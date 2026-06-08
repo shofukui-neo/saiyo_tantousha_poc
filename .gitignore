@@ -1,0 +1,14 @@
+node_modules/
+.env
+.env copy
+.env.local
+.env.*.local
+results.csv
+service-account.json
+service-account-*.json
+.vscode/
+.DS_Store
+npm-debug.log
+dist/
+/.idea/
+coverage/

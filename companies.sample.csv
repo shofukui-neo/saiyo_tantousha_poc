@@ -1,0 +1,6 @@
+company_name,homepage_url
+サイボウズ株式会社,
+freee株式会社,https://www.freee.co.jp/
+# company_name（企業名）だけあればOK。homepage_url は空でも企業名から公式URLを自動発見します。
+# 既にURLが分かっている場合は homepage_url に入れると検索をスキップして高速・確実になります。
+# 上記はサンプルです。実際の調査対象に置き換えてください。
