@@ -28,14 +28,17 @@ function normalizeJpPhone(raw) {
   if (/^(070|080|090|050)\d{8}$/.test(digits)) {
     return digits.replace(/^(\d{3})(\d{4})(\d{4})$/, '$1-$2-$3');
   }
-  // 固定電話: 合計10桁。市外局番の桁は地域で1〜4桁と可変だが、合計10桁を満たすことを必須とする。
+  // 固定電話: 合計10桁。市外局番は地域で1〜4桁と可変。
   if (digits.length === 10) {
-    // 元表記にハイフン/括弧があればその区切りを尊重、無ければ 0A-BBBB-CCCC 近似で整形
+    // 元表記にハイフン/括弧があればその区切りを最優先で尊重（最も正確）
     const m = halfRaw.match(/0\d{1,4}[-(]\d{1,4}[-)]\d{3,4}/);
     if (m) {
       return toHalfWidth(m[0]).replace(/[()]/g, '-').replace(/-+/g, '-').replace(/-$/, '');
     }
-    return digits.replace(/^(\d{2})(\d{4})(\d{4})$/, '$1-$2-$3');
+    // 区切りが無い場合：市外局番長が一意に決まる東京(03)/大阪(06)のみ整形。
+    // それ以外は局番長が不定なのでハイフンを推測せず、数字のまま返す（誤った区切りを作らない）。
+    if (/^0[36]/.test(digits)) return digits.replace(/^(\d{2})(\d{4})(\d{4})$/, '$1-$2-$3');
+    return digits;
   }
   return null;
 }

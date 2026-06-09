@@ -17,9 +17,25 @@ const ENTITY = '株式会社|有限会社|合同会社|合資会社|合名会社
 const NC = "0-9A-Za-zＡ-Ｚａ-ｚ０-９\\u3040-\\u309f\\u30a0-\\u30ff\\u4e00-\\u9fa5々ヶ・ー&'’\\-";
 const ENTITY_RE = new RegExp(`(?:${ENTITY})`, 'g');
 const SPLIT_RE = new RegExp(`[^${NC}]+`);          // セグメント分割（社名文字以外で割る）
-const PARTICLE_TRAIL = /[はがのをにへもとやで]+$/;  // 前置形で末尾に取り込みがちな助詞
 
 function isNameChar(ch) { return ch !== undefined && new RegExp(`[${NC}]`).test(ch); }
+function isHira(ch) { return ch !== undefined && ch >= '぀' && ch <= 'ゟ'; }
+
+// 後置形「〈核〉株式会社」の核は、ブランド名が「最後の文法ひらがなの直後」から始まる傾向を使って先頭の文章部分を落とす。
+//   例: 「…お問い合わせサイボウズ」→「サイボウズ」 / 「…ご紹介するサイトお問い合わせＳｋｙ」→「Ｓｋｙ」
+function trimSuffixCore(s) {
+  let start = 0;
+  for (let i = 1; i < s.length; i++) if (isHira(s[i - 1]) && !isHira(s[i])) start = i;
+  return s.slice(start);
+}
+// 前置形「株式会社〈核〉」の核は、末尾の文法ひらがな（助詞・活用）を落とす。
+//   例: 「メルカリは上場」→「メルカリ」。ひらがな始まり（助詞句）は不採用。
+function trimPrefixCore(s) {
+  if (!s || isHira(s[0])) return '';
+  let end = s.length;
+  for (let i = 1; i < s.length; i++) if (!isHira(s[i - 1]) && isHira(s[i])) { end = i; break; }
+  return s.slice(0, end);
+}
 
 // 全角英数を半角へ寄せて正規化（社名の表記ゆれ吸収）
 function toHalfAlnum(s) {
@@ -39,12 +55,13 @@ function namesFromSegment(seg, out, seen) {
     const nextStart = k < ents.length - 1 ? ents[k + 1].idx : seg.length;
     let name = '';
     if (e.idx > prevEnd && isNameChar(seg[e.idx - 1])) {
-      // 後置形「〈核〉株式会社」：法人格の直前の核を採用
-      name = seg.slice(prevEnd, e.end);
+      // 後置形「〈核〉株式会社」：法人格の直前の核（先頭の文章部分を除去）
+      const core = trimSuffixCore(seg.slice(prevEnd, e.idx));
+      if (!core) continue;
+      name = core + e.str;
     } else {
-      // 前置形「株式会社〈核〉」：法人格の直後の核を採用（末尾の助詞を除去）
-      let core = seg.slice(e.end, nextStart).replace(PARTICLE_TRAIL, '');
-      // 核が無い／純ひらがな2字以下（助詞句の可能性）は除外
+      // 前置形「株式会社〈核〉」：法人格の直後の核（末尾の助詞・活用を除去）
+      const core = trimPrefixCore(seg.slice(e.end, nextStart));
       if (!core) continue;
       if (/^[぀-ゟ]{1,2}$/.test(core)) continue;
       name = e.str + core;

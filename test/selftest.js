@@ -108,7 +108,9 @@ function testPhone() {
     if (got === expect) { console.log(`✓ ${label}`); }
     else { console.log(`✗ ${label}: expected ${JSON.stringify(expect)} got ${JSON.stringify(got)}`); fail++; }
   };
-  check('normalizeJpPhone: 固定(ハイフン無し)→整形', normalizeJpPhone('0312345678'), '03-1234-5678');
+  check('normalizeJpPhone: 東京03(ハイフン無し)→整形', normalizeJpPhone('0312345678'), '03-1234-5678');
+  check('normalizeJpPhone: 区切り付きはそのまま尊重(3桁市外)', normalizeJpPhone('072-233-1101'), '072-233-1101');
+  check('normalizeJpPhone: 区切り無し3桁市外はハイフンを捏造しない', normalizeJpPhone('0722331101'), '0722331101');
   check('normalizeJpPhone: 携帯11桁', normalizeJpPhone('090-1234-5678'), '090-1234-5678');
   check('normalizeJpPhone: フリーダイヤル', normalizeJpPhone('0120-123-456'), '0120-123-456');
   check('normalizeJpPhone: 全角→半角', normalizeJpPhone('０３－１２３４－５６７８'), '03-1234-5678');
