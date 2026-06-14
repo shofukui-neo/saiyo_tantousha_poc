@@ -9,6 +9,7 @@
     "start": "node src/index.js",
     "app": "node src/app.js",
     "leads": "node src/app.js",
+    "score": "node src/score-list.js",
     "test": "node test/selftest.js"
   },
   "dependencies": {

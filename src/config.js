@@ -155,6 +155,21 @@ module.exports = {
     '補助金', '設立年', '取得日'],
   SCORE_THRESHOLD: flt(process.env.SCORE_THRESHOLD, 0.6),
 
+  // --- リスト品質スコアリング（src/quality.js・src/score-list.js）---
+  // 4ディメンション加重（合計1.0）。テレアポ実績でチューニングする。
+  QUALITY_WEIGHTS: {
+    icp: flt(process.env.QUALITY_W_ICP, 0.30),
+    intent: flt(process.env.QUALITY_W_INTENT, 0.35),
+    data: flt(process.env.QUALITY_W_DATA, 0.20),
+    timing: flt(process.env.QUALITY_W_TIMING, 0.15),
+  },
+  // 架電優先度の閾値（総合スコア）
+  QUALITY_PRIORITY_HIGH: int(process.env.QUALITY_PRIORITY_HIGH, 70), // これ以上＝今週架電
+  QUALITY_PRIORITY_MID: int(process.env.QUALITY_PRIORITY_MID, 45),   // これ以上＝ナーチャリング、未満＝後回し
+  // 採用インテントの正規化上限（求人出稿データ連携時に使用）
+  INTENT_MEDIA_MAX: int(process.env.INTENT_MEDIA_MAX, 5),            // 出稿媒体数の満点ライン
+  INTENT_COST_MAX: int(process.env.INTENT_COST_MAX, 10000000),      // 予想出稿金額の対数正規化上限
+
   // ===== 電話番号抽出（正規表現＋tel:リンク。API不要） =====
   // 電話番号らしさを高めるキーワード（近接で加点）
   PHONE_POSITIVE_HINTS: ['tel', 'TEL', 'ＴＥＬ', '電話', '℡', '代表', 'お問い合わせ', 'お問合せ', 'お問合わせ', '問い合わせ', 'phone', 'お電話'],

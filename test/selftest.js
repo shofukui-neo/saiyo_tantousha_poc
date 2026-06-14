@@ -21,6 +21,7 @@ const { recordToRow, keyOfRecord } = require('../src/master-io');
 const { geminiToExt } = require('../src/recruiter');
 const { guessEmails } = require('../src/email');
 const { extractYear, matchIndustry, passesEstablishment } = require('../src/gbiz');
+const { scoreRecord, scoreData, scoreIcp, scoreIntent, monthSeason, parseEmployees, priorityOf, negativeAdjust } = require('../src/quality');
 
 function read(f) { return fs.readFileSync(path.join(__dirname, f), 'utf8'); }
 
@@ -337,6 +338,59 @@ function testGbizLogic() {
   return fail;
 }
 
+// ---- リスト品質スコアリング（4ディメンション加重）検証 ----
+function testQualityLogic() {
+  let fail = 0;
+  const ok = (label, cond) => { if (cond) console.log('✓ ' + label); else { console.log('✗ ' + label); fail++; } };
+  const icp = { target_industries: ['SaaS', 'IT'], geography: ['東京都'] };
+  const c = require('../src/config');
+  const fixedNow = new Date('2026-11-15T00:00:00+09:00'); // 11月＝計画ピーク(係数100)
+
+  // 従業員数パース
+  ok('parseEmployees: "150名 [ICP60]" → 150', parseEmployees('150名 [ICP60]') === 150);
+  ok('parseEmployees: 空 → null', parseEmployees('') === null);
+
+  // 季節係数
+  ok('monthSeason: 11月=100(計画ピーク)', monthSeason(11, c) === 100);
+  ok('monthSeason: 8月=55(中だるみ)', monthSeason(8, c) === 55);
+
+  // ICP適合：スイートスポット規模＋業種＋地域一致は高得点
+  const icpHigh = scoreIcp({ '従業員数': 150, '業種': 'SaaS', '都道府県': '東京都', '設立年': '2010', '補助金': '○' }, icp, c);
+  const icpLow = scoreIcp({ '従業員数': 5000, '業種': '製造', '都道府県': '北海道' }, icp, c);
+  ok('scoreIcp: ICP適合企業 > 非適合企業', icpHigh.score > icpLow.score);
+
+  // データ品質：妥当な電話＋メール＋担当者＋URL＋新しい取得日は高得点
+  const dataHigh = scoreData({ '電話番号': '03-1234-5678', 'メール': 'a@x.co.jp', 'メール確度': 0.95, '採用担当者名': '山田 太郎', '公式URL': 'https://x.co.jp', '取得日': fixedNow.toISOString() }, c, fixedNow.getTime());
+  const dataLow = scoreData({ '電話番号': '', 'メール': '', '採用担当者名': '', '公式URL': '' }, c, fixedNow.getTime());
+  ok('scoreData: 充実データ > 欠損データ', dataHigh.score > dataLow.score);
+  ok('scoreData: 不正な電話番号は満点にしない', scoreData({ '電話番号': '123-4567', '公式URL': 'https://x' }, c, fixedNow.getTime()).score < dataHigh.score);
+
+  // 採用インテント：出稿データありは本スコア、無しは代理推定フラグ
+  const intentReal = scoreIntent({ '新卒出稿': '○', '出稿媒体数': '3', '出稿継続性': '○' }, c);
+  const intentProxy = scoreIntent({ '採用担当者名': '山田 太郎', '担当者確度': 0.8, '根拠URL': 'https://x.co.jp/recruit' }, c);
+  ok('scoreIntent: 出稿データありは proxy=false', intentReal.proxy === false && intentReal.score > 0);
+  ok('scoreIntent: 担当者HIT代理シグナルで加点(proxy=true)', intentProxy.proxy === true && intentProxy.score > 20);
+
+  // 優先度の閾値
+  ok('priorityOf: 75→今週架電', priorityOf(75, c) === '今週架電');
+  ok('priorityOf: 50→ナーチャリング', priorityOf(50, c) === 'ナーチャリング');
+  ok('priorityOf: 30→後回し', priorityOf(30, c) === '後回し');
+
+  // ネガティブ調整（除外フラグ）
+  ok('negativeAdjust: 除外フラグで大幅減点', negativeAdjust({ '除外フラグ': '○' }).penalty >= 100);
+
+  // 総合スコア：高品質レコードは 0-100 に収まり、優先度が付く
+  const full = scoreRecord({ '従業員数': 150, '業種': 'SaaS', '都道府県': '東京都', '設立年': '2010', '電話番号': '03-1234-5678', 'メール': 'a@x.co.jp', 'メール確度': 0.95, '採用担当者名': '山田 太郎', '公式URL': 'https://x.co.jp', '根拠URL': 'https://x.co.jp/recruit', '担当者確度': 0.8, '取得日': fixedNow.toISOString() }, { icp, now: fixedNow, c });
+  ok('scoreRecord: 総合は0-100', full.total >= 0 && full.total <= 100);
+  ok('scoreRecord: 4ディメンションを返す', full.dims && ['icp', 'intent', 'data', 'timing'].every((k) => typeof full.dims[k] === 'number'));
+  ok('scoreRecord: 優先度が付与される', ['今週架電', 'ナーチャリング', '後回し'].includes(full.priority));
+  // 除外フラグ付きは総合スコアが下がる
+  const excluded = scoreRecord(Object.assign({ '除外フラグ': '○' }, { '従業員数': 150, '業種': 'SaaS', '都道府県': '東京都', '電話番号': '03-1234-5678', 'メール': 'a@x.co.jp', 'メール確度': 0.95, '採用担当者名': '山田 太郎', '公式URL': 'https://x.co.jp', '取得日': fixedNow.toISOString() }), { icp, now: fixedNow, c });
+  ok('scoreRecord: 除外フラグで総合が下がる', excluded.total < full.total);
+
+  return fail;
+}
+
 async function run() {
   const cases = [
     { name: 'サンプル株式会社', file: 'fixture.html', expect: 'HIT' },
@@ -388,6 +442,8 @@ async function run() {
   failures += testPipelineLogic();
   console.log('\n--- gBizINFO 発掘フィルタ（業種KW/設立年/補助金）検証 ---');
   failures += testGbizLogic();
+  console.log('\n--- リスト品質スコアリング（4ディメンション加重）検証 ---');
+  failures += testQualityLogic();
 
   if (failures > 0) { console.error(`\nSELFTEST FAILED: ${failures} case(s)`); process.exit(1); }
   console.log('\nSELFTEST PASSED ✓  (抽出→検証→集計 ＋ スプレッドシートI/O ロジックが正常動作)');

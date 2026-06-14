@@ -48,7 +48,8 @@ async function extractRecruiterFromText(text, company, c = cfg) {
     const j = await geminiExtractRecruiter(text, company, c);
     ext = j ? geminiToExt(j) : { found: false, engine: 'gemini' };
   } else {
-    ext = extractContact({ text, companyName: company.name }); // engine: 'heuristic'
+    // extractContact は非同期（OLLAMA_URL 設定時はローカルLLM、無ければ正規表現＋人名判定）
+    ext = await extractContact({ text, companyName: company.name });
   }
 
   const v = validateHit(ext, { threshold: c.SCORE_THRESHOLD, roleKeywords: c.ROLE_KEYWORDS });

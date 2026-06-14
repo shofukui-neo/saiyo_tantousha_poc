@@ -4,9 +4,10 @@
 // 各レイヤは利用可能なAPIキーに応じて自動で高精度/ローカル経路を選ぶ。
 const cfg = require('./config');
 const { getRobots, isAllowed } = require('./robots');
-const { fetchPage, discoverPages, guessContactPaths, extractText } = require('./fetch');
+const { fetchPage, fetchText, discoverPages, guessContactPaths, extractText } = require('./fetch');
 const { discoverUrl } = require('./search');
-const { extractPhones } = require('./phone');
+const { extractPhones, normalizeJpPhone } = require('./phone');
+const structured = require('./structured');
 const { extractRecruiterFromText } = require('./recruiter');
 const { enrichEmail } = require('./email');
 const { ntaAvailable, ntaFindByName } = require('./nta');
@@ -54,22 +55,24 @@ async function processCompany(cand, icp, c = cfg) {
       const nta = await ntaFindByName(cand.name, c);
       if (nta) { rec['法人番号'] = nta.corporateNumber; if (!rec['都道府県']) rec['都道府県'] = nta.prefecture || ''; }
     }
-    // 2) gBizINFO で代表者名・HP補完（任意）
+    // 2) gBizINFO で代表者名・HP・所在地を補完（任意）
     let domain = normalizeDomain(cand.domain || cand.websiteUrl || '');
     let homepageUrl = cand.websiteUrl || (domain ? 'https://' + domain : '');
+    let addressHint = cand.prefecture || '';   // 同名取り違え防止に使う所在地ヒント
     if (rec['法人番号'] && gbizAvailable(c)) {
       const gb = await gbizGet(rec['法人番号'], c);
       if (gb) {
         if (!rec['代表者名']) rec['代表者名'] = gb.representativeName || '';
+        if (gb.prefecture) addressHint = gb.prefecture; // gBizINFOの所在地（都道府県＋市区）
         if (!homepageUrl && gb.websiteUrl) { homepageUrl = gb.websiteUrl; domain = normalizeDomain(gb.websiteUrl); }
       }
     }
 
-    // 3) 公式URLの確定（入力/補完が無ければ企業名から発見）
+    // 3) 公式URLの確定（入力/補完が無ければ企業名から発見。所在地ヒントで同名取り違えを抑制）
     let urlSource = homepageUrl ? 'input' : '';
     if (!homepageUrl) {
       await sleep(c.SEARCH_DELAY_MS);
-      const d = await discoverUrl(cand.name, { fetchPage, extractText });
+      const d = await discoverUrl(cand.name, { fetchPage, extractText }, { addressHint });
       if (!d.url) {
         result.status = 'NO_URL'; result.error = ('URL未発見: ' + (d.error || '')).slice(0, 200);
         return finalize(rec, result, t0, icp, c);
@@ -95,7 +98,11 @@ async function processCompany(cand, icp, c = cfg) {
     const htmlByUrl = { [homepageUrl]: home.html };
 
     const discovered = discoverPages(homepageUrl, home.html);
-    const ordered = [homepageUrl, ...discovered, ...guessContactPaths(homepageUrl), ...locatePaths(homepageUrl, c)];
+    let sitemapPages = [];
+    if (c.USE_SITEMAP) {
+      try { sitemapPages = await structured.discoverFromSitemap(start.origin, { fetchText }); } catch (_) {}
+    }
+    const ordered = [homepageUrl, ...discovered, ...sitemapPages, ...guessContactPaths(homepageUrl), ...locatePaths(homepageUrl, c)];
     const candidates = [...new Set(ordered)].slice(0, c.MAX_PAGES_PER_SITE);
 
     let bestPhone = null;
@@ -114,9 +121,20 @@ async function processCompany(cand, icp, c = cfg) {
       const text = extractText(html);
       if (!text || text.length < 40) continue;
 
-      // 電話番号（全ページから最良を保持）
-      const ph = extractPhones({ html, text });
-      if (ph.phone && (!bestPhone || ph.score > bestPhone.score)) bestPhone = { ...ph, sourceUrl: url };
+      // 電話番号：JSON-LD(schema.org)の telephone を最優先（正規表現より正確）。
+      if (c.USE_STRUCTURED) {
+        const org = structured.extractOrganization(html);
+        if (org && org.telephone) {
+          const norm = normalizeJpPhone(org.telephone);
+          if (norm && (!bestPhone || bestPhone.source !== 'json-ld')) {
+            bestPhone = { phone: norm, score: 100, source: 'json-ld', evidence: ('JSON-LD telephone: ' + org.telephone).slice(0, 120), isFax: false, sourceUrl: url };
+          }
+        }
+      }
+      // 会社概要/お問い合わせ系ページは代表番号が載りやすいので加点して収集
+      const pageBoost = /company|contact|about|corporate|profile|outline|会社|問い合わせ|問合/i.test(url) ? 2 : 0;
+      const ph = extractPhones({ html, text, pageBoost });
+      if (ph.phone && (!bestPhone || (bestPhone.source !== 'json-ld' && ph.score > bestPhone.score))) bestPhone = { ...ph, sourceUrl: url };
 
       // 採用担当者（HITで確定。以降は電話探索のみ継続）
       if (!recruiterHit) {
