@@ -11,6 +11,10 @@ const { readJsonResponse } = require('../src/gas');
 const { extractPhones, normalizeJpPhone } = require('../src/phone');
 const { decodeDdgHref, isExcludedDomain, parseDdgHtml, scoreCandidates, pageMatchesCompany, companyCore } = require('../src/search');
 const { extractCompanyNames } = require('../src/discover');
+const gbiz = require('../src/gbizinfo');
+const structured = require('../src/structured');
+const areacode = require('../src/areacode');
+const { addressTokens } = require('../src/search');
 const { normalizeDomain, tierOf, callScript, discoveryIcpScore } = require('../src/score');
 const { normalizeIcp } = require('../src/icp');
 const { recordToRow, keyOfRecord } = require('../src/master-io');
@@ -116,7 +120,7 @@ function testPhone() {
   };
   check('normalizeJpPhone: 東京03(ハイフン無し)→整形', normalizeJpPhone('0312345678'), '03-1234-5678');
   check('normalizeJpPhone: 区切り付きはそのまま尊重(3桁市外)', normalizeJpPhone('072-233-1101'), '072-233-1101');
-  check('normalizeJpPhone: 区切り無し3桁市外はハイフンを捏造しない', normalizeJpPhone('0722331101'), '0722331101');
+  check('normalizeJpPhone: 区切り無し3桁市外も市外局番表で正整形', normalizeJpPhone('0722331101'), '072-233-1101');
   check('normalizeJpPhone: 携帯11桁', normalizeJpPhone('090-1234-5678'), '090-1234-5678');
   check('normalizeJpPhone: フリーダイヤル', normalizeJpPhone('0120-123-456'), '0120-123-456');
   check('normalizeJpPhone: 全角→半角', normalizeJpPhone('０３－１２３４－５６７８'), '03-1234-5678');
@@ -166,6 +170,62 @@ function testDiscover() {
   ok('extractCompanyNames: 重複を除去', dup.filter(n => companyCore(n) === 'テスト').length === 1);
   // 法人格が無い語は拾わない
   ok('extractCompanyNames: 法人格の無い語は拾わない', extractCompanyNames('東京 IT ベンチャー 一覧').length === 0);
+  return fail;
+}
+
+// ---- gBizINFO 純ロジック検証（ネットワーク不要） ----
+function testGbiz() {
+  let fail = 0;
+  const ok = (label, cond) => { if (cond) console.log('✓ ' + label); else { console.log('✗ ' + label); fail++; } };
+  const json = { 'hojin-infos': [
+    { corporate_number: '1', name: 'テスト工業株式会社', location: '東京都千代田区1-1', company_url: 'https://test.co.jp/' },
+    { corporate_number: '2', name: 'テスト工業株式会社 大阪支店', location: '大阪府大阪市北区' },
+  ] };
+  const recs = gbiz.parseResponse(json);
+  ok('gbiz.parseResponse: レコード正規化', recs.length === 2 && recs[0].url === 'https://test.co.jp/' && recs[0].prefecture === '東京都');
+  const best = gbiz.pickBest(recs, 'テスト工業株式会社');
+  ok('gbiz.pickBest: 完全一致を優先', best && best.corporateNumber === '1');
+  ok('gbiz.prefectureOf: 所在地→都道府県', gbiz.prefectureOf('神奈川県横浜市西区') === '神奈川県');
+  ok('gbiz.enabled: トークン未設定ならfalse', gbiz.enabled() === false);
+  return fail;
+}
+
+// ---- 構造化抽出(JSON-LD/sitemap) 純ロジック検証（ネットワーク不要） ----
+function testStructured() {
+  let fail = 0;
+  const ok = (label, cond) => { if (cond) console.log('✓ ' + label); else { console.log('✗ ' + label); fail++; } };
+  const html = '<html><head><script type="application/ld+json">' +
+    JSON.stringify({ '@context': 'https://schema.org', '@type': 'Organization', name: 'サンプル株式会社', telephone: '03-1234-5678', address: { addressRegion: '東京都', addressLocality: '港区', streetAddress: '1-2-3' } }) +
+    '</script></head><body>x</body></html>';
+  const org = structured.extractOrganization(html);
+  ok('structured.extractOrganization: name/telephone/address抽出', !!org && org.name === 'サンプル株式会社' && org.telephone === '03-1234-5678' && org.address.includes('港区'));
+  ok('structured.extractOrganization: JSON-LD無しはnull', structured.extractOrganization('<html><body>no jsonld</body></html>') === null);
+  const xml = '<urlset><url><loc>https://e.jp/</loc></url><url><loc>https://e.jp/company/</loc></url><url><loc>https://e.jp/contact/</loc></url></urlset>';
+  const locs = structured.parseSitemapLocs(xml);
+  ok('structured.parseSitemapLocs: locを3件抽出', locs.length === 3);
+  const ranked = structured.rankSitemapUrls(locs);
+  ok('structured.rankSitemapUrls: 会社概要/問い合わせを上位に', ranked.length === 2 && /company|contact/.test(ranked[0]));
+  return fail;
+}
+
+// ---- 市外局番テーブル 純ロジック検証（ネットワーク不要） ----
+function testAreacode() {
+  let fail = 0;
+  const eq = (label, got, exp) => { if (got === exp) console.log('✓ ' + label); else { console.log(`✗ ${label}: expected ${JSON.stringify(exp)} got ${JSON.stringify(got)}`); fail++; } };
+  eq('areacode.formatLandline: 東京03(2桁市外)', areacode.formatLandline('0312345678'), '03-1234-5678');
+  eq('areacode.formatLandline: 大阪周辺072(3桁市外)', areacode.formatLandline('0722331101'), '072-233-1101');
+  eq('areacode.formatLandline: 横浜045(3桁市外)', areacode.formatLandline('0451234567'), '045-123-4567');
+  eq('areacode.prefectureForNumber: 045→神奈川県', areacode.prefectureForNumber('045-123-4567'), '神奈川県');
+  eq('areacode.prefectureForNumber: 06→大阪府', areacode.prefectureForNumber('06-1234-5678'), '大阪府');
+  return fail;
+}
+
+// ---- 所在地トークン化（同名照合） 検証 ----
+function testAddressTokens() {
+  let fail = 0;
+  const toks = addressTokens('東京都千代田区丸の内1-1-1');
+  const ok = toks.includes('東京都') && toks.some(t => t.includes('千代田区'));
+  if (ok) console.log('✓ addressTokens: 都道府県＋市区を抽出'); else { console.log('✗ addressTokens: ' + JSON.stringify(toks)); fail++; }
   return fail;
 }
 
@@ -287,8 +347,8 @@ async function run() {
 
   for (const c of cases) {
     const text = extractText(read(c.file));
-    // 抽出はローカルのヒューリスティックのみ（外部AI API不使用）
-    const ext = extractContact({ text, companyName: c.name });
+    // 抽出はローカル処理（OLLAMA_URL未設定時はヒューリスティック）。外部AI APIへの課金は発生しない。
+    const ext = await extractContact({ text, companyName: c.name });
     const v = validateHit(ext);
     const status = v.hit ? 'HIT' : 'MISS';
     const ok = status === c.expect;
@@ -311,6 +371,14 @@ async function run() {
   failures += testName();
   console.log('\n--- 企業名 自動発見 検証 ---');
   failures += testDiscover();
+  console.log('\n--- gBizINFO 連携 検証 ---');
+  failures += testGbiz();
+  console.log('\n--- 構造化抽出(JSON-LD/sitemap) 検証 ---');
+  failures += testStructured();
+  console.log('\n--- 市外局番テーブル 検証 ---');
+  failures += testAreacode();
+  console.log('\n--- 所在地トークン化 検証 ---');
+  failures += testAddressTokens();
   console.log('\n--- URL発見（検索）ロジック 検証 ---');
   failures += testSearch();
   console.log('\n--- スプレッドシートI/O ヘルパー検証 ---');

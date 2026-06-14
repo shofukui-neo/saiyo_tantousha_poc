@@ -53,13 +53,60 @@ function heuristicExtract(text) {
   return { found: false, name: null, role: null, department: null, evidence: null, confidence: 0, reason: 'no pattern matched (heuristic)' };
 }
 
+// ---- ローカルLLM（Ollama）抽出。外部API課金なし。OLLAMA_URL 未設定なら使用しない ----
+const OLLAMA_SYSTEM =
+  'あなたは日本語Webページ本文から「採用・人事の担当者」の実在の氏名を抽出するアシスタントです。' +
+  '採用担当・人事担当・採用責任者など採用に関わる担当者の氏名のみを対象とし、経営者(代表取締役等)や' +
+  '「採用担当」「人事部」などの役割語・組織語は氏名ではありません。確証が無ければ found=false。氏名を創作しないこと。' +
+  '出力はJSONのみ: {"found":boolean,"name":string|null,"role":string|null,"department":string|null,"evidence":string|null,"confidence":number}';
+
+async function callOllama(text, companyName) {
+  const ctrl = new AbortController();
+  const t = setTimeout(() => ctrl.abort(), cfg.OLLAMA_TIMEOUT_MS);
+  try {
+    const res = await fetch(cfg.OLLAMA_URL.replace(/\/$/, '') + '/api/generate', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      signal: ctrl.signal,
+      body: JSON.stringify({
+        model: cfg.OLLAMA_MODEL,
+        stream: false,
+        format: 'json', // 有効なJSONのみを出力させる
+        system: OLLAMA_SYSTEM,
+        prompt: `対象企業: ${companyName || ''}\n以下の本文から採用/人事の担当者名を抽出してください。\n=== 本文 ===\n${text}\n=== 本文ここまで ===`,
+      }),
+    });
+    if (!res.ok) throw new Error('Ollama HTTP ' + res.status);
+    const data = await res.json();
+    const obj = JSON.parse(data.response || '{}');
+    return obj;
+  } finally {
+    clearTimeout(t);
+  }
+}
+
 /**
- * 本文から採用担当者を抽出（ヒューリスティックのみ・外部API不使用）。
+ * 本文から採用担当者を抽出。既定はローカル処理（正規表現＋人名判定）。
+ * OLLAMA_URL が設定されていればローカルLLMを使い、失敗時はヒューリスティックにフォールバック。
+ * いずれも外部AI APIへの課金は発生しない。
  * @param {{text:string, companyName?:string}} opts
- * @returns {object} 抽出結果（+ engine フィールド）
+ * @returns {Promise<object>} 抽出結果（+ engine フィールド）
  */
-function extractContact({ text }) {
-  return Object.assign({ engine: 'heuristic' }, heuristicExtract(text));
+async function extractContact({ text, companyName }) {
+  if (cfg.OLLAMA_URL) {
+    try {
+      const r = await callOllama(text, companyName);
+      // LLM結果も人名らしさで最終チェック（役割語・組織語の混入を防ぐ）
+      if (r && r.found && looksLikePersonName(r.name)) {
+        return Object.assign({ engine: 'ollama' }, r);
+      }
+      if (r && r.found === false) return Object.assign({ engine: 'ollama' }, r);
+      // foundだが人名として不適 → ヒューリスティックで取り直す
+    } catch (_) {
+      return Object.assign({ engine: 'ollama-fallback' }, heuristicExtract(text));
+    }
+  }
+  return Object.assign({ engine: cfg.OLLAMA_URL ? 'ollama-fallback' : 'heuristic' }, heuristicExtract(text));
 }
 
 module.exports = { extractContact, heuristicExtract, looksLikePersonName };

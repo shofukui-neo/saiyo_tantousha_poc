@@ -3,12 +3,14 @@ const fs = require('fs');
 const path = require('path');
 const cfg = require('./config');
 const { getRobots, isAllowed } = require('./robots');
-const { fetchPage, discoverPages, guessContactPaths, extractText, closeBrowser } = require('./fetch');
+const { fetchPage, fetchText, discoverPages, guessContactPaths, extractText, closeBrowser } = require('./fetch');
 const { extractContact } = require('./extract');
 const { validateHit } = require('./validate');
-const { discoverUrl } = require('./search');
+const { discoverUrl, companyCore } = require('./search');
 const { discoverCompanies } = require('./discover');
-const { extractPhones } = require('./phone');
+const gbiz = require('./gbizinfo');
+const structured = require('./structured');
+const { extractPhones, normalizeJpPhone } = require('./phone');
 const { summarize, printSummary } = require('./metrics');
 
 const sleep = (ms) => new Promise(r => setTimeout(r, ms));
@@ -87,14 +89,22 @@ async function processCompany(c) {
     url_source: '', phone_source_url: '', name_source_url: '', evidence: '', engine: '',
     pages_checked: 0, elapsed_ms: 0, error: '',
   };
-  try {
-    // ① 入力URLがあればそれを使用。無ければ企業名から公式URLを発見。
+    // gBizINFO（任意・無料トークン時のみ）で正式名称・所在地・公式HPを公的データから取得。
+    // 同名企業の取り違え防止と発見精度の底上げに使う。トークン未設定なら null。
+    const gb = gbiz.enabled() ? await gbiz.lookup(c.name) : null;
+    const addressHint = gb && gb.location ? gb.location : '';
+    res._prefecture = gb && gb.prefecture ? gb.prefecture : '';   // 電話の市外局番整合に使用（内部用）
+
+    // ① 入力URLがあればそれを使用。無ければ gBizINFO の企業HP → 検索発見 の順。
     let homepageUrl = (c.homepage_url || '').trim();
     if (homepageUrl) {
       res.url_source = 'input';
+    } else if (gb && gb.url) {
+      homepageUrl = gb.url;
+      res.url_source = 'gbizinfo';                                 // 公的データ由来＝高信頼
     } else {
       await sleep(cfg.SEARCH_DELAY_MS);
-      const d = await discoverUrl(c.name, { fetchPage, extractText });
+      const d = await discoverUrl(c.name, { fetchPage, extractText }, { addressHint });
       if (!d.url) { res.status = 'NO_URL'; res.error = ('URL未発見: ' + (d.error || '')).slice(0, 200); return finalize(res, t0); }
       homepageUrl = d.url;
       res.url_source = d.source;
@@ -111,9 +121,13 @@ async function processCompany(c) {
     res.pages_checked++;
     const htmlByUrl = { [homepageUrl]: home.html };
 
-    // ナビから発見したヒント候補。少なければ「よくあるパス」推測で補完してMAX_PAGESまで充填。
+    // ナビ発見 ＋ sitemap発見 ＋ 推測パス を統合してMAX_PAGESまで充填。
     const discovered = discoverPages(homepageUrl, home.html);
-    const ordered = [homepageUrl, ...discovered, ...guessContactPaths(homepageUrl)];
+    let sitemapPages = [];
+    if (cfg.USE_SITEMAP) {
+      try { sitemapPages = await structured.discoverFromSitemap(start.origin, { fetchText }); } catch (_) {}
+    }
+    const ordered = [homepageUrl, ...discovered, ...sitemapPages, ...guessContactPaths(homepageUrl)];
     const candidates = [...new Set(ordered)].slice(0, cfg.MAX_PAGES_PER_SITE);
 
     let bestPhone = null; // { phone, score, evidence, isFax, sourceUrl }
@@ -134,15 +148,27 @@ async function processCompany(c) {
       const text = extractText(html);
       if (!text || text.length < 40) continue;
 
-      // ③-a 電話番号（全ページから収集し、最良を保持）
-      const ph = extractPhones({ html, text });
-      if (ph.phone && (!bestPhone || ph.score > bestPhone.score)) {
+      // ③-a 電話番号。JSON-LD(schema.org)の telephone を最優先（正規表現より正確）。
+      if (cfg.USE_STRUCTURED) {
+        const org = structured.extractOrganization(html);
+        if (org && org.telephone) {
+          const norm = normalizeJpPhone(org.telephone);
+          if (norm && (!bestPhone || bestPhone.source !== 'json-ld')) {
+            bestPhone = { phone: norm, score: 100, source: 'json-ld', evidence: ('JSON-LD telephone: ' + org.telephone).slice(0, 120), isFax: false, sourceUrl: url };
+          }
+        }
+      }
+      // 正規表現＋tel: からも収集し、最良を保持（JSON-LDが取れていればそちらを優先）。
+      // 会社概要/お問い合わせ/会社情報 等のページは代表番号が載りやすいので加点。
+      const pageBoost = /company|contact|about|corporate|profile|outline|会社|問い合わせ|問合/i.test(url) ? 2 : 0;
+      const ph = extractPhones({ html, text, pageBoost });
+      if (ph.phone && (!bestPhone || (bestPhone.source !== 'json-ld' && ph.score > bestPhone.score))) {
         bestPhone = { ...ph, sourceUrl: url };
       }
 
       // ③-b 採用担当者名（検証ゲート通過で確定。確定後は名前抽出をスキップして電話探索のみ継続）
       if (!nameHit) {
-        const ext = extractContact({ text, companyName: c.name });
+        const ext = await extractContact({ text, companyName: c.name });
         const v = validateHit(ext);
         if (v.hit) {
           nameHit = true;
@@ -167,6 +193,10 @@ async function processCompany(c) {
       res.phone = bestPhone.phone;
       res.phone_source_url = bestPhone.sourceUrl;
       if (!res.evidence) res.evidence = String(bestPhone.evidence || '').slice(0, 160);
+      // 電話の市外局番(都道府県)とgBizINFOの所在地が食い違う＝同名取り違え/支店番号の疑い。ソフトに注意表示。
+      if (res._prefecture && bestPhone.prefecture && bestPhone.prefecture !== res._prefecture) {
+        res.evidence = (`⚠所在地(${res._prefecture})と市外局番(${bestPhone.prefecture})不一致 ` + (res.evidence || '')).slice(0, 160);
+      }
     }
   } catch (e) {
     res.status = 'ERROR';
@@ -223,7 +253,16 @@ async function main() {
     console.log(`\n発見モード: ${seed.listUrl ? '一覧URL「' + seed.listUrl + '」' : 'キーワード「' + seed.query + '」'} から企業名を収集中…（外部AI API不使用）`);
     const d = await discoverCompanies(seed, { fetchPage, extractText });
     discovered = d.names;
-    console.log(`→ ${discovered.length}社の企業名を発見（source=${d.source}）`);
+    let srcLabel = d.source;
+    // gBizINFO（任意）が有効なら、公的データからの企業名も併合して網羅性・精度を底上げ。
+    if (gbiz.enabled() && seed.query) {
+      const seenKeys = new Set(discovered.map(n => companyCore(n).toLowerCase()));
+      const gbNames = await gbiz.discoverNames(seed.query, { limit: seed.limit || cfg.DISCOVER_LIMIT });
+      let added = 0;
+      for (const n of gbNames) { const k = companyCore(n).toLowerCase(); if (k && !seenKeys.has(k)) { seenKeys.add(k); discovered.push(n); added++; } }
+      if (added) { srcLabel += `+gbizinfo(${added})`; if (seed.limit) discovered = discovered.slice(0, seed.limit); }
+    }
+    console.log(`→ ${discovered.length}社の企業名を発見（source=${srcLabel}）`);
     if (!discovered.length) { console.error('企業名を1件も発見できませんでした。キーワードを具体化するか、一覧ページURLを指定してください。'); await closeBrowser(); process.exit(1); }
 
     if (discoverOnly) {
@@ -267,6 +306,9 @@ async function main() {
   console.log(`取得項目: 企業名 / 公式URL / 電話番号 / 採用担当者名（すべてローカル処理・外部AI API不使用）`);
   console.log(`URL発見: ${needSearch ? cfg.SEARCH_ENGINE + '（企業名→公式URL）' : '入力URLを使用'} ｜ 電話番号: 正規表現＋tel: ｜ 担当者名: 正規表現＋人名判定`
     + (cfg.ONLY_PENDING ? ' / ONLY_PENDING' : ''));
+  console.log(`精度向上: gBizINFO=${gbiz.enabled() ? 'ON（公的データで同名照合）' : 'OFF（GBIZINFO_TOKEN未設定）'}`
+    + ` ｜ 構造化抽出(JSON-LD/sitemap)=${cfg.USE_STRUCTURED ? 'ON' : 'OFF'}`
+    + ` ｜ ローカルLLM(Ollama)=${cfg.OLLAMA_URL ? 'ON' : 'OFF'}`);
 
   const results = await pool(companies, cfg.CONCURRENCY, (c) => processCompany(c));
   await closeBrowser();

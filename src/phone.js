@@ -4,6 +4,7 @@
 //       FAX 近接は減点、日本の固定/携帯/フリーダイヤルの桁構成のみ採用する。
 const cheerio = require('cheerio');
 const cfg = require('./config');
+const { formatLandline, prefectureForNumber } = require('./areacode');
 
 // 全角数字・記号を半角へ
 function toHalfWidth(s) {
@@ -35,8 +36,10 @@ function normalizeJpPhone(raw) {
     if (m) {
       return toHalfWidth(m[0]).replace(/[()]/g, '-').replace(/-+/g, '-').replace(/-$/, '');
     }
-    // 区切りが無い場合：市外局番長が一意に決まる東京(03)/大阪(06)のみ整形。
-    // それ以外は局番長が不定なのでハイフンを推測せず、数字のまま返す（誤った区切りを作らない）。
+    // 区切りが無い場合：市外局番テーブル（areacode）で正しい桁区切りを決定。
+    const byTable = formatLandline(digits);
+    if (byTable) return byTable;
+    // テーブル未収録でも東京(03)/大阪(06)は一意なので整形。それ以外はハイフンを捏造しない。
     if (/^0[36]/.test(digits)) return digits.replace(/^(\d{2})(\d{4})(\d{4})$/, '$1-$2-$3');
     return digits;
   }
@@ -56,7 +59,7 @@ function hasHintNear(hay, pos, len, hints) {
  * @param {{html?:string, text?:string}} input
  * @returns {{phone:string|null, isFax:boolean, score:number, source:string, evidence:string, candidates:Array}}
  */
-function extractPhones({ html = '', text = '' } = {}) {
+function extractPhones({ html = '', text = '', pageBoost = 0 } = {}) {
   const candidates = [];
 
   // 1) tel: リンク（最も信頼できる）
@@ -69,7 +72,8 @@ function extractPhones({ html = '', text = '' } = {}) {
         if (norm) {
           const label = ($(a).text() || '').replace(/\s+/g, ' ').trim();
           const isFax = cfg.PHONE_NEGATIVE_HINTS.some((h) => label.toLowerCase().includes(String(h).toLowerCase()));
-          candidates.push({ phone: norm, isFax, score: (isFax ? 4 : 9), source: 'tel-link', evidence: ('tel: ' + (label || norm)).slice(0, 120) });
+          const isRep = cfg.PHONE_REP_HINTS.some((h) => label.includes(h));
+          candidates.push({ phone: norm, isFax, score: (isFax ? 4 : 9) + (isRep ? 2 : 0) + pageBoost, source: 'tel-link', evidence: ('tel: ' + (label || norm)).slice(0, 120) });
         }
       });
     } catch (_) { /* HTML解析失敗時はテキストへフォールバック */ }
@@ -87,15 +91,18 @@ function extractPhones({ html = '', text = '' } = {}) {
     const pos = m.index;
     const isFax = hasHintNear(hay, pos, m[0].length, cfg.PHONE_NEGATIVE_HINTS);
     const posHint = hasHintNear(hay, pos, m[0].length, cfg.PHONE_POSITIVE_HINTS);
+    const isRep = hasHintNear(hay, pos, m[0].length, cfg.PHONE_REP_HINTS); // 「代表」近接＝代表電話の確度UP
     let score = 2;
     if (posHint) score += 3;
+    if (isRep) score += 2;            // 代表番号を優先
     if (isFax) score -= 5;
+    score += pageBoost;               // 会社概要/お問い合わせページからの番号を加点
     const around = hay.slice(Math.max(0, pos - 16), pos + m[0].length + 8).replace(/\s+/g, ' ').trim();
     candidates.push({ phone: norm, isFax, score, source: posHint ? 'text+hint' : 'text', evidence: around.slice(0, 120) });
   }
 
   if (!candidates.length) {
-    return { phone: null, isFax: false, score: 0, source: '', evidence: '', candidates: [] };
+    return { phone: null, isFax: false, score: 0, source: '', evidence: '', prefecture: '', candidates: [] };
   }
 
   // 同一番号は最高スコアへ集約
@@ -108,7 +115,7 @@ function extractPhones({ html = '', text = '' } = {}) {
   // FAXでない・高スコアを優先
   merged.sort((a, b) => (a.isFax - b.isFax) || (b.score - a.score));
   const best = merged[0];
-  return { ...best, candidates: merged };
+  return { ...best, prefecture: prefectureForNumber(best.phone), candidates: merged };
 }
 
 module.exports = { extractPhones, normalizeJpPhone, toHalfWidth };

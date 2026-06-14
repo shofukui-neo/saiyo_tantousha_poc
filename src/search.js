@@ -216,6 +216,18 @@ async function ddgSearch(query) {
   }
 }
 
+// 所在地文字列を照合トークン（都道府県＋市区町村）に分解
+function addressTokens(addr) {
+  const s = String(addr || '').trim();
+  if (!s) return [];
+  const tokens = [];
+  const pref = s.match(/(北海道|東京都|京都府|大阪府|.{2,3}県)/);
+  if (pref) tokens.push(pref[1]);
+  const city = s.match(/(?:北海道|東京都|京都府|大阪府|.{2,3}県)\s*(.+?[市区町村])/);
+  if (city && city[1]) tokens.push(city[1]);
+  return tokens;
+}
+
 // 設定された検索エンジンでクエリを実行し、候補配列を返す
 async function runSearch(query) {
   const engine = String(cfg.SEARCH_ENGINE).toLowerCase();
@@ -227,9 +239,10 @@ async function runSearch(query) {
  * 企業名から公式HPのURLを発見する。
  * @param {string} companyName
  * @param {{fetchPage?:Function, extractText?:Function}} deps fetch/抽出関数（テスト時に差し替え可）
+ * @param {{addressHint?:string}} opt 同名企業の取り違え防止に使う所在地ヒント（gBizINFOの所在地等）
  * @returns {Promise<{url:string|null, source:string, verified:boolean, candidates:number, error?:string}>}
  */
-async function discoverUrl(companyName, deps = {}) {
+async function discoverUrl(companyName, deps = {}, opt = {}) {
   if (!companyName || !companyName.trim()) {
     return { url: null, source: 'search', verified: false, candidates: 0, error: 'empty company name' };
   }
@@ -262,8 +275,11 @@ async function discoverUrl(companyName, deps = {}) {
   // 上位を実際に取得して企業名一致を検証（fetch/extract が渡された時のみ）
   const fetchPage = deps.fetchPage;
   const extractText = deps.extractText;
+  // 所在地ヒント（gBizINFO等）から照合用トークンを作る（都道府県＋市区町村まで）
+  const addrTokens = addressTokens(opt.addressHint);
   if (fetchPage && extractText) {
     const top = scored.slice(0, cfg.SEARCH_VERIFY_TOP);
+    let nameMatched = null; // 名前一致したが住所未確認の最初の候補
     for (const cand of top) {
       try {
         const origin = new URL(cand.url).origin; // 検証はトップ（origin）で行う
@@ -272,11 +288,20 @@ async function discoverUrl(companyName, deps = {}) {
         const title = $('title').first().text() || '';
         const text = extractText(page.html || '');
         if (pageMatchesCompany(companyName, title, text)) {
-          return { url: page.finalUrl || origin, source: 'search+verified', verified: true, candidates: candidates.length };
+          const url = page.finalUrl || origin;
+          // 住所ヒントがあり、ページに所在地（都道府県＋市区）が一致 → 同名取り違えをほぼ排除＝最優先で確定
+          if (addrTokens.length && addrTokens.every(t => text.includes(t))) {
+            return { url, source: 'search+verified+address', verified: true, candidates: candidates.length };
+          }
+          if (!nameMatched) nameMatched = { url, candidates: candidates.length };
+          // 住所ヒントが無ければ名前一致だけで即確定（従来挙動）
+          if (!addrTokens.length) return { url, source: 'search+verified', verified: true, candidates: candidates.length };
         }
       } catch (_) { /* 次の候補へ */ }
       await sleep(cfg.SEARCH_DELAY_MS);
     }
+    // 住所までは一致しなかったが、名前一致は得られた場合
+    if (nameMatched) return { url: nameMatched.url, source: 'search+verified', verified: true, candidates: nameMatched.candidates };
   }
 
   // 検証は通らなかったが最有力候補は返す（origin に正規化）。source で未検証と分かるようにする。
@@ -291,5 +316,5 @@ module.exports = {
   bingSearch, ddgSearch, runSearch,
   // 以下はテスト用に公開（ネットワーク不要の純ロジック）
   companyCore, nameTokens, decodeDdgHref, decodeBingHref, rootDomain, isExcludedDomain,
-  parseDdgHtml, parseBingHtml, scoreCandidates, pageMatchesCompany,
+  parseDdgHtml, parseBingHtml, scoreCandidates, pageMatchesCompany, addressTokens,
 };

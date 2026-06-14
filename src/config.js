@@ -41,6 +41,22 @@ module.exports = {
   DISCOVER_PAGES: int(process.env.DISCOVER_PAGES, 3),                // キーワード検索で辿る検索結果ページ数
   DISCOVER_FETCH_TOP: int(process.env.DISCOVER_FETCH_TOP, 4),        // 各検索ページで本文抽出する上位結果数（まとめ記事・一覧）
 
+  // ===== gBizINFO（経産省オープンデータ） — 無料トークン登録のみ。未設定なら自動スキップ =====
+  // 取得: https://info.gbiz.go.jp/api/index.html （無料・要メール登録）→ .env の GBIZINFO_TOKEN に設定
+  GBIZINFO_TOKEN: process.env.GBIZINFO_TOKEN || '',
+  GBIZINFO_BASE: process.env.GBIZINFO_BASE || 'https://info.gbiz.go.jp/hojin/v1/hojin',
+  GBIZINFO_PREFECTURE: process.env.GBIZINFO_PREFECTURE || '',        // 発見時の都道府県コード(任意, 例 13=東京)
+
+  // ===== 構造化データ抽出（JSON-LD / sitemap） — APIキー不要 =====
+  USE_STRUCTURED: !/^(0|false|no)$/i.test(process.env.USE_STRUCTURED || ''),  // 既定ON
+  USE_SITEMAP: !/^(0|false|no)$/i.test(process.env.USE_SITEMAP || ''),        // 既定ON
+
+  // ===== ローカルLLM（Ollama） — 任意。外部API課金なし。未設定なら使用しない =====
+  // 例: OLLAMA_URL=http://localhost:11434  OLLAMA_MODEL=qwen2.5:7b
+  OLLAMA_URL: process.env.OLLAMA_URL || '',
+  OLLAMA_MODEL: process.env.OLLAMA_MODEL || 'qwen2.5:7b',
+  OLLAMA_TIMEOUT_MS: int(process.env.OLLAMA_TIMEOUT_MS, 20000),
+
   // 公式サイトでは「ない」ドメイン（求人媒体 / SNS / 企業DB / ニュース等）。これらは候補から除外。
   EXCLUDE_DOMAINS: [
     // 求人媒体・転職サイト
@@ -142,6 +158,8 @@ module.exports = {
   // ===== 電話番号抽出（正規表現＋tel:リンク。API不要） =====
   // 電話番号らしさを高めるキーワード（近接で加点）
   PHONE_POSITIVE_HINTS: ['tel', 'TEL', 'ＴＥＬ', '電話', '℡', '代表', 'お問い合わせ', 'お問合せ', 'お問合わせ', '問い合わせ', 'phone', 'お電話'],
+  // 代表電話を最優先するためのキーワード（近接でさらに加点）
+  PHONE_REP_HINTS: ['代表', '本社', '代表電話', '代表番号', '本社代表'],
   // FAX番号は本命ではないので近接で減点
   PHONE_NEGATIVE_HINTS: ['fax', 'FAX', 'ＦＡＸ', 'ファクス', 'ファックス', 'ｆａｘ'],
 };

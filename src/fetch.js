@@ -19,6 +19,17 @@ async function fetchStatic(url) {
   } finally { clearTimeout(t); }
 }
 
+// ---- 生テキスト取得（content-type を問わない。sitemap.xml 等に使用） ----
+async function fetchText(url) {
+  const ctrl = new AbortController();
+  const t = setTimeout(() => ctrl.abort(), PER_PAGE_TIMEOUT_MS);
+  try {
+    const res = await fetch(url, { headers: { 'User-Agent': USER_AGENT }, signal: ctrl.signal, redirect: 'follow' });
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    return await res.text();
+  } finally { clearTimeout(t); }
+}
+
 // ---- JSレンダリング判定（本文が薄い／SPAマーカー） ----
 function looksJsRendered(html) {
   if (!html) return true;
@@ -152,4 +163,4 @@ async function closeBrowser() {
   if (_browserPromise) { const b = await _browserPromise; if (b) await b.close().catch(() => {}); }
 }
 
-module.exports = { fetchStatic, fetchRendered, fetchPage, looksJsRendered, discoverPages, guessContactPaths, registrableDomain, sameRegistrableDomain, extractText, closeBrowser };
+module.exports = { fetchStatic, fetchRendered, fetchPage, fetchText, looksJsRendered, discoverPages, guessContactPaths, registrableDomain, sameRegistrableDomain, extractText, closeBrowser };
