@@ -41,11 +41,7 @@ module.exports = {
   DISCOVER_PAGES: int(process.env.DISCOVER_PAGES, 3),                // キーワード検索で辿る検索結果ページ数
   DISCOVER_FETCH_TOP: int(process.env.DISCOVER_FETCH_TOP, 4),        // 各検索ページで本文抽出する上位結果数（まとめ記事・一覧）
 
-  // ===== gBizINFO（経産省オープンデータ） — 無料トークン登録のみ。未設定なら自動スキップ =====
-  // 取得: https://info.gbiz.go.jp/api/index.html （無料・要メール登録）→ .env の GBIZINFO_TOKEN に設定
-  GBIZINFO_TOKEN: process.env.GBIZINFO_TOKEN || '',
-  GBIZINFO_BASE: process.env.GBIZINFO_BASE || 'https://info.gbiz.go.jp/hojin/v1/hojin',
-  GBIZINFO_PREFECTURE: process.env.GBIZINFO_PREFECTURE || '',        // 発見時の都道府県コード(任意, 例 13=東京)
+  // ※ gBizINFO は統合アプリの src/gbiz.js（GBIZ_TOKEN）を使用（旧 GBIZINFO_* キーは廃止）。
 
   // ===== 構造化データ抽出（JSON-LD / sitemap） — APIキー不要 =====
   USE_STRUCTURED: !/^(0|false|no)$/i.test(process.env.USE_STRUCTURED || ''),  // 既定ON

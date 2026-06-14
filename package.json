@@ -6,7 +6,7 @@
   "type": "commonjs",
   "engines": { "node": ">=18" },
   "scripts": {
-    "start": "node src/index.js",
+    "start": "node src/app.js",
     "app": "node src/app.js",
     "leads": "node src/app.js",
     "score": "node src/score-list.js",

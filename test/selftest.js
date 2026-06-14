@@ -11,7 +11,6 @@ const { readJsonResponse } = require('../src/gas');
 const { extractPhones, normalizeJpPhone } = require('../src/phone');
 const { decodeDdgHref, isExcludedDomain, parseDdgHtml, scoreCandidates, pageMatchesCompany, companyCore } = require('../src/search');
 const { extractCompanyNames } = require('../src/discover');
-const gbiz = require('../src/gbizinfo');
 const structured = require('../src/structured');
 const areacode = require('../src/areacode');
 const { addressTokens } = require('../src/search');
@@ -171,23 +170,6 @@ function testDiscover() {
   ok('extractCompanyNames: 重複を除去', dup.filter(n => companyCore(n) === 'テスト').length === 1);
   // 法人格が無い語は拾わない
   ok('extractCompanyNames: 法人格の無い語は拾わない', extractCompanyNames('東京 IT ベンチャー 一覧').length === 0);
-  return fail;
-}
-
-// ---- gBizINFO 純ロジック検証（ネットワーク不要） ----
-function testGbiz() {
-  let fail = 0;
-  const ok = (label, cond) => { if (cond) console.log('✓ ' + label); else { console.log('✗ ' + label); fail++; } };
-  const json = { 'hojin-infos': [
-    { corporate_number: '1', name: 'テスト工業株式会社', location: '東京都千代田区1-1', company_url: 'https://test.co.jp/' },
-    { corporate_number: '2', name: 'テスト工業株式会社 大阪支店', location: '大阪府大阪市北区' },
-  ] };
-  const recs = gbiz.parseResponse(json);
-  ok('gbiz.parseResponse: レコード正規化', recs.length === 2 && recs[0].url === 'https://test.co.jp/' && recs[0].prefecture === '東京都');
-  const best = gbiz.pickBest(recs, 'テスト工業株式会社');
-  ok('gbiz.pickBest: 完全一致を優先', best && best.corporateNumber === '1');
-  ok('gbiz.prefectureOf: 所在地→都道府県', gbiz.prefectureOf('神奈川県横浜市西区') === '神奈川県');
-  ok('gbiz.enabled: トークン未設定ならfalse', gbiz.enabled() === false);
   return fail;
 }
 
@@ -425,8 +407,6 @@ async function run() {
   failures += testName();
   console.log('\n--- 企業名 自動発見 検証 ---');
   failures += testDiscover();
-  console.log('\n--- gBizINFO 連携 検証 ---');
-  failures += testGbiz();
   console.log('\n--- 構造化抽出(JSON-LD/sitemap) 検証 ---');
   failures += testStructured();
   console.log('\n--- 市外局番テーブル 検証 ---');
