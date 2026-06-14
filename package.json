@@ -10,6 +10,8 @@
     "app": "node src/app.js",
     "leads": "node src/app.js",
     "score": "node src/score-list.js",
+    "media": "node src/build-media.js --in leads-daihyou-1000.csv --out sources/A-media.csv",
+    "discover": "node src/build-media.js --discover \"新卒 営業 東京;新卒 エンジニア 大阪\" --out sources/E-hiring.csv",
     "build-list": "node src/build-list.js --sources sources/manifest.json --out leads.master.csv",
     "kpi": "node src/source-kpi.js --leads leads.master.csv --outcomes sources/outcomes.csv",
     "test": "node test/selftest.js"
