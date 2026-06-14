@@ -14,3 +14,220 @@
   …220/577（累計HIT 2）
   …240/577（累計HIT 2）
   …260/577（累計HIT 2）
+  …280/577（累計HIT 2）
+  …300/577（累計HIT 2）
+  …320/577（累計HIT 2）
+  …340/577（累計HIT 2）
+
+
+#
+# Fatal error in , line 0
+# Fatal process out of memory: Zone
+#
+#
+#
+#FailureMessage Object: 000000813ABF62F0
+----- Native stack trace -----
+
+ 1: 00007FF7B3A1A19B 
+ 2: 00007FF7B390CCAF 
+ 3: 00007FF7B48169C2 
+ 4: 00007FF7B43EC513 
+ 5: 00007FF7B3ECF014 
+ 6: 00007FF7B490B963 
+ 7: 00007FF7B49A44CF 
+ 8: 00007FF7B48D1836 
+ 9: 00007FF7B48DC925 
+10: 00007FF7B48D852A 
+11: 00007FF7B435AD21 
+12: 00007FF7B4327C41 
+13: 00007FF7B390F78D 
+14: 00007FF7B3A6DFDD 
+15: 00007FF7B4C39FF0 
+16: 00007FFA6AEDE8D7 
+17: 00007FFA6BDAC3FC 
+[loop] attempt 1 exited code=3
+対象 237社（公式URLあり・未処理）｜既処理 340社・既HIT 2件｜並列3｜採用ページ特化・正規表現（API不要）
+  …20/237（累計HIT 2）
+  …40/237（累計HIT 2）
+  …60/237（累計HIT 2）
+UNCAUGHT The expression evaluated to a falsy value:
+
+  assert(!this.paused)
+
+[loop] attempt 2 exited code=2
+対象 175社（公式URLあり・未処理）｜既処理 402社・既HIT 2件｜並列3｜採用ページ特化・正規表現（API不要）
+UNCAUGHT The expression evaluated to a falsy value:
+
+  assert(!this.paused)
+
+[loop] attempt 3 exited code=2
+対象 175社（公式URLあり・未処理）｜既処理 402社・既HIT 2件｜並列3｜採用ページ特化・正規表現（API不要）
+UNCAUGHT The expression evaluated to a falsy value:
+
+  assert(!this.paused)
+
+[loop] attempt 4 exited code=2
+対象 175社（公式URLあり・未処理）｜既処理 402社・既HIT 2件｜並列3｜採用ページ特化・正規表現（API不要）
+UNCAUGHT The expression evaluated to a falsy value:
+
+  assert(!this.paused)
+
+[loop] attempt 5 exited code=2
+対象 175社（公式URLあり・未処理）｜既処理 402社・既HIT 2件｜並列3｜採用ページ特化・正規表現（API不要）
+UNCAUGHT The expression evaluated to a falsy value:
+
+  assert(!this.paused)
+
+[loop] attempt 6 exited code=2
+対象 175社（公式URLあり・未処理）｜既処理 402社・既HIT 2件｜並列3｜採用ページ特化・正規表現（API不要）
+UNCAUGHT The expression evaluated to a falsy value:
+
+  assert(!this.paused)
+
+[loop] attempt 7 exited code=2
+対象 175社（公式URLあり・未処理）｜既処理 402社・既HIT 2件｜並列3｜採用ページ特化・正規表現（API不要）
+UNCAUGHT The expression evaluated to a falsy value:
+
+  assert(!this.paused)
+
+[loop] attempt 8 exited code=2
+対象 175社（公式URLあり・未処理）｜既処理 402社・既HIT 2件｜並列3｜採用ページ特化・正規表現（API不要）
+UNCAUGHT The expression evaluated to a falsy value:
+
+  assert(!this.paused)
+
+[loop] attempt 9 exited code=2
+対象 175社（公式URLあり・未処理）｜既処理 402社・既HIT 2件｜並列3｜採用ページ特化・正規表現（API不要）
+UNCAUGHT The expression evaluated to a falsy value:
+
+  assert(!this.paused)
+
+[loop] attempt 10 exited code=2
+対象 175社（公式URLあり・未処理）｜既処理 402社・既HIT 2件｜並列3｜採用ページ特化・正規表現（API不要）
+UNCAUGHT The expression evaluated to a falsy value:
+
+  assert(!this.paused)
+
+[loop] attempt 11 exited code=2
+対象 175社（公式URLあり・未処理）｜既処理 402社・既HIT 2件｜並列3｜採用ページ特化・正規表現（API不要）
+UNCAUGHT The expression evaluated to a falsy value:
+
+  assert(!this.paused)
+
+[loop] attempt 12 exited code=2
+対象 175社（公式URLあり・未処理）｜既処理 402社・既HIT 2件｜並列3｜採用ページ特化・正規表現（API不要）
+UNCAUGHT The expression evaluated to a falsy value:
+
+  assert(!this.paused)
+
+[loop] attempt 13 exited code=2
+対象 175社（公式URLあり・未処理）｜既処理 402社・既HIT 2件｜並列3｜採用ページ特化・正規表現（API不要）
+UNCAUGHT The expression evaluated to a falsy value:
+
+  assert(!this.paused)
+
+[loop] attempt 14 exited code=2
+対象 175社（公式URLあり・未処理）｜既処理 402社・既HIT 2件｜並列3｜採用ページ特化・正規表現（API不要）
+UNCAUGHT The expression evaluated to a falsy value:
+
+  assert(!this.paused)
+
+[loop] attempt 15 exited code=2
+対象 175社（公式URLあり・未処理）｜既処理 402社・既HIT 2件｜並列3｜採用ページ特化・正規表現（API不要）
+UNCAUGHT The expression evaluated to a falsy value:
+
+  assert(!this.paused)
+
+[loop] attempt 16 exited code=2
+対象 175社（公式URLあり・未処理）｜既処理 402社・既HIT 2件｜並列3｜採用ページ特化・正規表現（API不要）
+UNCAUGHT The expression evaluated to a falsy value:
+
+  assert(!this.paused)
+
+[loop] attempt 17 exited code=2
+対象 175社（公式URLあり・未処理）｜既処理 402社・既HIT 2件｜並列3｜採用ページ特化・正規表現（API不要）
+UNCAUGHT The expression evaluated to a falsy value:
+
+  assert(!this.paused)
+
+[loop] attempt 18 exited code=2
+対象 175社（公式URLあり・未処理）｜既処理 402社・既HIT 2件｜並列3｜採用ページ特化・正規表現（API不要）
+UNCAUGHT The expression evaluated to a falsy value:
+
+  assert(!this.paused)
+
+[loop] attempt 19 exited code=2
+対象 175社（公式URLあり・未処理）｜既処理 402社・既HIT 2件｜並列3｜採用ページ特化・正規表現（API不要）
+UNCAUGHT The expression evaluated to a falsy value:
+
+  assert(!this.paused)
+
+[loop] attempt 20 exited code=2
+対象 175社（公式URLあり・未処理）｜既処理 402社・既HIT 2件｜並列2｜採用ページ特化・正規表現（API不要）
+UNCAUGHT The expression evaluated to a falsy value:
+
+  assert(!this.paused)
+
+[loop] attempt 1 exited code=2
+対象 172社（公式URLあり・未処理）｜既処理 405社・既HIT 2件｜並列2｜採用ページ特化・正規表現（API不要）
+  …20/172（累計HIT 2）
+  ✓ 株式会社三協技術 → 佐々木・粟津（新卒採用・確度0.74）
+  …40/172（累計HIT 3）
+  …60/172（累計HIT 3）
+  …80/172（累計HIT 3）
+  …100/172（累計HIT 3）
+  ✓ ＯＥＣ株式会社 → 池田 宛（採用担当・確度0.74）
+  …120/172（累計HIT 4）
+  ✓ 株式会社リブドゥコーポレーション → 関連（採用・確度0.74）
+  …140/172（累計HIT 5）
+  ✓ 株式会社ＳＹＳＫＥＮ → 関連（採用・確度0.74）
+  …160/172（累計HIT 6）
+  ✓ 株式会社ビック → 安部真理子（人事担当・確度0.74）
+
+===== 完了 ｜ 累計HIT 7/577社（歩留まり 1.2%）｜1244秒 =====
+出力: C:\Users\shofu\Desktop\saiyo_tantousha_poc\poc\data\recruiter-recruitpage-full.csv
+[loop] attempt 2 exited code=0
+[loop] completed
+対象 573社（公式URLあり・未処理）｜既処理 4社・既HIT 0件｜並列2｜採用ページ特化・正規表現（API不要）
+  …20/573（累計HIT 0）
+  …40/573（累計HIT 0）
+  …60/573（累計HIT 0）
+  …80/573（累計HIT 0）
+  …100/573（累計HIT 0）
+  …120/573（累計HIT 0）
+  …140/573（累計HIT 0）
+  …160/573（累計HIT 0）
+  …180/573（累計HIT 0）
+  ✓ 株式会社公文教育研究会 → 武田忠昌（人事・確度0.74）
+  …200/573（累計HIT 1）
+  ✓ 東邦レオ株式会社 → 吉川稔（新卒採用・確度0.74）
+  …220/573（累計HIT 2）
+  …240/573（累計HIT 2）
+  …260/573（累計HIT 2）
+  …280/573（累計HIT 2）
+  …300/573（累計HIT 2）
+  …320/573（累計HIT 2）
+  …340/573（累計HIT 2）
+  …360/573（累計HIT 2）
+  …380/573（累計HIT 2）
+UNCAUGHT The expression evaluated to a falsy value:
+
+  assert(!this.paused)
+
+[loop] attempt 1 exited code=2
+対象 172社（公式URLあり・未処理）｜既処理 405社・既HIT 2件｜並列2｜採用ページ特化・正規表現（API不要）
+  …20/172（累計HIT 2）
+  …40/172（累計HIT 2）
+  …60/172（累計HIT 2）
+  …80/172（累計HIT 2）
+  …100/172（累計HIT 2）
+  …120/172（累計HIT 2）
+  …140/172（累計HIT 2）
+  …160/172（累計HIT 2）
+  ✓ 株式会社ビック → 安部真理子（人事担当・確度0.74）
+
+===== 完了 ｜ 累計HIT 3/577社（歩留まり 0.5%）｜314秒 =====
+出力: C:\Users\shofu\Desktop\saiyo_tantousha_poc\poc\data\recruiter-recruitpage-full.csv
+[loop] attempt 2 exited code=0
+[loop] completed

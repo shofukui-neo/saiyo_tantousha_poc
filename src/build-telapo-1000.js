@@ -38,6 +38,11 @@ const JOURNAL = path.resolve(__dirname, '..', 'data', 'telapo-journal.json');
 const LOG = path.resolve(__dirname, '..', 'telapo.log');
 
 function log(m) { const l = `[${new Date().toISOString()}] ${m}`; console.log(l); try { fs.appendFileSync(LOG, l + '\n'); } catch (_) {} }
+
+// undici(Node fetch)の内部アサーション等、try/catch不能なクラッシュでプロセスごと落ちないように吸収する。
+// （数件ごとにジャーナルへフラッシュ済みなので状態は安全。該当リクエストはタイムアウトで回収される）
+process.on('uncaughtException', (e) => { try { log('⚠ uncaughtException(無視継続): ' + (e && e.message ? e.message : e)); } catch (_) {} });
+process.on('unhandledRejection', (e) => { try { log('⚠ unhandledRejection(無視継続): ' + (e && e.message ? e.message : e)); } catch (_) {} });
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 const RECRUIT_HINT = /recruit|saiyo|採用|career|jobs|entry|contact|問い合わせ|問合|company|about|会社/i;
 

@@ -371,7 +371,12 @@ node src/build-names.js --include-experimental           # ハローワーク枠
 
 | アダプタ | 状態 | 備考 |
 |---|---|---|
-| **Wantedly** | 最有望 | 募集投稿に投稿者の個人名が出やすい。JS描画・アンチボットが強く、robots/描画次第で収量変動。`authorSel` は実DOMで較正前提 |
+| **Wantedly** | 較正済み（静的取得で動作） | エンドポイントは `wantedly.com/projects?q=<社名>`（SSR・robots許可）。投稿者名は `[class*="MemberName"]` から抽出。**会社一致を必須化**し無関係企業の名を出さない。`NAMES_RENDER=auto` でPlaywright描画も可（chromium同時起動はメモリを食うため並列1推奨） |
 | **ハローワーク** | experimental | 公的データで低リスクだが現行ネットサービスは**JSF（ViewState付きセッション）**でGET検索が成立しにくい。担当者欄は係名止まりも多い。`--include-experimental` で枠を起動 |
 
-> 純ロジック（`firstFullName`/`extractPersonName`/`pickDetailUrls`）は `npm test` で回帰検証済み（ネットワーク不要）。媒体セレクタは実HTMLに合わせて `scrape-names.js` の `NAME_ADAPTERS[].authorSel` / `detailSel` を較正してから本番投入。
+> 純ロジック（`firstFullName`/`extractPersonName`/`pickDetailUrls`/`namesMatch`/`companyOnPage`）は `npm test` で回帰検証済み（ネットワーク不要）。抽出経路は実証済み（例: 「株式会社FLINTERS」→ 投稿者「早瀬峻介」を根拠URL付きで取得）。
+
+### 実測と限界（このgBiz中堅〜大手1000件での歩留まり）
+実母集団10社（JFEスチール/住友商事/日産化学/五洋建設等）で試走した結果、**個人名HIT 0%**。`探索結果`は全件 `Wantedly:company-mismatch`＝**検索は募集を返すが、対象の中堅大手はWantedlyの結果に現れない**（Wantedlyの全文検索は社名スコープでなく人気のスタートアップ募集を返す）。これは [採用担当者名が取れない真因＝母集団] の決定的な裏付けで、抽出技術ではなく**母集団の問題**であることを再確認した（会社一致ガードが誤名の混入を完全に防いでいる点も確認）。
+
+> **使いどころ**：本層は**母集団を採用広報の活発なSME/ベンチャーに寄せたとき**に効く（個人名が募集投稿に出るため）。中堅大手中心の現リストでは収量は出ない。媒体セレクタは将来のDOM変更時に `scrape-names.js` の `NAME_ADAPTERS[].authorSel` / `detailSel` を再較正する。

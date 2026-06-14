@@ -16,6 +16,11 @@ const { normCompanyName } = require('./csv');
 const { isFullName, splitName } = require('./jp-names');
 const { heuristicExtract, looksLikePersonName } = require('./extract');
 
+// 取得モード。既定 'static'（plain HTTP・Chromium不使用＝低メモリ）。
+// JS描画が必要な媒体（Wantedly等）は NAMES_RENDER=auto で Playwright 描画にエスカレーションできるが、
+// chromium 同時起動はメモリを食うため build-names 側は並列1を推奨。
+const RENDER = process.env.NAMES_RENDER === 'auto' ? 'auto' : 'static';
+
 // 文字列中から最初の「姓＋名（フルネーム）」を取り出す。
 // 例: "山田 太郎 | 人事担当" -> "山田太郎"。姓辞書で検証できなければ null。
 function firstFullName(str) {
@@ -88,13 +93,16 @@ function extractPersonName(html, { authorSel = [] } = {}) {
 const NAME_ADAPTERS = [
   {
     name: 'Wantedly',
-    // 募集（projects）を社名で検索。投稿者の個人名が出やすい。
-    searchUrl: (name) => `https://www.wantedly.com/search?q=${encodeURIComponent(name)}&type=projects`,
-    detailSel: ['a[href*="/projects/"]', 'a[href*="/companies/"]'],
-    // 投稿者名・メンバー名が入りうる箇所（要較正）
-    authorSel: ['[class*="UserName"]', '[class*="user_name"]', '[class*="MemberName"]',
-      '[data-testid*="user"]', 'a[href*="/id/"]', '.wt-text-body-1'],
-    maxDetails: 2,
+    // 募集一覧（projects）を社名で検索。SSRで募集カードが返り、各募集ページに投稿者の個人名が載る。
+    // ※ 全文検索のため対象社と無関係な人気募集も混じる → companySel で会社一致を必須化する。
+    searchUrl: (name) => `https://www.wantedly.com/projects?q=${encodeURIComponent(name)}`,
+    detailSel: ['a[href*="/projects/"]'],
+    // 募集ページのメンバー氏名（実DOMで確認: ProjectMemberName / FocusedMemberName）
+    authorSel: ['[class*="MemberName"]', '[class*="UserName"]', '[data-testid*="user"]'],
+    // 募集ページ上の掲載企業（会社一致の判定に使う）
+    companySel: ['a[href*="/companies/"]'],
+    // 全文検索は社名スコープでなく上位が変動するため、一致する募集を取りこぼさない範囲で深めに探す
+    maxDetails: 5,
     experimental: false,
   },
   {
@@ -110,6 +118,27 @@ const NAME_ADAPTERS = [
     experimental: true,
   },
 ];
+
+// 正規化社名どうしのゆるい一致（どちらかが他方を包含＝表記揺れ・部署付きを許容）。
+function namesMatch(a, b) {
+  const x = normCompanyName(a), y = normCompanyName(b);
+  if (!x || !y) return false;
+  return x === y || x.includes(y) || y.includes(x);
+}
+
+// 詳細ページの掲載企業名（companySel の最初の非空テキスト）。
+function companyOnPage($, selectors) {
+  for (const sel of selectors) {
+    let name = '';
+    $(sel).each((_, el) => {
+      if (name) return;
+      const t = $(el).text().replace(/\s+/g, ' ').trim();
+      if (t && t.length <= 60) name = t;
+    });
+    if (name) return name;
+  }
+  return '';
+}
 
 // 検索結果HTMLから、対象社名に一致しそうな詳細ページURLを集める。
 function pickDetailUrls(html, baseUrl, selectors, targetName, max) {
@@ -146,7 +175,7 @@ async function findRecruiterName(companyName, { adapters = NAME_ADAPTERS, includ
     if (ad.experimental && !includeExperimental) { detail[ad.name] = 'skip(experimental)'; continue; }
     // 1) 検索
     const sUrl = ad.searchUrl(companyName);
-    const sr = await politeGet(sUrl);
+    const sr = await politeGet(sUrl, { render: RENDER });
     if (!sr || sr.blocked || sr.error || !sr.html) {
       detail[ad.name] = sr && sr.blocked ? 'blocked(robots)' : 'search-failed';
       continue;
@@ -154,16 +183,19 @@ async function findRecruiterName(companyName, { adapters = NAME_ADAPTERS, includ
     // 2) 詳細ページ候補
     const urls = pickDetailUrls(sr.html, sr.finalUrl || sUrl, ad.detailSel, companyName, ad.maxDetails);
     if (!urls.length) { detail[ad.name] = 'no-detail'; continue; }
-    // 3) 各詳細から個人名抽出
-    let any = false;
+    // 3) 各詳細から個人名抽出（会社一致を必須化）
+    const target = normCompanyName(companyName);
+    let any = false, mismatch = false, noname = false;
     for (const u of urls) {
-      const dr = await politeGet(u);
+      const dr = await politeGet(u, { render: RENDER });
       if (!dr || dr.blocked || dr.error || !dr.html) continue;
       any = true;
-      // 社名一致をゆるく確認（誤った会社の投稿者を拾わない）
-      const target = normCompanyName(companyName);
-      const pageNorm = normCompanyName(cheerio.load(dr.html)('body').text().slice(0, 4000));
-      if (target && pageNorm && !pageNorm.includes(target)) { /* 一致弱いが名は文脈語で守る */ }
+      const $d = cheerio.load(dr.html);
+      // 募集ページの掲載企業が対象社と一致するか（全文検索の無関係ヒットを排除）
+      if (ad.companySel && target) {
+        const pageCompany = companyOnPage($d, ad.companySel);
+        if (pageCompany && !namesMatch(pageCompany, target)) { mismatch = true; continue; }
+      }
       const got = extractPersonName(dr.html, { authorSel: ad.authorSel });
       if (got) {
         detail[ad.name] = 'hit';
@@ -172,13 +204,14 @@ async function findRecruiterName(companyName, { adapters = NAME_ADAPTERS, includ
           取得元媒体: ad.name, 根拠URL: u, 確度: got.confidence, 詳細: detail,
         };
       }
+      noname = true;
     }
-    detail[ad.name] = any ? 'no-name' : 'detail-failed';
+    detail[ad.name] = !any ? 'detail-failed' : (noname ? 'no-name' : (mismatch ? 'company-mismatch' : 'no-detail'));
   }
   return { 採用担当者名: '', 役職: '', 部署: '', 取得元媒体: '', 根拠URL: '', 確度: 0, 詳細: detail };
 }
 
 module.exports = {
   findRecruiterName, extractPersonName, firstFullName, pickDetailUrls,
-  NAME_ADAPTERS,
+  namesMatch, companyOnPage, NAME_ADAPTERS,
 };

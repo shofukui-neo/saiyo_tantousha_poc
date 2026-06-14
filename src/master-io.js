@@ -19,11 +19,19 @@ function keyOfRecord(rec) {
 }
 
 // ---- CSV 出力 ----
+// 各セルを「1行」に正規化（改行・タブ・連続空白を単一スペースへ）。
+// → 表計算で開いたときにセル内改行が複数行・隣列へ「混入」して見える問題を防ぐ。
+function sanitizeCell(v) {
+  return String(v == null ? '' : v)
+    .replace(/[\r\n\t\f\v]+/g, ' ')      // 改行・タブ類 → スペース
+    .replace(/[ 　]{2,}/g, ' ')       // 連続スペース（半角/全角）→ 単一スペース
+    .trim();
+}
 function writeMasterCsv(outPath, records, headers = cfg.MASTER_HEADERS) {
-  const esc = (v) => { const s = String(v == null ? '' : v); return /[",\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s; };
+  const esc = (v) => { const s = sanitizeCell(v); return /[",]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s; };
   const lines = [headers.join(',')];
   for (const rec of records) lines.push(recordToRow(rec, headers).map(esc).join(','));
-  fs.writeFileSync(outPath, lines.join('\n'), 'utf8');
+  fs.writeFileSync(outPath, '﻿' + lines.join('\r\n'), 'utf8'); // BOM+CRLF で Excel 日本語の文字化け/改行崩れも回避
   return outPath;
 }
 

@@ -43,6 +43,7 @@ function looksJsRendered(html) {
 // ---- RPA（Playwright）でレンダリング後にHTML取得。未インストール時はnullを返す ----
 let _browserPromise = null;
 async function getBrowser() {
+  if (process.env.DISABLE_RENDER) return null; // 省メモリ運用：Playwrightレンダリングを無効化（静的取得のみ）
   if (_browserPromise) return _browserPromise;
   let chromium;
   try { ({ chromium } = require('playwright')); }

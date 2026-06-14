@@ -16,7 +16,7 @@ const fs = require('fs');
 const path = require('path');
 const { readCsv, toCsv, truthy, mergeKey } = require('./csv');
 const { checkRecruitPage } = require('./recruit-page');
-const { checkMediaListing, discoverHiringCompanies } = require('./scrape-media');
+const { checkMediaListing, discoverHiringCompanies, lookupCompanyHiring } = require('./scrape-media');
 const { closeBrowser } = require('./fetch');
 
 // ---- 堅牢化: undici(組み込みfetch)の keep-alive 接続終了アサーション対策 ----
@@ -47,8 +47,10 @@ const OUT = getArg('out', path.join('sources', 'A-media.csv'));
 const LIMIT = parseInt(getArg('limit', '0'), 10) || 0;        // 0=全件
 const CONC = parseInt(getArg('concurrency', '3'), 10) || 3;   // 同一媒体ホストは polite が直列化
 const DISCOVER = getArg('discover', '');
+const BACKFILL = getArg('backfill', '');                      // 既知社を企業名で求人検索エンジンに照会
 const DO_MEDIA = !process.argv.includes('--no-media');        // 媒体掲載チェックをスキップ
 const DO_RECRUIT = !process.argv.includes('--no-recruit');    // 採用ページチェックをスキップ
+const EMPTY_ONLY = process.argv.includes('--empty-only');     // 公式URL未保有の社だけを対象に
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 function log(m) { console.log(`[${new Date().toISOString()}] ${m}`); }
@@ -74,6 +76,52 @@ async function runDiscover() {
   fs.mkdirSync(path.dirname(path.resolve(OUT)), { recursive: true });
   fs.writeFileSync(OUT, toCsv(headers, records));
   log(`発見完了: ${records.length}社 → ${path.resolve(OUT)}`);
+}
+
+// ---- モード(3): 既知社の穴埋め（企業名→求人検索エンジン照会、法人番号を保持） ----
+// 公式URLが無く A-media で採用情報が取れなかった社などを、社名検索で「今採用中か」判定。
+// 出力 E-hiring.csv は系統C（"今動いている"トリガー）として manifest 統合される。
+async function runBackfill() {
+  const text = fs.readFileSync(path.resolve(BACKFILL), 'utf8');
+  let { records } = readCsv(text);
+  if (EMPTY_ONLY) records = records.filter((r) => !String(r['公式URL'] || r['url'] || '').trim());
+  if (LIMIT) records = records.slice(0, LIMIT);
+
+  const headers = ['企業名', '法人番号', '採用中', '発見媒体', '求人件数', '採用職種', '取得日', '根拠'];
+  const OUTABS = path.resolve(OUT);
+  fs.mkdirSync(path.dirname(OUTABS), { recursive: true });
+  const out = [];
+  const doneKeys = new Set();
+  if (!process.argv.includes('--fresh') && fs.existsSync(OUTABS)) {
+    try { for (const r of readCsv(fs.readFileSync(OUTABS, 'utf8')).records) { const k = mergeKey(r); if (k) { doneKeys.add(k); out.push(r); } } } catch (_) {}
+    if (doneKeys.size) log(`再開: 既存 ${doneKeys.size}社をスキップ`);
+  }
+  const todo = records.filter((r) => { const k = mergeKey(r); return !k || !doneKeys.has(k); });
+  log(`穴埋めモード: 対象${todo.length}社（empty-only=${EMPTY_ONLY}, 並列${CONC}）→ 求人ボックス/Indeed`);
+
+  let done = 0;
+  const flush = () => { const tmp = OUTABS + '.tmp'; fs.writeFileSync(tmp, toCsv(headers, out)); fs.renameSync(tmp, OUTABS); };
+  const PER_COMPANY_MS = parseInt(getArg('company-timeout', '60000'), 10) || 60000;
+
+  await pool(todo, CONC, async (rec) => {
+    const name = rec['企業名'] || rec['company_name'] || '';
+    const row = { '企業名': name, '法人番号': rec['法人番号'] || '', '採用中': '', '発見媒体': '', '求人件数': '', '採用職種': '', '取得日': new Date().toISOString().slice(0, 10), '根拠': '' };
+    if (name) {
+      await withTimeout((async () => {
+        try {
+          const h = await lookupCompanyHiring(name);
+          if (h.採用中) {
+            row['採用中'] = '○'; row['発見媒体'] = h.発見媒体.join('/'); row['求人件数'] = h.求人件数; row['採用職種'] = h.職種.join('/'); row['根拠'] = 'job-engine-hit';
+          } else { row['根拠'] = 'not-found'; }
+        } catch (e) { row['根拠'] = 'err:' + String(e && e.message || e).slice(0, 40); }
+      })(), PER_COMPANY_MS, () => { row['根拠'] = 'timeout'; });
+    }
+    out.push(row);
+    if (++done % 10 === 0) { flush(); log(`  ${done}/${todo.length}（採用中ヒット ${out.filter((r) => truthy(r['採用中'])).length}）`); }
+  });
+  flush();
+  const hit = out.filter((r) => truthy(r['採用中'])).length;
+  log(`完了: ${out.length}社 ｜ 採用中ヒット ${hit} → ${OUTABS}`);
 }
 
 // ---- モード(1): 既存リストの濃縮 ----
@@ -152,7 +200,8 @@ async function runEnrich() {
 
 (async () => {
   try {
-    if (DISCOVER) await runDiscover();
+    if (BACKFILL) await runBackfill();
+    else if (DISCOVER) await runDiscover();
     else await runEnrich();
   } catch (e) {
     console.error('FATAL', e && e.stack ? e.stack : e);

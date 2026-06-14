@@ -54,6 +54,10 @@ async function main() {
   async function worker() {
     while (idx < targets.length) {
       const rec = targets[idx++];
+      // fetch層(undici)が特定サーバで即クラッシュ(uncaughtException)するため、probe前に処理済み記録を確定。
+      // これで「毒ページ」を再起動時にスキップし前進を保証する（最大で並列数だけ取りこぼす＝許容）。
+      doneKeys.add(keyOf(rec));
+      try { fs.writeFileSync(DONE, JSON.stringify({ done: [...doneKeys], hits })); } catch (_) {}
       try {
         const r = await probeRecruitPage(rec['公式URL']);
         if (r) {
@@ -65,7 +69,6 @@ async function main() {
           console.log(`  ✓ ${rec['企業名']} → ${r.name}（${r.role || '役職?'}・確度${r.confidence.toFixed(2)}）`);
         }
       } catch (_) { /* 個社失敗はスキップ */ }
-      doneKeys.add(keyOf(rec));
       done++;
       if (done % 20 === 0) { console.log(`  …${done}/${targets.length}（累計HIT ${hits.length}）`); flush(); }
     }

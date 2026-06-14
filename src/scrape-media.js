@@ -17,17 +17,43 @@ const { normCompanyName } = require('./csv');
 const JOB_ENGINES = [
   {
     name: '求人ボックス',
-    // 例: https://求人ボックス.com/<キーワード>の仕事-<エリア>  → 実体は kyujinbox.com
+    // 求人ボックス.com（実体 xn--pckua2a7gp15o89zb.com）。静的HTMLで取得可（Playwright不要）。
     searchUrl: (q, page) => `https://xn--pckua2a7gp15o89zb.com/${encodeURIComponent(q)}の仕事?pg=${page || 1}`,
-    // 求人カード内の企業名要素（要キャリブレーション）
-    companySel: ['.c-result-card__company', '.p-result_company', '[class*="company"]'],
+    cardSel: '.p-result_card',       // 求人カード（実DOM較正済 2026-06）
+    companySel: ['.p-result_company'], // カード内の企業名
+    titleSel: '.p-result_name',       // カード内の職種名
   },
   {
     name: 'Indeed',
+    // jp.indeed.com は bot に 403 を返すため既定から除外（disabled）。将来APIや別経路で復活余地。
+    disabled: true,
     searchUrl: (q, page) => `https://jp.indeed.com/jobs?q=${encodeURIComponent(q)}&start=${((page || 1) - 1) * 10}`,
-    companySel: ['[data-testid="company-name"]', '.companyName', 'span.companyName'],
+    cardSel: '.job_seen_beacon',
+    companySel: ['[data-testid="company-name"]', '.companyName'],
+    titleSel: 'h2.jobTitle',
   },
-];
+].filter((e) => !e.disabled);
+
+// 求人カードから「ターゲット社に一致するカードのみ」を抽出（誤マッチ防止）。
+// 戻り値: { 件数, 職種:Set } ターゲット社のカードだけを数える。
+function extractMatchingCards($, eng, targetName) {
+  const target = normCompanyName(targetName);
+  const jobs = new Set();
+  let count = 0;
+  if (!target || !eng.cardSel) return { 件数: 0, 職種: jobs };
+  $(eng.cardSel).each((_, card) => {
+    const $c = $(card);
+    let comp = '';
+    for (const sel of eng.companySel) { const t = $c.find(sel).first().text().replace(/\s+/g, ' ').trim(); if (t) { comp = t; break; } }
+    const n = normCompanyName(comp);
+    if (!n) return;
+    if (n === target || n.includes(target) || target.includes(n)) {
+      count++;
+      if (eng.titleSel) { const ti = $c.find(eng.titleSel).first().text().replace(/\s+/g, ' ').trim(); if (ti) jobs.add(ti.slice(0, 30)); }
+    }
+  });
+  return { 件数: count, 職種: jobs };
+}
 
 // 1ページから企業名候補を抽出
 function extractCompanies($, selectors) {
@@ -50,7 +76,7 @@ async function discoverHiringCompanies(queries, { engines = JOB_ENGINES, maxPage
     for (const eng of engines) {
       for (let page = 1; page <= maxPagesPerQuery; page++) {
         const url = eng.searchUrl(q, page);
-        const r = await politeGet(url);
+        const r = await politeGet(url, { render: 'static' });
         if (!r || r.blocked || r.error || !r.html) {
           if (r && r.blocked) console.warn(`  [${eng.name}] robotsで取得不可: ${url}`);
           break;
@@ -121,7 +147,7 @@ async function checkMediaListing(companyName, { adapters = MEDIA_ADAPTERS } = {}
   const detail = {};
   for (const ad of adapters) {
     const url = ad.searchUrl(companyName);
-    const r = await politeGet(url);
+    const r = await politeGet(url, { render: 'static' });
     if (!r || r.blocked || r.error || !r.html) { detail[ad.name] = false; continue; }
     const ok = resultMatches(r.html, ad.resultSel, companyName);
     detail[ad.name] = ok;
@@ -138,19 +164,15 @@ async function lookupCompanyHiring(companyName, { engines = JOB_ENGINES } = {}) 
   const jobs = new Set();
   for (const eng of engines) {
     const url = eng.searchUrl(companyName, 1);
-    const r = await politeGet(url);
+    const r = await politeGet(url, { render: 'static' });
     if (!r || r.blocked || r.error || !r.html) continue;
-    // 同名企業が結果に出るか（企業名要素 or 本文で照合）
-    if (resultMatches(r.html, eng.companySel, companyName)) {
+    const $ = cheerio.load(r.html);
+    // カード単位で「ターゲット社に一致する求人」だけを数える（検索語の本文反響による誤マッチを防ぐ）
+    const m = extractMatchingCards($, eng, companyName);
+    if (m.件数 > 0) {
       media.add(eng.name);
-      // ヒット件数の目安（企業名要素の出現数）
-      const $ = cheerio.load(r.html);
-      const names = extractCompanies($, eng.companySel);
-      const target = normCompanyName(companyName);
-      count += names.filter((nm) => { const n = normCompanyName(nm); return n && (n === target || n.includes(target) || target.includes(n)); }).length || 1;
-      // 職種語の軽い抽出（本文から）
-      const body = $('body').text();
-      for (const k of ['エンジニア', '営業', '総合職', '技術職', '事務', '企画', '施工管理', '介護', '看護', '販売', 'マーケティング']) if (body.includes(k)) jobs.add(k);
+      count += m.件数;
+      for (const j of m.職種) jobs.add(j);
     }
   }
   return { 採用中: media.size > 0, 発見媒体: [...media], 求人件数: count, 職種: [...jobs].slice(0, 5) };

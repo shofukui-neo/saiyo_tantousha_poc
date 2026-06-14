@@ -158,7 +158,8 @@ function testName() {
 
 // ---- 採用担当者「個人名」取得層（Wantedly/ハローワーク）純ロジック検証（ネットワーク不要） ----
 function testNameScraping() {
-  const { firstFullName, extractPersonName, pickDetailUrls } = require('../src/scrape-names');
+  const { firstFullName, extractPersonName, pickDetailUrls, namesMatch, companyOnPage } = require('../src/scrape-names');
+  const cheerio = require('cheerio');
   let fail = 0;
   const ok = (label, cond) => { if (cond) console.log('✓ ' + label); else { console.log('✗ ' + label); fail++; } };
   // firstFullName: 姓辞書(jp-names)で検証。肩書き連結・分かち書きを許容し、一般語は弾く。
@@ -177,6 +178,12 @@ function testNameScraping() {
     'https://www.wantedly.com/search', ['a[href*="/projects/"]'], 'テスト', 2);
   ok('pickDetailUrls: projectsリンクのみ2件を絶対URLで返す',
     urls.length === 2 && urls[0] === 'https://www.wantedly.com/projects/1');
+  // namesMatch: 法人格・表記揺れを吸収して会社一致（無関係企業は不一致）
+  ok('namesMatch: 法人格違いでも一致（株式会社FLINTERS≈FLINTERS）', namesMatch('株式会社FLINTERS', 'FLINTERS') === true);
+  ok('namesMatch: 無関係企業は不一致', namesMatch('株式会社FLINTERS', '日産化学株式会社') === false);
+  // companyOnPage: companySel の最初の非空テキストを掲載企業として返す
+  const $c = cheerio.load('<body><a href="/companies/x">株式会社テスト</a><a href="/companies/y">別会社</a></body>');
+  ok('companyOnPage: 最初の会社リンク名を返す', companyOnPage($c, ['a[href*="/companies/"]']) === '株式会社テスト');
   return fail;
 }
 
