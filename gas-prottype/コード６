@@ -1,0 +1,75 @@
+/**
+ * recruit-js-worker — 任意のJS描画媒体レース用ワーカー（Cloud Run 無料枠向け）
+ *
+ * GAS本体が静的HTMLで採用担当者を取れなかった、かつ JS描画と判定したURLだけを
+ * このワーカーへPOSTする。Playwrightでレンダリング→本文抽出→Geminiで担当者抽出。
+ *
+ * 既定では GAS 側 USE_JS_WORKER='false' のため呼ばれない（=¥0死守）。
+ * 使う場合のみ Cloud Run にデプロイし、GASに WORKER_URL を設定、USE_JS_WORKER='true'。
+ *
+ * 法令: robots.txt / 規約を尊重。ログイン突破はしない（公開ページのみ）。
+ */
+
+let browserPromise = null;
+function getBrowser() {
+  if (!browserPromise) {
+    browserPromise = chromium.launch({ args: ['--no-sandbox', '--disable-dev-shm-usage'] });
+  }
+  return browserPromise;
+}
+
+function htmlToText(s) {
+  return String(s)
+    .replace(/<script[\s\S]*?<\/script>/gi, ' ')
+    .replace(/<style[\s\S]*?<\/style>/gi, ' ')
+    .replace(/<[^>]+>/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim()
+    .slice(0, 12000);
+}
+
+async function geminiExtract(text, company) {
+  if (!GEMINI_KEY) return { found: false, error: 'GEMINI_KEY unset' };
+  const prompt =
+    `次のWebページ本文から、企業「${company}」の採用・人事担当者を最大1名だけ厳密に抽出しJSON出力。` +
+    `実在の個人名のみ。役職または部署が採用/人事/HR/新卒/中途/タレント等に関連すること。` +
+    `無ければ {"found": false}。キー: found(bool), name, title, department, snippet, confidence(0-1)。\n本文:\n${text}`;
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/${LLM_MODEL}:generateContent?key=${GEMINI_KEY}`;
+  const r = await fetch(url, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      contents: [{ parts: [{ text: prompt }] }],
+      generationConfig: { temperature: 0.1, maxOutputTokens: 400, responseMimeType: 'application/json' }
+    })
+  });
+  const j = await r.json();
+  try { return JSON.parse(j.candidates[0].content.parts[0].text); }
+  catch (e) { return { found: false, error: 'parse' }; }
+}
+
+app.get('/', (_req, res) => res.send('recruit-js-worker ok'));
+
+app.post('/', async (req, res) => {
+  const { url, company } = req.body || {};
+  if (!url) return res.status(400).json({ found: false, error: 'url required' });
+  let ctx;
+  try {
+    const browser = await getBrowser();
+    ctx = await browser.newContext({
+      userAgent: 'Mozilla/5.0 (compatible; RecruitListBot/1.0; +set-your-contact-url)'
+    });
+    const page = await ctx.newPage();
+    await page.goto(url, { waitUntil: 'networkidle', timeout: NAV_TIMEOUT });
+    const html = await page.content();
+    const out = await geminiExtract(htmlToText(html), company || '');
+    return res.json(out || { found: false });
+  } catch (e) {
+    return res.json({ found: false, error: String(e) });
+  } finally {
+    if (ctx) { try { await ctx.close(); } catch (e) {} }
+  }
+});
+
+const port = process.env.PORT || 8080;
+app.listen(port, () => console.log('recruit-js-worker listening on ' + port));

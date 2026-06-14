@@ -1,0 +1,239 @@
+/**
+ * Main.gs — セットアップ / メニュー / パイプライン駆動（L0 + L5）
+ *
+ * 使い方:
+ *  1) メニュー「採用リスト → ① 初期セットアップ」でシート作成
+ *  2) 「② APIキーを設定」で GEMINI_KEY / NTA_APP_ID / GBIZ_TOKEN 等を保存
+ *  3) 「商材」シートに商材説明を記入、「候補企業」に企業名（or 法人番号）を入れる
+ *     （または「企業を発掘」で gBizINFO から候補を自動投入）
+ *  4) 「③ パイプライン実行」。大量時は「自動実行トリガーを設置」で定期実行
+ */
+
+function onOpen(){
+  SpreadsheetApp.getUi().createMenu('採用リスト')
+    .addItem('① 初期セットアップ（シート作成）', 'setupSheets')
+    .addItem('② APIキーを設定', 'promptKeys')
+    .addSeparator()
+    .addItem('企業を発掘（gBizINFO・任意）', 'discoverIntoCandidates')
+    .addItem('③ パイプライン実行', 'runPipeline')
+    .addItem('④ 30日鮮度リフレッシュ', 'refreshStale')
+    .addSeparator()
+    .addItem('自動実行トリガーを設置', 'installTriggers')
+    .addItem('トリガーを全削除', 'deleteTriggers')
+    .addToUi();
+}
+
+// ===================== セットアップ =====================
+function setupSheets(){
+  var p = ensureSheet_(CONFIG.SHEET_PRODUCT, null);
+  if(p.getLastRow() < 1){
+    p.getRange(1, 1, 3, 2).setValues([
+      ['商材説明', '（例）MOCHICA：LINEで完結する新卒採用管理SaaS。応募者対応の工数を削減し…'],
+      ['既存受注（任意・改行区切り）', ''],
+      ['発掘条件メモ（任意）', '']
+    ]);
+    p.setColumnWidth(2, 540);
+  }
+  ensureSheet_(CONFIG.SHEET_CAND, CONFIG.CAND_HEADERS);
+  ensureSheet_(CONFIG.SHEET_MASTER, CONFIG.MASTER_HEADERS);
+  ensureSheet_(CONFIG.SHEET_LOG, CONFIG.LOG_HEADERS);
+  SpreadsheetApp.getUi().alert('セットアップ完了：商材 / 候補企業 / 担当者マスタ / ログ を用意しました。');
+}
+
+function ensureSheet_(name, headers){
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var sh = ss.getSheetByName(name) || ss.insertSheet(name);
+  if(headers && sh.getLastRow() < 1){
+    sh.getRange(1, 1, 1, headers.length).setValues([headers])
+      .setFontWeight('bold').setBackground('#15212b').setFontColor('#f8f4ea');
+    sh.setFrozenRows(1);
+  }
+  return sh;
+}
+
+function promptKeys(){
+  var ui = SpreadsheetApp.getUi();
+  ['GEMINI_KEY', 'NTA_APP_ID', 'GBIZ_TOKEN', 'EDINET_KEY', 'HUNTER_KEY', 'WORKER_URL'].forEach(function(k){
+    var cur = cfg_(k) ? '（設定済）' : '（未設定）';
+    var r = ui.prompt('APIキー設定', k + ' を入力 ' + cur + '\n空のままOKでスキップ：', ui.ButtonSet.OK_CANCEL);
+    if(r.getSelectedButton() === ui.Button.OK && r.getResponseText().trim()){
+      setCfg_(k, r.getResponseText().trim());
+    }
+  });
+  if(!cfg_('DO_EMAIL_VERIFY')) setCfg_('DO_EMAIL_VERIFY', 'false'); // 既定: MX篩いのみ（無料枠保護）
+  if(!cfg_('USE_JS_WORKER'))   setCfg_('USE_JS_WORKER', 'false');   // 既定: JSワーカーOFF（¥0死守）
+  ui.alert('キー設定を保存しました。');
+}
+
+// ===================== ICP（キャッシュ付き） =====================
+function getIcp_(){
+  var p = sheet_(CONFIG.SHEET_PRODUCT);
+  if(p.getLastRow() < 1) return null;
+  var vals = p.getRange(1, 1, Math.min(3, p.getLastRow()), 2).getValues();
+  var desc = '', existing = '';
+  vals.forEach(function(r){
+    if(/商材説明/.test(r[0])) desc = r[1];
+    if(/既存受注/.test(r[0])) existing = r[1];
+  });
+  if(!desc) return null;
+  var digest = Utilities.base64EncodeWebSafe(Utilities.computeDigest(Utilities.DigestAlgorithm.MD5, desc + '|' + existing));
+  var ck = 'icp:' + digest, c = cacheGet_(ck);
+  if(c){ try{ return JSON.parse(c); }catch(e){} }
+  var icp = buildIcp_(desc, existing);
+  if(icp) cachePut_(ck, JSON.stringify(icp));
+  return icp;
+}
+
+// ===================== パイプライン駆動（6分制限対応） =====================
+function runPipeline(){
+  var props = PropertiesService.getScriptProperties();
+  var cand = sheet_(CONFIG.SHEET_CAND);
+  var last = cand.getLastRow();
+  if(last < 2){ log_('INFO', 'runPipeline', '候補企業が空です'); return; }
+
+  var icp = getIcp_();
+  var start = Date.now();
+  var row = Math.max(2, parseInt(props.getProperty('cursor') || '2', 10));
+
+  for(; row <= last; row++){
+    if(Date.now() - start > CONFIG.SAFE_EXEC_MS){
+      props.setProperty('cursor', String(row));
+      var t = ScriptApp.newTrigger('runPipeline').timeBased().after(60 * 1000).create();
+      props.setProperty('resumeTriggerId', t.getUniqueId());
+      log_('INFO', 'runPipeline', '6分制限回避：' + row + '行目で中断し1分後に再開');
+      return;
+    }
+    try{ processCompanyRow_(cand, row, icp); }
+    catch(e){ log_('ERROR', 'processCompanyRow_', 'row ' + row + ': ' + e); }
+    Utilities.sleep(CONFIG.CONCURRENCY_SLEEP_MS);
+  }
+  props.deleteProperty('cursor');
+  cleanupResumeTrigger_(props);
+  log_('INFO', 'runPipeline', '完了（' + (last - 1) + '社）');
+}
+
+function cleanupResumeTrigger_(props){
+  var id = props.getProperty('resumeTriggerId');
+  if(!id) return;
+  ScriptApp.getProjectTriggers().forEach(function(t){ if(t.getUniqueId() === id) ScriptApp.deleteTrigger(t); });
+  props.deleteProperty('resumeTriggerId');
+}
+
+// ===================== 1社の処理（全レイヤ） =====================
+function processCompanyRow_(cand, row, icp){
+  var H = CONFIG.CAND_HEADERS;
+  var vals = cand.getRange(row, 1, 1, H.length).getValues()[0];
+  var rec = {}; H.forEach(function(h, i){ rec[h] = vals[i]; });
+  var name = rec['企業名'];
+  if(!name) return;
+  if(String(rec['ステータス']).indexOf('完了') === 0) return; // 再実行スキップ
+
+  // 1) 法人番号（国税庁）
+  var corpNo = String(rec['法人番号'] || '').trim();
+  if(!corpNo){
+    var nta = ntaFindByName_(name);
+    if(nta){ corpNo = nta.corporateNumber; if(!rec['都道府県']) rec['都道府県'] = nta.prefecture; }
+  }
+
+  // 2) gBizINFO（代表者名・HP・属性）
+  var gb = corpNo ? gbizGet_(corpNo) : null;
+  var domain = normalizeDomain_(rec['ドメイン'] || (gb && gb.websiteUrl) || rec['HP_URL'] || '');
+  var repName = (gb && gb.representativeName) || rec['代表者名'] || '';
+  var company = {
+    name: name, corporateNumber: corpNo, domain: domain,
+    websiteUrl: (gb && gb.websiteUrl) || rec['HP_URL'] || '', representativeName: repName
+  };
+
+  // 3) 採用担当者レース
+  var hit = raceRecruiter_(company);
+
+  // 4) フォールバック（架電呼称は常に生成）
+  var recruiterName = hit ? hit.name : '';
+  var call = callScript_(company, icp);
+
+  // 5) メール（MX篩い → 任意検証）
+  company.recruiterName = recruiterName;
+  var em = enrichEmail_(company);
+
+  // 6) Tier
+  var hitScore = hit ? hit.score : 0;
+  var tier = tierOf_(hitScore, em.score, !!repName);
+
+  // 7) 担当者マスタへ upsert
+  var out = {
+    '企業名': name, '法人番号': corpNo,
+    '採用担当者名': recruiterName, '役職': hit ? hit.title : '', '部署': hit ? (hit.department || '') : '',
+    '代表者名': repName, '役員名': '',
+    'メール': em.email, 'メール確度': em.score, '担当者確度': hitScore,
+    'Tier': tier, '取得元媒体': hit ? hit.source : (recruiterName ? '' : '非公開'),
+    '根拠URL': hit ? hit.sourceUrl : '', '架電呼称': call,
+    '取得日': new Date(), 'last_verified': new Date(),
+    '備考': recruiterName ? '採用担当者HIT' : (repName ? '代表者フォールバック' : '要架電確認')
+  };
+  upsertMaster_(out, corpNo, name);
+
+  // 候補シートに反映
+  cand.getRange(row, H.indexOf('法人番号') + 1).setValue(corpNo);
+  cand.getRange(row, H.indexOf('代表者名') + 1).setValue(repName);
+  cand.getRange(row, H.indexOf('ステータス') + 1).setValue('完了 ' + Utilities.formatDate(new Date(), 'Asia/Tokyo', 'MM/dd HH:mm'));
+}
+
+function tierOf_(hitScore, emailScore, hasRep){
+  if(hitScore >= 0.8 && emailScore >= 0.8) return 'A';
+  if(hitScore >= CONFIG.SCORE_THRESHOLD || emailScore >= 0.8) return 'B';
+  if(hasRep) return 'C';
+  return 'D';
+}
+
+function upsertMaster_(out, corpNo, name){
+  var sh = sheet_(CONFIG.SHEET_MASTER);
+  var M = CONFIG.MASTER_HEADERS;
+  var last = sh.getLastRow();
+  var keyCol = M.indexOf('法人番号'), nameCol = M.indexOf('企業名');
+  var foundRow = 0;
+  if(last >= 2){
+    var data = sh.getRange(2, 1, last - 1, M.length).getValues();
+    for(var i = 0; i < data.length; i++){
+      if((corpNo && String(data[i][keyCol]) === String(corpNo)) || (!corpNo && data[i][nameCol] === name)){ foundRow = i + 2; break; }
+    }
+  }
+  var arr = M.map(function(h){ return (out[h] != null ? out[h] : ''); });
+  if(foundRow) sh.getRange(foundRow, 1, 1, M.length).setValues([arr]);
+  else sh.appendRow(arr);
+}
+
+// ===================== 30日鮮度リフレッシュ =====================
+function refreshStale(){
+  var sh = sheet_(CONFIG.SHEET_MASTER);
+  var last = sh.getLastRow();
+  if(last < 2) return;
+  var M = CONFIG.MASTER_HEADERS;
+  var lvCol = M.indexOf('last_verified');
+  var now = Date.now(), THIRTY = 30 * 24 * 3600 * 1000;
+  var cand = sheet_(CONFIG.SHEET_CAND);
+  var rows = sh.getRange(2, 1, last - 1, M.length).getValues();
+  var budget = Math.ceil((last - 1) * 0.1); // 1日10%ローテ
+  var picked = 0;
+  for(var i = 0; i < rows.length && picked < budget; i++){
+    var lv = rows[i][lvCol];
+    var ts = lv ? new Date(lv).getTime() : 0;
+    if(now - ts > THIRTY){
+      // 候補へ再投入（ステータス空=再処理対象）
+      cand.appendRow([rows[i][0], rows[i][1], '', '', '', '', rows[i][M.indexOf('代表者名')], '', '再検証', '']);
+      picked++;
+    }
+  }
+  log_('INFO', 'refreshStale_', picked + '件を再検証キューへ投入');
+}
+
+// ===================== トリガー =====================
+function installTriggers(){
+  deleteTriggers();
+  ScriptApp.newTrigger('runPipeline').timeBased().everyHours(1).create();
+  ScriptApp.newTrigger('refreshStale').timeBased().everyDays(1).atHour(3).create();
+  SpreadsheetApp.getUi().alert('1時間毎のパイプラインと、毎日3時の鮮度リフレッシュを設置しました。');
+}
+function deleteTriggers(){
+  ScriptApp.getProjectTriggers().forEach(function(t){ ScriptApp.deleteTrigger(t); });
+  PropertiesService.getScriptProperties().deleteProperty('resumeTriggerId');
+}

@@ -1,0 +1,426 @@
+/**
+ * Discovery.gs — 企業発掘・名寄せ・代表者/役員（公的API）＋ ICP生成
+ * L1(ICP) / L2(Discovery & Identity)
+ */
+
+// ---------- L1: 商材 → ICP ----------
+function buildIcp_(productDesc, existing){
+  if(!productDesc){ return null; }
+  var prompt =
+    'あなたはB2B SaaSのRevOpsアナリストです。次の自社商材から理想顧客プロファイル(ICP)を日本語でJSON出力してください。\n' +
+    '商材説明:\n' + productDesc + '\n' +
+    (existing ? '既存受注（参考・類似性を学習）:\n' + existing + '\n' : '') +
+    '出力キー: primary_value_prop(string), target_industries(string[]), ' +
+    'company_size{employees_min:int, employees_max:int}, geography(string[]都道府県), ' +
+    'buying_signals(string[]), pain_points(string[]), ' +
+    'buyer_persona{titles:string[], departments:string[]}, exclusion(string[])';
+  return geminiJson_(prompt, { maxTokens: 1200 });
+}
+
+// ---------- L2-a: 国税庁 法人番号 Web-API v4（商号→法人番号） ----------
+function ntaFindByName_(name){
+  var appId = cfg_('NTA_APP_ID');
+  if(!appId){ log_('WARN', 'ntaFindByName_', 'NTA_APP_ID未設定'); return null; }
+  // type=12: XML / mode=2: 部分一致 / close=0: 登記閉鎖を除く
+  var url = CONFIG.NTA_BASE + '/name'
+    + '?id=' + encodeURIComponent(appId)
+    + '&name=' + encodeURIComponent(name)
+    + '&type=12&mode=2&close=0';
+  var res = fetchWithRetry_(url, {}, 3);
+  if(!res || res.getResponseCode() >= 400){ log_('WARN', 'ntaFindByName_', 'HTTP ' + (res && res.getResponseCode())); return null; }
+  try{
+    var root = XmlService.parse(res.getContentText()).getRootElement();
+    var corp = findFirstChild_(root, 'corporation');
+    if(!corp) return null;
+    return {
+      corporateNumber: childText_(corp, 'corporateNumber'),
+      name: childText_(corp, 'name'),
+      prefecture: childText_(corp, 'prefectureName'),
+      city: childText_(corp, 'cityName')
+    };
+  }catch(e){ log_('WARN', 'ntaFindByName_', e); return null; }
+}
+
+function findFirstChild_(el, tag){
+  var kids = el.getChildren();
+  for(var i = 0; i < kids.length; i++){
+    if(kids[i].getName() === tag) return kids[i];
+    var deep = findFirstChild_(kids[i], tag);
+    if(deep) return deep;
+  }
+  return null;
+}
+function childText_(el, tag){ var c = findFirstChild_(el, tag); return c ? c.getText() : ''; }
+
+
+
+// ---------- L2-c: gBizINFO 条件検索（業種×地域 → 候補） ----------
+function gbizSearch_(params){
+  var token = cfg_('GBIZ_TOKEN');
+  if(!token){ return []; }
+  var q = [];
+  if(params.name)         q.push('name=' + encodeURIComponent(params.name));
+  if(params.prefecture)   q.push('prefecture=' + encodeURIComponent(params.prefecture));
+  if(params.businessItem) q.push('business_item=' + encodeURIComponent(params.businessItem));
+  q.push('page=1');
+  var url = CONFIG.GBIZ_BASE + '?' + q.join('&');
+  var res = fetchWithRetry_(url, { headers: { 'X-hojinInfo-api-token': token, 'Accept': 'application/json' } }, 3);
+  if(!res || res.getResponseCode() >= 400){ return []; }
+  try{
+    var arr = (JSON.parse(res.getContentText())['hojin-infos']) || [];
+    return arr.map(function(info){
+      return {
+        corporateNumber: info.corporate_number || info.corporateNumber || '',
+        name: info.name || '',
+        representativeName: info.representative_name || '',
+        websiteUrl: info.company_url || '',
+        prefecture: info.location || ''
+      };
+    });
+  }catch(e){ log_('WARN', 'gbizSearch_', e); return []; }
+}
+
+
+// ---------- L2-d: EDINET（上場役員名・フック） ----------
+function edinetOfficers_(companyName){
+  // EDINETは日付指定の書類一覧→XBRL解析が必要なため、本MVPでは未実装フック。
+  // 実装手順:
+  //  1) GET EDINET_BASE/documents.json?date=YYYY-MM-DD&type=2&Subscription-Key=KEY で有報docIDを取得
+  //  2) GET EDINET_BASE/documents/{docID}?type=5&Subscription-Key=KEY でZIP(XBRL)取得
+  //  3) XBRL内の役員氏名（jpcrp:NameOfDirectorsAndOtherOfficers 等）を抽出
+  return [];
+}
+
+/**
+ * ============================================================================
+ *  Discovery_patch.gs — 発掘ロジック強化パッチ（既存関数の置き換え）
+ * ============================================================================
+ *
+ *  【これは何】
+ *    既存 Discovery.gs の 2関数を「丸ごと置き換える」差分です。
+ *      - gbizSearch_()            → ページネーション対応版に置換
+ *      - discoverIntoCandidates() → 1000件目標・従業員数選別・重複排除版に置換
+ *
+ *  【適用方法】
+ *    1. 既存 Discovery.gs 内の `function gbizSearch_(params){...}` と
+ *       `function discoverIntoCandidates(){...}` の2つを削除する
+ *    2. このファイルの中身を Discovery.gs の末尾に貼る（別ファイルでも可）
+ *    ※ Config.gs / Lib.gs / ContactRace.gs / Main.gs は一切変更不要。
+ *
+ *  【設計判断（重要）】
+ *    gBizINFOの検索APIには「従業員数での範囲絞り込みパラメータが存在しない」。
+ *    検索で使えるのは name / prefecture / city / corporate_type / average_age のみ。
+ *    employee_number は“取得後のレスポンス項目”でしかない。
+ *    したがって ICP主軸の「従業員50〜300名」は、
+ *      [広く集める]→[employee_number で後段フィルタ＆スコアリング]
+ *    という二段構えで実現する（= 選んだ「多めに集めて後から選別」方針と一致）。
+ *
+ *  【追加するCONFIG（任意・無くても既定値で動く）】
+ *    Config.gs の CONFIG に以下を足すと挙動を調整できる。未定義なら下の既定値を使用。
+ *      DISCOVERY: {
+ *        TARGET: 1000,            // 発掘目標件数
+ *        EMP_MIN: 50,             // ICP従業員下限
+ *        EMP_MAX: 300,            // ICP従業員上限
+ *        EMP_SWEET_MIN: 100,      // スイートスポット下限（高スコア帯）
+ *        EMP_SWEET_MAX: 250,      // スイートスポット上限
+ *        PAGES_PER_QUERY: 5,      // 1検索条件あたり何ページ取るか（limit=100×5=500件/条件）
+ *        LIMIT: 100,              // 1ページ件数（gBizINFO上限）
+ *        CORPORATE_TYPE: '301,305',// 株式会社・合同会社に限定（新卒採用の現実性）
+ *        KEEP_UNKNOWN_EMP: true   // 従業員数不明の企業を母集団に残すか
+ *      }
+ * ============================================================================
+ */
+
+// ---- 既定値（CONFIG.DISCOVERY が未定義でも動くようにする） ----
+function discoveryCfg_(){
+  var d = (typeof CONFIG !== 'undefined' && CONFIG.DISCOVERY) ? CONFIG.DISCOVERY : {};
+  return {
+    TARGET:        d.TARGET        || 1000,
+    EMP_MIN:       d.EMP_MIN       != null ? d.EMP_MIN : 50,
+    EMP_MAX:       d.EMP_MAX       != null ? d.EMP_MAX : 300,
+    EMP_SWEET_MIN: d.EMP_SWEET_MIN != null ? d.EMP_SWEET_MIN : 100,
+    EMP_SWEET_MAX: d.EMP_SWEET_MAX != null ? d.EMP_SWEET_MAX : 250,
+    PAGES_PER_QUERY: d.PAGES_PER_QUERY || 5,
+    LIMIT:         d.LIMIT         || 100,
+    CORPORATE_TYPE: d.CORPORATE_TYPE || '301,305',
+    KEEP_UNKNOWN_EMP: d.KEEP_UNKNOWN_EMP != null ? d.KEEP_UNKNOWN_EMP : true
+  };
+}
+
+// ============================================================================
+//  置き換え①: gbizSearch_  （ページネーション対応 + 従業員数を必ず返す）
+// ============================================================================
+/**
+ * gBizINFO 条件検索（1ページ）。既存シグネチャ互換のまま page/limit/corporate_type を受け取れる。
+ * @param {Object} params {name, prefecture, city, businessItem, page, limit, corporateType}
+ * @return {Array} 正規化済み候補（employee_number 含む）
+ */
+function gbizSearch_(params){
+  var token = cfg_('GBIZ_TOKEN');
+  if(!token){ log_('WARN', 'gbizSearch_', 'GBIZ_TOKEN未設定'); return []; }
+  params = params || {};
+
+  var q = [];
+  if(params.name)         q.push('name=' + encodeURIComponent(params.name));
+  if(params.prefecture)   q.push('prefecture=' + encodeURIComponent(params.prefecture));
+  if(params.city)         q.push('city=' + encodeURIComponent(params.city));
+  if(params.businessItem) q.push('business_item=' + encodeURIComponent(params.businessItem));
+  if(params.corporateType)q.push('corporate_type=' + encodeURIComponent(params.corporateType));
+  q.push('page=' + encodeURIComponent(params.page || 1));
+  q.push('limit=' + encodeURIComponent(params.limit || 100));
+
+  var url = CONFIG.GBIZ_BASE + '?' + q.join('&');
+  var res = fetchWithRetry_(url, { headers: { 'X-hojinInfo-api-token': token, 'Accept': 'application/json' } }, 3);
+  if(!res){ return []; }
+  var code = res.getResponseCode();
+  if(code === 404){ return []; }                 // 該当なし＝このページで打ち止め
+  if(code >= 400){ log_('WARN', 'gbizSearch_', 'HTTP ' + code + ' @page' + (params.page||1)); return []; }
+
+  try{
+    var arr = (JSON.parse(res.getContentText())['hojin-infos']) || [];
+    return arr.map(function(info){
+      return {
+        corporateNumber: info.corporate_number || info.corporateNumber || '',
+        name: info.name || '',
+        representativeName: info.representative_name || '',
+        websiteUrl: info.company_url || '',
+        prefecture: info.location || info.prefecture_name || '',
+        // ICP選別の核：従業員数（取得できないことも多い→後段で扱う）
+        employees: (function(){
+          var e = info.employee_number || info.employees;
+          var n = parseInt(e, 10);
+          return isNaN(n) ? null : n;
+        })(),
+        businessSummary: info.business_summary || ''
+      };
+    });
+  }catch(e){ log_('WARN', 'gbizSearch_', e); return []; }
+}
+
+// ============================================================================
+//  置き換え②: discoverIntoCandidates （1000件・選別・重複排除・再開可能）
+// ============================================================================
+/**
+ * ICPから候補企業を発掘して「候補企業」シートへ積む。
+ *   - geography × target_industries を総当たりし、各条件を複数ページ取得
+ *   - 取得後に従業員数で ICPフィルタ＆スコアリング
+ *   - 法人番号＋企業名で重複排除（シート既存分とも照合）
+ *   - DISCOVERY.TARGET 件に達したら停止
+ *   - 6分制限に当たったら進捗を保存し、再実行で続きから（discoverIntoCandidates を再度実行）
+ *
+ *  ※ 出力列は CONFIG.CAND_HEADERS の10列順を厳守：
+ *     企業名,法人番号,ドメイン,HP_URL,業種,都道府県,代表者名,従業員数,発掘元,ステータス
+ *  ※ 「従業員数」列に gBizINFO の従業員数を格納。値の先頭にICPスコアを併記して優先度を可視化。
+ */
+function discoverIntoCandidates(){
+  var dc = discoveryCfg_();
+  var icp = getIcp_();
+  if(!icp){
+    try{ SpreadsheetApp.getUi().alert('「商材」シートに商材説明を入れてから実行してください。'); }catch(e){}
+    return;
+  }
+
+  var cand = sheet_(CONFIG.SHEET_CAND);
+  var H = CONFIG.CAND_HEADERS;
+  var props = PropertiesService.getScriptProperties();
+  var start = Date.now();
+  var SAFE_MS = (CONFIG.SAFE_EXEC_MS || 5 * 60 * 1000);
+
+  // --- 検索条件マトリクスを構築（geography × industries） ---
+  var prefs = (icp.geography && icp.geography.length) ? icp.geography.slice(0) : [''];
+  // 「全国」「日本」などの非・都道府県語が入っていたら、空（全国）扱いにする
+  prefs = prefs.map(function(p){ return /全国|日本|全都道府県/.test(String(p)) ? '' : p; });
+  if(!prefs.length) prefs = [''];
+  var inds = (icp.target_industries && icp.target_industries.length) ? icp.target_industries.slice(0) : [''];
+
+  var queries = [];
+  prefs.forEach(function(pref){
+    inds.forEach(function(ind){ queries.push({ pref: pref, ind: ind }); });
+  });
+
+  // --- 進捗復元（再開可能） ---
+  var st = JSON.parse(props.getProperty('disc_state') || '{}');
+  var qi   = st.qi   || 0;   // 何番目の検索条件まで進んだか
+  var page = st.page || 1;   // その条件の何ページ目か
+
+  // --- 既存の重複キー集合をロード（法人番号 と 企業名） ---
+  var seen = loadSeenKeys_(cand, H);
+  var added = 0, scanned = 0, kept = 0;
+
+  log_('INFO', 'discoverIntoCandidates', '発掘開始 目標' + dc.TARGET + '件 / 条件数' + queries.length + ' / 復元 q' + qi + ' p' + page);
+
+  // 現在のシート件数（ヘッダ除く）からも残量を判断
+  var collected = Math.max(0, cand.getLastRow() - 1);
+
+  var buffer = [];
+
+  while(qi < queries.length && collected + added < dc.TARGET){
+    // 6分制限チェック → 中断して再スケジュール
+    if(Date.now() - start > SAFE_MS){
+      flushCandRows_(cand, buffer); buffer = [];
+      props.setProperty('disc_state', JSON.stringify({ qi: qi, page: page }));
+      scheduleResume_('discoverIntoCandidates', 'discResumeTriggerId');
+      log_('INFO', 'discoverIntoCandidates', '時間制限で中断（' + added + '件追加）。1分後に自動再開。');
+      return;
+    }
+
+    var Q = queries[qi];
+    var hits = gbizSearch_({
+      prefecture: Q.pref,
+      businessItem: Q.ind,
+      corporateType: dc.CORPORATE_TYPE,
+      page: page,
+      limit: dc.LIMIT
+    });
+
+    if(!hits.length){
+      // この条件は取り切った → 次の条件の1ページ目へ
+      qi++; page = 1;
+      Utilities.sleep(CONFIG.CONCURRENCY_SLEEP_MS || 200);
+      continue;
+    }
+
+    for(var i = 0; i < hits.length; i++){
+      if(collected + added >= dc.TARGET) break;
+      var h = hits[i];
+      scanned++;
+      if(!h.name) continue;
+
+      // 重複排除（法人番号優先、無ければ企業名）
+      var key = h.corporateNumber ? ('c:' + h.corporateNumber) : ('n:' + h.name);
+      if(seen[key]) continue;
+
+      // ICPフィルタ：従業員数レンジ
+      if(h.employees != null){
+        if(h.employees < dc.EMP_MIN || h.employees > dc.EMP_MAX) continue;
+      }else{
+        if(!dc.KEEP_UNKNOWN_EMP) continue; // 不明を捨てる設定なら除外
+      }
+
+      // ICPスコア（0-100）
+      var score = discoveryIcpScore_(h, dc);
+
+      // 「従業員数」列に “スコア+人数” を可視化（後でソートしやすい）
+      var empCell = (h.employees != null)
+        ? (h.employees + '名 [ICP' + score + ']')
+        : ('不明 [ICP' + score + ']');
+
+      // CAND_HEADERS の10列順で行を生成
+      var rowObj = {
+        '企業名': h.name,
+        '法人番号': h.corporateNumber || '',
+        'ドメイン': normalizeDomain_(h.websiteUrl),
+        'HP_URL': h.websiteUrl || '',
+        '業種': Q.ind || (h.businessSummary || ''),
+        '都道府県': h.prefecture || Q.pref || '',
+        '代表者名': h.representativeName || '',
+        '従業員数': empCell,
+        '発掘元': 'gBizINFO発掘',
+        'ステータス': ''   // 空＝既存パイプライン processCompanyRow_ の処理対象
+      };
+      buffer.push(H.map(function(col){ return rowObj[col] != null ? rowObj[col] : ''; }));
+      seen[key] = true;
+      added++; kept++;
+
+      if(buffer.length >= 50){ flushCandRows_(cand, buffer); buffer = []; }
+    }
+
+    page++;
+    if(page > dc.PAGES_PER_QUERY){ qi++; page = 1; } // この条件は規定ページ数で打ち切り → 次条件
+    Utilities.sleep(CONFIG.CONCURRENCY_SLEEP_MS || 200);
+  }
+
+  flushCandRows_(cand, buffer); buffer = [];
+
+  // 完了処理：進捗クリア＋再開トリガー掃除
+  props.deleteProperty('disc_state');
+  cleanupResumeTriggerByKey_('discResumeTriggerId');
+
+  log_('INFO', 'discoverIntoCandidates', '発掘完了 追加' + added + '件 / 走査' + scanned + '件');
+  try{
+    SpreadsheetApp.getUi().alert(
+      '発掘完了：' + added + '社を「候補企業」へ追加しました。\n' +
+      '（従業員' + dc.EMP_MIN + '〜' + dc.EMP_MAX + '名のICPで選別済み・重複排除済み）\n' +
+      'このあと「③ パイプライン実行」で担当者・メールを付与してください。'
+    );
+  }catch(e){}
+}
+
+// ============================================================================
+//  発掘用ヘルパー群（既存と名前衝突しない _disc 系・新規）
+// ============================================================================
+
+/** ICP適合スコア（発掘段階用 0-100）。従業員規模を主軸に評価。 */
+function discoveryIcpScore_(h, dc){
+  var score = 0;
+
+  // (A) 従業員規模：最大60点（今回の主軸なので重め）
+  if(h.employees != null){
+    var e = h.employees;
+    if(e >= dc.EMP_SWEET_MIN && e <= dc.EMP_SWEET_MAX) score += 60;      // スイートスポット
+    else if(e >= 80 && e < dc.EMP_SWEET_MIN) score += 48;
+    else if(e > dc.EMP_SWEET_MAX && e <= dc.EMP_MAX) score += 44;
+    else if(e >= dc.EMP_MIN && e < 80) score += 32;
+    else score += 12;
+  }else{
+    score += 20; // 不明はニュートラル寄り（捨てない設定のときの基礎点）
+  }
+
+  // (B) 自社HP有無：最大25点（後段の採用担当者レース成功率に直結）
+  if(h.websiteUrl) score += 25;
+
+  // (C) 代表者名が取れている：最大15点（フォールバック確度＆実在性）
+  if(h.representativeName) score += 15;
+
+  return Math.min(100, Math.round(score));
+}
+
+/** 候補シートの既存行から重複キー集合を作る（法人番号 と 企業名）。 */
+function loadSeenKeys_(cand, H){
+  var seen = {};
+  var last = cand.getLastRow();
+  if(last < 2) return seen;
+  var corpCol = H.indexOf('法人番号');
+  var nameCol = H.indexOf('企業名');
+  var data = cand.getRange(2, 1, last - 1, H.length).getValues();
+  for(var i = 0; i < data.length; i++){
+    var corp = String(data[i][corpCol] || '').trim();
+    var name = String(data[i][nameCol] || '').trim();
+    if(corp) seen['c:' + corp] = true;
+    if(name) seen['n:' + name] = true;
+  }
+  return seen;
+}
+
+/** 行バッファをまとめて候補シートへ追記（書き込み回数を削減）。 */
+function flushCandRows_(cand, buffer){
+  if(!buffer || !buffer.length) return;
+  var startRow = cand.getLastRow() + 1;
+  cand.getRange(startRow, 1, buffer.length, CONFIG.CAND_HEADERS.length).setValues(buffer);
+}
+
+/** 6分制限の再開トリガーを設置（キー名を指定して衝突回避）。 */
+function scheduleResume_(fnName, propKey){
+  var props = PropertiesService.getScriptProperties();
+  var t = ScriptApp.newTrigger(fnName).timeBased().after(60 * 1000).create();
+  props.setProperty(propKey, t.getUniqueId());
+}
+
+/** 指定キーの再開トリガーを掃除。 */
+function cleanupResumeTriggerByKey_(propKey){
+  var props = PropertiesService.getScriptProperties();
+  var id = props.getProperty(propKey);
+  if(!id) return;
+  ScriptApp.getProjectTriggers().forEach(function(t){
+    if(t.getUniqueId() === id) ScriptApp.deleteTrigger(t);
+  });
+  props.deleteProperty(propKey);
+}
+
+/** 発掘の進捗をリセットして最初からやり直す（任意で実行）。 */
+function resetDiscovery(){
+  var props = PropertiesService.getScriptProperties();
+  props.deleteProperty('disc_state');
+  cleanupResumeTriggerByKey_('discResumeTriggerId');
+  log_('INFO', 'resetDiscovery', '発掘の進捗をリセットしました（候補シートのデータは消していません）。');
+}

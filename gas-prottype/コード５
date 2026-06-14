@@ -1,0 +1,161 @@
+/**
+ * ContactRace.gs — L3 採用担当者レース ＋ 代表者フォールバック ＋ L4 メール
+ *
+ * レース方式（GAS適応版）:
+ *   候補URLを fetchAll で「並列取得」→ 媒体信頼度の優先順位で Gemini 抽出を「逐次」→
+ *   VALIDATE 通過の瞬間に残りの抽出を break（= 無料枠節約 = REV.2 の cancellation 等価）。
+ *   真の並列キャンセルが要る JS描画媒体だけ任意ワーカーへ委譲。
+ */
+
+// ---------- STEP① LOCATE（検索API不要・決め打ち） ----------
+function locateCandidates_(company){
+  var urls = [];
+  var domain = normalizeDomain_(company.domain || company.websiteUrl || '');
+  if(domain){
+    CONFIG.LOCATE_PATHS.forEach(function(p){ urls.push('https://' + domain + p); });
+    urls.push('https://' + domain); // トップページ
+  }
+  if(company.name){
+    // PR TIMES 企業名検索（公開ページ）
+    urls.push('https://prtimes.jp/main/action.php?run=html&page=searchkey&search_word=' + encodeURIComponent(company.name));
+  }
+  return urls;
+}
+
+// ---------- STEP②〜④ レース本体 ----------
+function raceRecruiter_(company){
+  var urls = locateCandidates_(company).filter(robotsAllowed_);
+  if(!urls.length) return null;
+
+  var reqs = urls.map(function(u){ return { url: u, muteHttpExceptions: true, followRedirects: true }; });
+  var responses;
+  try{ responses = UrlFetchApp.fetchAll(reqs); }       // ← 並列取得
+  catch(e){ log_('WARN', 'raceRecruiter_', 'fetchAll: ' + e); return null; }
+
+  for(var i = 0; i < responses.length; i++){           // ← 優先順位で逐次抽出
+    var res = responses[i];
+    if(!res || res.getResponseCode() >= 400) continue;
+    var html = res.getContentText();
+    if(!html || html.length < 200) continue;
+
+    if(isJsShell_(html)){
+      if(cfg_('USE_JS_WORKER') === 'true'){
+        var w = jsWorkerExtract_(reqs[i].url, company);
+        if(w && validateHit_(w)){ w.sourceUrl = reqs[i].url; w.source = 'JSワーカー'; return w; }
+      }
+      continue;
+    }
+    var hit = geminiExtractRecruiter_(htmlToText_(html), company);
+    if(hit && validateHit_(hit)){       // ← VALIDATE 通過で即確定（残りは抽出しない）
+      hit.sourceUrl = reqs[i].url;
+      hit.source = sourceLabel_(reqs[i].url);
+      return hit;
+    }
+  }
+  return null;
+}
+
+function sourceLabel_(url){
+  if(/prtimes\.jp/.test(url)) return 'PR TIMES';
+  if(/\/recruit|\/saiyo|\/採用|\/career/.test(url)) return '自社採用サイト';
+  if(/speakerdeck|docswell/.test(url)) return '採用ピッチ資料';
+  if(/note\.com/.test(url)) return 'note';
+  return '自社サイト';
+}
+
+// ---------- STEP③ AI抽出 ----------
+function geminiExtractRecruiter_(text, company){
+  var prompt =
+    '次のWebページ本文から、企業「' + company.name + '」の採用・人事の担当者を最大1名だけ厳密に抽出しJSON出力。\n' +
+    '条件: 実在の個人名のみ（会社名・部署名だけは不可）。役職または部署が採用/人事/HR/新卒/中途/タレント等に関連すること。\n' +
+    '該当が無ければ {"found": false} を返す。\n' +
+    '出力キー: found(bool), name(string), title(string), department(string), snippet(string 根拠20〜60字), confidence(0〜1)\n' +
+    '本文:\n' + text;
+  var j = geminiJson_(prompt, { maxTokens: 400, temperature: 0.1 });
+  if(!j || !j.found) return null;
+  return {
+    name: j.name || '', title: j.title || '', department: j.department || '',
+    snippet: j.snippet || '', score: Number(j.confidence || 0)
+  };
+}
+
+// ---------- STEP④ VALIDATE ----------
+function validateHit_(hit){
+  if(!hit || !hit.name) return false;
+  if(Number(hit.score) < CONFIG.SCORE_THRESHOLD) return false;
+  // 人名らしさ（日本語姓名 or ローマ字フルネーム）
+  var nameOk =
+    /[一-龯々]{1,4}[ 　]?[一-龯ぁ-んァ-ヴ]{1,6}/.test(hit.name) ||
+    /^[A-Z][a-zA-Z]+ [A-Z][a-zA-Z]+$/.test(hit.name.trim());
+  if(!nameOk) return false;
+  // 採用/人事ロール
+  var blob = (hit.title || '') + ' ' + (hit.department || '') + ' ' + (hit.snippet || '');
+  var low = blob.toLowerCase();
+  return CONFIG.RECRUIT_ROLE_KEYWORDS.some(function(k){
+    return blob.indexOf(k) >= 0 || low.indexOf(k.toLowerCase()) >= 0;
+  });
+}
+
+// ---------- 任意: JS描画媒体ワーカー（Cloud Run） ----------
+function jsWorkerExtract_(url, company){
+  var w = cfg_('WORKER_URL');
+  if(!w) return null;
+  try{
+    var res = fetchWithRetry_(w, {
+      method: 'post', contentType: 'application/json',
+      payload: JSON.stringify({ url: url, company: company.name })
+    }, 2);
+    if(res && res.getResponseCode() < 400){
+      var j = JSON.parse(res.getContentText());
+      if(j && j.found){ return { name: j.name, title: j.title, department: j.department, snippet: j.snippet, score: Number(j.confidence || 0) }; }
+    }
+  }catch(e){ log_('WARN', 'jsWorkerExtract_', e); }
+  return null;
+}
+
+// ---------- フォールバック: 架電呼称 ----------
+function callScript_(company, icp){
+  var dept = '人事部';
+  var role = 'ご採用ご担当者様';
+  if(icp && icp.buyer_persona && icp.buyer_persona.departments && icp.buyer_persona.departments[0]){
+    dept = icp.buyer_persona.departments[0];
+  }
+  var hint = icp ? ((icp.primary_value_prop || '') + ' ' + JSON.stringify(icp.buying_signals || [])) : '';
+  if(/新卒/.test(hint)) role = '新卒採用ご担当者様';
+  else if(/中途|キャリア/.test(hint)) role = '中途採用ご担当者様';
+  return dept + ' ' + role;
+}
+
+// ---------- L4: メール（MX篩い → 任意で実在検証） ----------
+function enrichEmail_(company){
+  var domain = normalizeDomain_(company.domain || company.websiteUrl || '');
+  if(!domain) return { email: '', score: 0, note: 'ドメイン不明' };
+  var mx = mxRecords_(domain);
+  if(!mx.length) return { email: '', score: 0, note: 'MXなし' };
+
+  var candidates = guessEmails_(domain);
+  var best = candidates[0] || '';
+  var score = 0.4; // パターン推測のみ（送信は要検証）
+
+  if(cfg_('DO_EMAIL_VERIFY') === 'true' && cfg_('HUNTER_KEY') && best){
+    var v = hunterVerify_(best);
+    if(v){ score = v.score; if(v.status === 'invalid'){ best = ''; score = 0; } }
+  }
+  return { email: best, score: score, mx: mx[0] || '' };
+}
+
+function guessEmails_(domain){
+  return CONFIG.EMAIL_ROLES.map(function(r){ return r + '@' + domain; });
+}
+
+function hunterVerify_(email){
+  var key = cfg_('HUNTER_KEY'); if(!key) return null;
+  var res = fetchWithRetry_('https://api.hunter.io/v2/email-verifier?email=' + encodeURIComponent(email) + '&api_key=' + encodeURIComponent(key), {}, 2);
+  if(!res || res.getResponseCode() >= 400) return null;
+  try{
+    var d = JSON.parse(res.getContentText()).data;
+    var map = { deliverable: 0.95, risky: 0.6, undeliverable: 0.0, unknown: 0.4 };
+    var status = d.result === 'deliverable' ? 'valid' : (d.result === 'undeliverable' ? 'invalid' : 'risky');
+    return { status: status, score: (map[d.result] != null ? map[d.result] : 0.4) };
+  }catch(e){ return null; }
+}

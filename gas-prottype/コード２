@@ -1,0 +1,70 @@
+/**
+ * Config.gs — 全体設定（採用リスト作成システム REV.3 / 限りなく無料・統合版）
+ *
+ * 設計書: 採用リスト作成システム_完成設計書_REV3.html
+ * 機密値（APIキー/トークン）はコードに書かず、メニュー「② APIキーを設定」から
+ * ScriptProperties に保存する。Config には「公開してよい定数」だけを置く。
+ */
+
+var CONFIG = {
+  // ---- シート名 ----
+  SHEET_PRODUCT: '商材',
+  SHEET_CAND:    '候補企業',
+  SHEET_MASTER:  '担当者マスタ',
+  SHEET_LOG:     'ログ',
+
+  // ---- ヘッダ定義 ----
+  CAND_HEADERS:   ['企業名','法人番号','ドメイン','HP_URL','業種','都道府県','代表者名','従業員数','発掘元','ステータス'],
+  MASTER_HEADERS: ['企業名','法人番号','採用担当者名','役職','部署','代表者名','役員名','メール','メール確度','担当者確度','Tier','取得元媒体','根拠URL','架電呼称','取得日','last_verified','備考'],
+  LOG_HEADERS:    ['日時','レベル','関数','メッセージ'],
+
+  // ---- 実行制御 ----
+  BATCH_SIZE: 10,                 // fetchAll 並列数の目安
+  SAFE_EXEC_MS: 5 * 60 * 1000,    // 6分制限の手前（5分）で中断・再スケジュール
+  CACHE_TTL: 6 * 60 * 60,         // CacheService 6時間
+  CONCURRENCY_SLEEP_MS: 200,      // レート制御（礼儀）
+
+  // ---- LLM（Gemini 無料枠）----
+  // 2026-06時点で Flash系は無料枠あり（カード不要・約1,500回/日）。
+  // 現行の無料枠モデル名は Google AI Studio で確認し差し替え可（例: gemini-flash-latest 等）。
+  LLM_ENDPOINT: 'https://generativelanguage.googleapis.com/v1beta/models/',
+  LLM_MODEL: 'gemini-flash-latest',
+
+  // ---- 公的API ----
+  // 国税庁 法人番号 Web-API v4（誰でも可・無料。アプリIDは別途申請：発行2週間〜1ヶ月）
+  NTA_BASE: 'https://api.houjin-bangou.nta.go.jp/4',
+
+  // gBizINFO REST API。新ホストは api.info.gbiz.go.jp。
+  // 下記は v1 パス（当面利用可）。v1 は 2026/9 終了予定のため、Swagger UI v2 で
+  // 正式な v2 パス/項目名を確認して差し替えること。
+  //   Swagger v2: https://api.info.gbiz.go.jp/hojin/swagger-ui/index.html?urls.primaryName=v2
+  GBIZ_BASE: 'https://api.info.gbiz.go.jp/hojin/v1/hojin',
+
+  // EDINET v2（上場・有報の役員名。MVPではフックのみ）
+  EDINET_BASE: 'https://api.edinet-fsa.go.jp/api/v2',
+
+  // ---- 採用担当者レース ----
+  // HP ドメインに対して決め打ちで叩く採用/会社系パス（検索API不要）
+  LOCATE_PATHS: ['/recruit','/recruit/','/saiyo','/saiyo/','/採用','/careers','/career','/company','/corporate','/about','/news','/contact'],
+  RECRUIT_ROLE_KEYWORDS: ['採用','人事','人材','新卒','中途','タレント','HR','hr','recruit','talent','recruiting','people'],
+  SCORE_THRESHOLD: 0.6,           // VALIDATE 通過の確度閾値
+
+  // ---- メール ----
+  EMAIL_ROLES: ['info','recruit','saiyo','jinji','hr','contact','otoiawase','adm']
+};
+
+/** ScriptProperties アクセサ */
+function cfg_(key){ return PropertiesService.getScriptProperties().getProperty(key) || ''; }
+function setCfg_(key, val){ PropertiesService.getScriptProperties().setProperty(key, String(val)); }
+
+/**
+ * 使用する ScriptProperties キー（メニューから設定）:
+ *   GEMINI_KEY      … Google AI Studio の Gemini APIキー（必須）
+ *   NTA_APP_ID      … 国税庁 法人番号 Web-API アプリケーションID（発掘の名寄せに必須）
+ *   GBIZ_TOKEN      … gBizINFO REST API トークン（代表者名/属性に必須）
+ *   EDINET_KEY      … EDINET API サブスクリプションキー（任意・上場役員名）
+ *   HUNTER_KEY      … Hunter.io APIキー（任意・メール実在検証）
+ *   WORKER_URL      … 任意Playwrightワーカー(Cloud Run)のURL（任意・JS描画媒体）
+ *   DO_EMAIL_VERIFY … 'true' で有料/無料枠のメール検証を実行（既定 'false' = MX篩いのみ）
+ *   USE_JS_WORKER   … 'true' でJS描画媒体をワーカーに委譲（既定 'false'）
+ */

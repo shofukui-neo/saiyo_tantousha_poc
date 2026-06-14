@@ -11,6 +11,12 @@ const { readJsonResponse } = require('../src/gas');
 const { extractPhones, normalizeJpPhone } = require('../src/phone');
 const { decodeDdgHref, isExcludedDomain, parseDdgHtml, scoreCandidates, pageMatchesCompany, companyCore } = require('../src/search');
 const { extractCompanyNames } = require('../src/discover');
+const { normalizeDomain, tierOf, callScript, discoveryIcpScore } = require('../src/score');
+const { normalizeIcp } = require('../src/icp');
+const { recordToRow, keyOfRecord } = require('../src/master-io');
+const { geminiToExt } = require('../src/recruiter');
+const { guessEmails } = require('../src/email');
+const { extractYear, matchIndustry, passesEstablishment } = require('../src/gbiz');
 
 function read(f) { return fs.readFileSync(path.join(__dirname, f), 'utf8'); }
 
@@ -194,6 +200,83 @@ function testSearch() {
   return fail;
 }
 
+// ---- 統合パイプライン（究極の営業リスト）純ロジック検証（ネットワーク不要） ----
+function testPipelineLogic() {
+  let fail = 0;
+  const ok = (label, cond) => { if (cond) console.log('✓ ' + label); else { console.log('✗ ' + label); fail++; } };
+
+  // ドメイン正規化
+  ok('normalizeDomain: protocol/www/パスを除去', normalizeDomain('https://www.Example.co.jp/about?x=1') === 'example.co.jp');
+  ok('normalizeDomain: 空は空', normalizeDomain('') === '');
+
+  // Tier 判定
+  ok('tierOf: 担当者0.9+メール0.9 → A', tierOf(0.9, 0.9, true) === 'A');
+  ok('tierOf: 担当者0.7（閾値超）→ B', tierOf(0.7, 0, false) === 'B');
+  ok('tierOf: 代表者ありのみ → C', tierOf(0, 0, true) === 'C');
+  ok('tierOf: 何も無し → D', tierOf(0, 0, false) === 'D');
+
+  // 架電呼称
+  ok('callScript: 新卒シグナルで敬称調整', callScript({ buyer_persona: { departments: ['人事部'] }, primary_value_prop: '新卒採用SaaS' }) === '人事部 新卒採用ご担当者様');
+
+  // ICPスコア（従業員スイートスポット）
+  ok('discoveryIcpScore: 150名+HP+代表者 → 満点100', discoveryIcpScore({ employees: 150, websiteUrl: 'x', representativeName: 'y' }) === 100);
+  ok('discoveryIcpScore: 従業員不明はニュートラル寄り', discoveryIcpScore({ employees: null, websiteUrl: '', representativeName: '' }) === 20);
+
+  // ICP 正規化（手動設定の補完）
+  const icp = normalizeIcp({ source: 'manual' }, { ICP_INDUSTRIES: ['IT'], ICP_PREFECTURES: ['東京都'], ICP_EMP_MIN: 50, ICP_EMP_MAX: 300, ICP_DEPARTMENT: '人事部' });
+  ok('normalizeIcp: 手動の業種/地域/従業員を反映', icp.target_industries[0] === 'IT' && icp.geography[0] === '東京都' && icp.company_size.employees_max === 300);
+  ok('normalizeIcp: 既定部署を補完', icp.buyer_persona.departments[0] === '人事部');
+
+  // マスタ行整形・upsertキー
+  const headers = ['企業名', '法人番号', 'Tier'];
+  const row = recordToRow({ '企業名': 'A社', 'Tier': 'B' }, headers);
+  ok('recordToRow: ヘッダ順に整形（欠損は空）', row.length === 3 && row[0] === 'A社' && row[1] === '' && row[2] === 'B');
+  ok('keyOfRecord: 法人番号優先', keyOfRecord({ '法人番号': '123', '企業名': 'A社' }) === 'c:123');
+  ok('keyOfRecord: 法人番号無しは企業名', keyOfRecord({ '企業名': 'A社' }) === 'n:A社');
+
+  // Gemini レスポンス → ext 変換（AI経路でも検証ゲートに乗る形）
+  const ext = geminiToExt({ found: true, name: '山田 太郎', title: '採用担当', department: '人事部', snippet: '採用担当の山田です', confidence: 0.8 });
+  const v = validateHit(ext);
+  ok('geminiToExt+validateHit: AI抽出も検証ゲートを通過', v.hit === true);
+
+  // メール候補生成
+  const emails = guessEmails('example.co.jp', { EMAIL_ROLES: ['info', 'recruit'] });
+  ok('guessEmails: 役割アドレスを生成', emails[0] === 'info@example.co.jp' && emails[1] === 'recruit@example.co.jp');
+
+  return fail;
+}
+
+// ---- gBizINFO 発掘フィルタ（GAS Layer1.5 移植分）純ロジック検証（ネットワーク不要） ----
+function testGbizLogic() {
+  let fail = 0;
+  const ok = (label, cond) => { if (cond) console.log('✓ ' + label); else { console.log('✗ ' + label); fail++; } };
+
+  // 西暦抽出
+  ok('extractYear: "1995-04-01" → 1995', extractYear('1995-04-01') === '1995');
+  ok('extractYear: 空は空', extractYear('') === '');
+
+  // 業種KWフィルタ（事業概要＋営業品目への部分一致）
+  const h = { businessSummary: '総合建設業を営む', businessItems: ['土木一式工事'] };
+  ok('matchIndustry: 事業概要に「建設」がヒット', matchIndustry(h, ['建設', '医療'], false).matchedKw === '建設');
+  ok('matchIndustry: 営業品目に「土木」がヒット', matchIndustry({ businessSummary: '', businessItems: ['土木一式工事'] }, ['土木'], false).matchedKw === '土木');
+  ok('matchIndustry: KW未指定なら常に通過', matchIndustry(h, [], false).keep === true);
+  ok('matchIndustry: 不一致は除外', matchIndustry(h, ['医療'], false).keep === false);
+  // 事業概要・営業品目が空のとき keepWhenNoData に従う
+  const empty = { businessSummary: '', businessItems: [] };
+  ok('matchIndustry: データ空＋keep=false で除外', matchIndustry(empty, ['建設'], false).keep === false);
+  ok('matchIndustry: データ空＋keep=true で残す', matchIndustry(empty, ['建設'], true).keep === true);
+
+  // 設立年フィルタ（現在年を注入して時間に依存しない検証）
+  ok('passesEstablishment: minYears=0 は常に通過', passesEstablishment('2024', 0, 2026) === true);
+  ok('passesEstablishment: 設立5年で min5 を満たす', passesEstablishment('2021', 5, 2026) === true);
+  ok('passesEstablishment: 設立3年は min5 で除外', passesEstablishment('2023', 5, 2026) === false);
+  ok('passesEstablishment: 設立年不明は通過（取りこぼし防止）', passesEstablishment('', 5, 2026) === true);
+
+  // スコア加点（補助金＝買いシグナル / 設立継続性）
+  ok('discoveryIcpScore: 補助金フラグで加点', discoveryIcpScore({ employees: 200, websiteUrl: '', representativeName: '', subsidy: true }) > discoveryIcpScore({ employees: 200, websiteUrl: '', representativeName: '' }));
+  return fail;
+}
+
 async function run() {
   const cases = [
     { name: 'サンプル株式会社', file: 'fixture.html', expect: 'HIT' },
@@ -233,6 +316,10 @@ async function run() {
   console.log('\n--- スプレッドシートI/O ヘルパー検証 ---');
   failures += testSheetHelpers();
   failures += await testGasJsonGuard();
+  console.log('\n--- 統合パイプライン（究極の営業リスト）ロジック検証 ---');
+  failures += testPipelineLogic();
+  console.log('\n--- gBizINFO 発掘フィルタ（業種KW/設立年/補助金）検証 ---');
+  failures += testGbizLogic();
 
   if (failures > 0) { console.error(`\nSELFTEST FAILED: ${failures} case(s)`); process.exit(1); }
   console.log('\nSELFTEST PASSED ✓  (抽出→検証→集計 ＋ スプレッドシートI/O ロジックが正常動作)');

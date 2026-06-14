@@ -75,6 +75,70 @@ module.exports = {
   ROLE_KEYWORDS: ['採用', '人事', '人材', '人財', '新卒', '中途', '採用担当', '採用責任者',
     'recruit', 'recruiting', 'recruiter', 'hr', 'human resources', 'talent', 'hiring', 'people'],
 
+  // ===================================================================================
+  // ===== 統合パイプライン「究極の営業リスト」用の追加設定 =====
+  // すべて環境変数で点火する。未設定なら自動でローカル・API不要の経路にフォールバックする。
+  // （現状キーが無くても discoverUrl＋正規表現＋MX篩い だけで一気通貫が動く）
+  // ===================================================================================
+
+  // --- LLM（Gemini 無料枠）。GEMINI_KEY があれば ICP生成・採用担当者抽出をAIで行う ---
+  GEMINI_KEY: process.env.GEMINI_KEY || '',
+  LLM_ENDPOINT: process.env.LLM_ENDPOINT || 'https://generativelanguage.googleapis.com/v1beta/models/',
+  LLM_MODEL: process.env.LLM_MODEL || 'gemini-flash-latest',
+
+  // --- 国税庁 法人番号 Web-API v4（商号→法人番号の名寄せ。アプリID申請に数週間）---
+  NTA_APP_ID: process.env.NTA_APP_ID || '',
+  NTA_BASE: process.env.NTA_BASE || 'https://api.houjin-bangou.nta.go.jp/4',
+
+  // --- gBizINFO REST API（業種×地域での構造化発掘・代表者名/HP取得。トークン申請が必要）---
+  GBIZ_TOKEN: process.env.GBIZ_TOKEN || '',
+  GBIZ_BASE: process.env.GBIZ_BASE || 'https://api.info.gbiz.go.jp/hojin/v1/hojin',
+  GBIZ_CORPORATE_TYPE: process.env.GBIZ_CORPORATE_TYPE || '301,305', // 株式会社・合同会社に限定
+  GBIZ_PAGES_PER_QUERY: int(process.env.GBIZ_PAGES_PER_QUERY, 5),
+  GBIZ_LIMIT: int(process.env.GBIZ_LIMIT, 100),
+  // 事業概要・営業品目への業種KW部分一致でさらに絞る（gBiz発掘の精度上げ）。空で無効＝API側 business_item のみ。
+  GBIZ_INDUSTRY_KEYWORDS: (process.env.GBIZ_INDUSTRY_KEYWORDS || '')
+    .split(',').map(s => s.trim()).filter(Boolean),
+  // 事業概要・営業品目が空の企業を残すか（true=取りこぼし防止 / false=精度優先）
+  GBIZ_KEEP_WHEN_NO_INDUSTRY_DATA: /^(1|true|yes)$/i.test(process.env.GBIZ_KEEP_WHEN_NO_INDUSTRY_DATA || ''),
+  // 設立からの最低経過年数（新卒採用の継続性シグナル）。0で無効。
+  GBIZ_MIN_YEARS: int(process.env.GBIZ_MIN_YEARS, 0),
+  // 補助金採択フラグ付与（source=4で突合）。trueでgBiz呼び出しが約2倍に。
+  GBIZ_ENRICH_SUBSIDY: /^(1|true|yes)$/i.test(process.env.GBIZ_ENRICH_SUBSIDY || ''),
+
+  // --- メール実在検証（任意・Hunter.io）---
+  HUNTER_KEY: process.env.HUNTER_KEY || '',
+  DO_EMAIL_VERIFY: /^(1|true|yes)$/i.test(process.env.DO_EMAIL_VERIFY || ''),
+  EMAIL_ROLES: (process.env.EMAIL_ROLES || 'info,recruit,saiyo,jinji,hr,contact,otoiawase,adm')
+    .split(',').map(s => s.trim()).filter(Boolean),
+
+  // --- ICP（理想顧客像）。GEMINI_KEY＋PRODUCT_DESC があれば自動生成し、無ければ手動設定を使う ---
+  PRODUCT_DESC: process.env.PRODUCT_DESC || '',
+  PRODUCT_EXISTING: process.env.PRODUCT_EXISTING || '',
+  ICP_INDUSTRIES: (process.env.ICP_INDUSTRIES || '').split(',').map(s => s.trim()).filter(Boolean),
+  ICP_PREFECTURES: (process.env.ICP_PREFECTURES || '').split(',').map(s => s.trim()).filter(Boolean),
+  ICP_EMP_MIN: int(process.env.ICP_EMP_MIN, 50),
+  ICP_EMP_MAX: int(process.env.ICP_EMP_MAX, 300),
+  ICP_EMP_SWEET_MIN: int(process.env.ICP_EMP_SWEET_MIN, 100),
+  ICP_EMP_SWEET_MAX: int(process.env.ICP_EMP_SWEET_MAX, 250),
+  ICP_DEPARTMENT: process.env.ICP_DEPARTMENT || '人事部', // 架電呼称の既定部署
+
+  // --- 発掘（企業選定）---
+  DISCOVER_TARGET: int(process.env.DISCOVER_TARGET, 100), // 発掘の目標社数
+  KEEP_UNKNOWN_EMP: !/^(0|false|no)$/i.test(process.env.KEEP_UNKNOWN_EMP || 'true'), // 従業員数不明を母集団に残すか
+
+  // --- 採用担当者レースで決め打ちで叩く採用/会社系パス（既存 guessContactPaths と併用）---
+  LOCATE_PATHS: ['/recruit', '/recruit/', '/saiyo', '/saiyo/', '/careers', '/career',
+    '/company', '/corporate', '/about', '/news', '/contact', '/contact/'],
+
+  // --- 出力（担当者マスタ）---
+  MASTER_TAB: process.env.MASTER_TAB || '担当者マスタ',
+  MASTER_HEADERS: ['企業名', '法人番号', '採用担当者名', '役職', '部署', '代表者名',
+    'メール', 'メール確度', '担当者確度', '電話番号', '公式URL', 'Tier',
+    '取得元媒体', '根拠URL', '架電呼称', '業種', '都道府県', '従業員数',
+    '補助金', '設立年', '取得日'],
+  SCORE_THRESHOLD: flt(process.env.SCORE_THRESHOLD, 0.6),
+
   // ===== 電話番号抽出（正規表現＋tel:リンク。API不要） =====
   // 電話番号らしさを高めるキーワード（近接で加点）
   PHONE_POSITIVE_HINTS: ['tel', 'TEL', 'ＴＥＬ', '電話', '℡', '代表', 'お問い合わせ', 'お問合せ', 'お問合わせ', '問い合わせ', 'phone', 'お電話'],

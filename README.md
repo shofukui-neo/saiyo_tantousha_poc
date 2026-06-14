@@ -4,6 +4,9 @@
 企業名リストを持っていれば②〜④だけを回せますし、企業名すら無ければ**キーワード（業種・地域）や一覧ページから企業名自体を自動収集**できます。
 入出力は **Google スプレッドシート / GAS / ローカルCSV**。スクレイピング本体はGASでは動かせないため Node＋Playwright で実行し、**リストの読み込みと結果の書き戻し**をスプレッドシートが担います。
 
+> **🆕 究極の営業リスト作成アプリ（一気通貫・統合版）→ 末尾の [統合アプリ](#統合アプリ究極の営業リスト作成アプリ一気通貫) を参照。**
+> 旧GASの6レイヤ（ICP生成→企業発掘→法人番号名寄せ→採用担当者→メール→Tier）をローカルへ移植し、本PoCの強み（Playwright描画・電話番号抽出・URL検証）と合体。`企業選定→各種データ収集→担当者マスタ出力` を **1コマンド**（`node src/app.js`）で実行します。**APIキーが無くても動き**、キー（gBizINFO/国税庁/Gemini/Hunter）を入れた項目だけ自動で高精度経路に点火します。
+
 ## 起点は3通り（どれでもOK）
 1. **企業名すら無い** → `--discover "<キーワード>"`（業種・地域など）または `--discover-url <一覧ページURL>` で企業名を自動収集 → そのまま②〜④へ。
 2. **企業名リストはある** → A列に企業名（URLは任意）。URLが空なら企業名から自動発見。
@@ -156,3 +159,93 @@ npm test
 2. 同名企業対策：所在地・業種などの補助シグナルで候補を絞り込み、取り違えを低減。
 3. 媒体ワーカーを追加（PR TIMES / Wantedly 等）し、**並列レース＋first-validated-hit cancel** 化。
 4. 全MISS時の**架電確認→スプレッドシート書き戻し→次サイクル昇格**ループを実装。
+
+---
+
+# 統合アプリ「究極の営業リスト作成アプリ」（一気通貫）
+
+旧GAS（採用リスト作成システム REV.3）の6レイヤをローカルへ移植し、本PoCの強み（Playwright描画・電話番号抽出・URL一致検証・robots遵守）と合体させた**一気通貫パイプライン**です。エントリは [`src/app.js`](src/app.js)。
+
+```
+[L1 ICP ]  商材→理想顧客像   : Gemini(あれば) / 手動設定(.env)        src/icp.js
+[L2 発掘]  企業選定          : gBizINFO(あれば) / Bing発掘(既存)        src/discovery.js
+[L2 名寄]  法人番号/代表者   : 国税庁 + gBizINFO(あれば・任意)          src/nta.js, src/gbiz.js
+[L3 担当]  採用担当者レース  : Gemini(あれば) / 正規表現(既存)          src/recruiter.js（+ fetch/extract/validate）
+[L3 電話]  電話番号          : 既存 src/phone.js（GASには無かった）
+[L4 mail]  メール            : MX篩い+パターン / Hunter(あれば・任意)    src/email.js
+[L5 出力]  Tier/架電呼称/出力 : 担当者マスタ(Sheet upsert + CSV)         src/score.js, src/master-io.js
+           司令塔            :                                          src/pipeline.js, src/app.js
+```
+
+## 思想：キー無しでも動き、キーがあれば点火する
+**現状APIキーがゼロでも**、`discoverUrl（Bing）＋正規表現抽出＋電話抽出＋MX篩い` だけで企業選定〜担当者マスタ出力まで通ります。`.env` に下記キーを入れた項目だけ、自動で高精度経路に切り替わります（コード変更不要）。
+
+| 環境変数 | 入れると点火する経路 | 無いときのフォールバック |
+|---|---|---|
+| `GBIZ_TOKEN` | gBizINFO で 業種×地域の**構造化発掘**＋従業員数選別・代表者名/HP取得 | Bing検索ベースの発掘（`discover.js`） |
+| `NTA_APP_ID` | 国税庁APIで**商号→法人番号**の名寄せ | 名寄せスキップ（法人番号空欄） |
+| `GEMINI_KEY` | **ICP自動生成**＋**採用担当者AI抽出** | 手動ICP（.env）＋正規表現抽出 |
+| `HUNTER_KEY`＋`DO_EMAIL_VERIFY=true` | メール実在検証 | MX篩い＋パターン推測（確度0.4） |
+| `SHEET_ID`＋サービスアカウント | 「担当者マスタ」タブへ upsert 出力 | ローカルCSV（`leads.csv`）のみ |
+
+## セットアップ
+```bash
+npm install
+npx playwright install chromium      # 動的ページ対応（任意・静的のみなら省略可）
+cp ".env copy" .env                  # 統合アプリ用の設定は .env.example の末尾セクション参照
+```
+発掘の起点になる ICP を `.env` に設定（キー無しの最低限）：
+```
+ICP_INDUSTRIES=システム開発,SaaS       # 発掘の業種（カンマ区切り）
+ICP_PREFECTURES=東京都,大阪府          # 地域（空なら全国）
+ICP_EMP_MIN=50
+ICP_EMP_MAX=300
+DISCOVER_TARGET=100                    # 目標社数
+```
+
+## 実行
+```bash
+# ① ICP(.env) から自動発掘して一気通貫（企業選定→全データ収集→担当者マスタ出力）
+node src/app.js
+
+# ② キーワード起点で発掘して一気通貫
+node src/app.js --discover "渋谷 システム開発 会社" --limit 30
+
+# ③ 企業一覧ページ起点
+node src/app.js --discover-url "https://example.org/members" --limit 50
+
+# ④ 既に企業名リストがある場合（company_name 列のCSV。homepage_url 列は任意）
+node src/app.js --input names.csv
+
+# ⑤ 発掘した企業名だけ確認（収集の確認用・データ収集はしない）
+node src/app.js --discover "大阪 製造業" --only-discover --out companies.csv
+
+# 主なオプション
+node src/app.js --limit 50 --concurrency 3 --out leads.csv
+```
+
+## 出力（担当者マスタ）
+各社1行で `leads.csv`（および設定があればスプレッドシートの「担当者マスタ」タブ）へ出力します。列：
+
+`企業名 / 法人番号 / 採用担当者名 / 役職 / 部署 / 代表者名 / メール / メール確度 / 担当者確度 / 電話番号 / 公式URL / Tier / 取得元媒体 / 根拠URL / 架電呼称 / 業種 / 都道府県 / 従業員数 / 取得日`
+
+- **Tier**：A（担当者＆メール高確度）/ B（どちらか高確度）/ C（代表者名フォールバック可）/ D（要架電確認）。
+- **架電呼称**：担当者名が取れなくても必ず生成（例「人事部 新卒採用ご担当者様」）。ICPの部署・新卒/中途シグナルから自動調整。
+- スプレッドシート出力は**法人番号→企業名の順でupsert**（重複行を作らない）。`SHEET_ID` 未設定ならCSVのみ。
+
+## 旧GASからの移行対応表
+| 旧GAS（採用リスト作成システム REV.3） | 本統合アプリのローカル実装 |
+|---|---|
+| L1 ICP生成（Gemini） | `src/icp.js`（Gemini or 手動ICP） |
+| L2 gBizINFO発掘・従業員数選別 | `src/discovery.js` + `src/gbiz.js`（トークンあれば。無ければ `discover.js`） |
+| L2 国税庁 法人番号名寄せ | `src/nta.js` |
+| L3 採用担当者レース（Gemini抽出＋検証） | `src/recruiter.js` + 既存 `fetch.js`/`extract.js`/`validate.js` |
+| （GASには無し） 電話番号 | 既存 `src/phone.js` |
+| L4 メール（MX＋パターン＋Hunter） | `src/email.js` |
+| L5 Tier/架電呼称/担当者マスタupsert | `src/score.js` + `src/master-io.js` |
+| L0 6分制限対応の再開トリガー | 不要（ローカルは時間制限なし。並列プールで処理） |
+
+> 旧GASの原本は `gas-prottype/` に残しています（参照用）。ローカル動作前提のため、GASのデプロイ・トリガー・ワーカー(Cloud Run)は不要です。
+
+## 自動化（任意）
+完全無人運用にするなら、Windowsタスクスケジューラで `node src/app.js` を定期実行（開始フォルダ＝この `poc` ディレクトリ）。スプレッドシート出力にしておけば、できたリストをそのまま共有できます。

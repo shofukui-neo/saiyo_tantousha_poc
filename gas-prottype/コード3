@@ -1,0 +1,151 @@
+/**
+ * Lib.gs — 共通ユーティリティ ＋ Gemini 呼び出し
+ * cache / log / robots.txt / DNS-over-HTTPS(MX) / HTTPリトライ / LLM
+ */
+
+function sheet_(name){
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  return ss.getSheetByName(name) || ss.insertSheet(name);
+}
+
+function log_(level, fn, msg){
+  try{
+    sheet_(CONFIG.SHEET_LOG).appendRow([new Date(), level, fn, String(msg).slice(0, 500)]);
+  }catch(e){}
+  if(level === 'ERROR') console.error(fn + ': ' + msg); else console.log(fn + ': ' + msg);
+}
+
+function cacheGet_(key){ try{ return CacheService.getScriptCache().get(key); }catch(e){ return null; } }
+function cachePut_(key, val){ try{ CacheService.getScriptCache().put(key, val, CONFIG.CACHE_TTL); }catch(e){} }
+
+/** 429/5xx は指数バックオフで最大 tries 回リトライ */
+function fetchWithRetry_(url, params, tries){
+  tries = tries || 3;
+  params = params || {};
+  params.muteHttpExceptions = true;
+  var wait = 1000;
+  for(var i = 0; i < tries; i++){
+    try{
+      var res = UrlFetchApp.fetch(url, params);
+      var code = res.getResponseCode();
+      if(code === 429 || code >= 500){ Utilities.sleep(wait); wait *= 2; continue; }
+      return res;
+    }catch(e){ Utilities.sleep(wait); wait *= 2; }
+  }
+  return null;
+}
+
+function normalizeDomain_(urlOrDomain){
+  if(!urlOrDomain) return '';
+  var s = String(urlOrDomain).trim()
+    .replace(/^https?:\/\//i, '')
+    .replace(/^www\./i, '');
+  s = s.split('/')[0].split('?')[0].split('#')[0];
+  return s.toLowerCase();
+}
+
+/** 簡易 robots.txt 判定（User-agent:* の Disallow 前方一致で false）。失敗時は許可。 */
+function robotsAllowed_(url){
+  try{
+    var m = String(url).match(/^https?:\/\/[^\/]+/i);
+    if(!m) return true;
+    var origin = m[0];
+    var path = url.slice(origin.length) || '/';
+    var ck = 'robots:' + origin;
+    var body = cacheGet_(ck);
+    if(body === null){
+      var res = fetchWithRetry_(origin + '/robots.txt', {}, 2);
+      body = (res && res.getResponseCode() < 400) ? res.getContentText() : '';
+      cachePut_(ck, body);
+    }
+    if(!body) return true;
+    var lines = body.split(/\r?\n/), applies = false, disallows = [];
+    for(var i = 0; i < lines.length; i++){
+      var ln = lines[i].replace(/#.*$/, '').trim();
+      var um = ln.match(/^User-agent:\s*(.+)$/i);
+      if(um){ applies = (um[1].trim() === '*'); continue; }
+      if(applies){
+        var dm = ln.match(/^Disallow:\s*(.*)$/i);
+        if(dm && dm[1].trim()) disallows.push(dm[1].trim());
+      }
+    }
+    for(var j = 0; j < disallows.length; j++){ if(path.indexOf(disallows[j]) === 0) return false; }
+    return true;
+  }catch(e){ return true; }
+}
+
+/** Google DNS-over-HTTPS で MX を取得（無料・認証不要）。メール実在の一次篩い。 */
+function mxRecords_(domain){
+  domain = normalizeDomain_(domain);
+  if(!domain) return [];
+  var ck = 'mx:' + domain, cached = cacheGet_(ck);
+  if(cached !== null){ try{ return JSON.parse(cached); }catch(e){ return []; } }
+  var out = [];
+  try{
+    var res = fetchWithRetry_('https://dns.google/resolve?name=' + encodeURIComponent(domain) + '&type=MX', {}, 2);
+    if(res && res.getResponseCode() < 400){
+      var j = JSON.parse(res.getContentText());
+      if(j.Answer) j.Answer.forEach(function(a){
+        if(a.data){ var parts = String(a.data).split(' '); out.push(parts[parts.length - 1].replace(/\.$/, '')); }
+      });
+    }
+  }catch(e){ log_('WARN', 'mxRecords_', e); }
+  cachePut_(ck, JSON.stringify(out));
+  return out;
+}
+
+/** HTML → プレーンテキスト（抽出用に上限 12,000 字） */
+function htmlToText_(html){
+  return String(html)
+    .replace(/<script[\s\S]*?<\/script>/gi, ' ')
+    .replace(/<style[\s\S]*?<\/style>/gi, ' ')
+    .replace(/<[^>]+>/g, ' ')
+    .replace(/&nbsp;/g, ' ')
+    .replace(/&amp;/g, '&')
+    .replace(/\s+/g, ' ')
+    .trim()
+    .slice(0, 12000);
+}
+
+/** JS描画のシェルページか（本文が薄く SPA マーカーがある）を簡易判定 */
+function isJsShell_(html){
+  var textLen = htmlToText_(html).length;
+  return textLen < 400 && /__NEXT_DATA__|id="root"|id="app"|window\.__NUXT__|data-reactroot/.test(html);
+}
+
+// ===================== Gemini（無料枠） =====================
+
+function geminiText_(prompt, opts){
+  opts = opts || {};
+  var key = cfg_('GEMINI_KEY');
+  if(!key){ log_('ERROR', 'geminiText_', 'GEMINI_KEY未設定'); return ''; }
+  var url = CONFIG.LLM_ENDPOINT + CONFIG.LLM_MODEL + ':generateContent?key=' + encodeURIComponent(key);
+  var payload = {
+    contents: [{ parts: [{ text: prompt }] }],
+    generationConfig: {
+      temperature: (opts.temperature == null ? 0.2 : opts.temperature),
+      maxOutputTokens: opts.maxTokens || 1024
+    }
+  };
+  if(opts.json) payload.generationConfig.responseMimeType = 'application/json';
+  Utilities.sleep(CONFIG.CONCURRENCY_SLEEP_MS); // 無料枠RPM保護
+  var res = fetchWithRetry_(url, { method: 'post', contentType: 'application/json', payload: JSON.stringify(payload) }, 3);
+  if(!res){ log_('ERROR', 'geminiText_', 'no response'); return ''; }
+  if(res.getResponseCode() >= 400){ log_('ERROR', 'geminiText_', 'HTTP ' + res.getResponseCode() + ' ' + res.getContentText().slice(0, 200)); return ''; }
+  try{
+    var j = JSON.parse(res.getContentText());
+    return (j.candidates && j.candidates[0] && j.candidates[0].content.parts[0].text) || '';
+  }catch(e){ log_('ERROR', 'geminiText_', 'parse: ' + e); return ''; }
+}
+
+function geminiJson_(prompt, opts){
+  var txt = geminiText_(prompt, Object.assign({ json: true }, opts || {}));
+  if(!txt) return null;
+  try{ return JSON.parse(txt); }
+  catch(e){
+    var m = txt.match(/\{[\s\S]*\}/);
+    if(m){ try{ return JSON.parse(m[0]); }catch(e2){} }
+    log_('WARN', 'geminiJson_', 'JSON parse失敗: ' + txt.slice(0, 160));
+    return null;
+  }
+}
