@@ -57,7 +57,7 @@ function csvEscape(v) {
   return /[",\n]/.test(sv) ? '"' + sv.replace(/"/g, '""') + '"' : sv;
 }
 
-const SCORE_COLS = ['品質スコア', '優先度', 'ICP適合', '採用インテント', 'データ品質', 'タイミング', 'インテント根拠', 'スコア根拠'];
+const SCORE_COLS = ['品質スコア', '優先度', '属性ランク', 'intent★', 'ICP適合', '採用インテント', 'データ品質', 'タイミング', 'インテント根拠', 'スコア根拠'];
 
 function bar(n, width = 20) {
   const f = Math.round((n / 100) * width);
@@ -97,6 +97,7 @@ async function main() {
     if (min != null && s.total < min) continue;
     const merged = Object.assign({}, rec, {
       '品質スコア': s.total, '優先度': s.priority,
+      '属性ランク': s.grade, 'intent★': s.stars,
       'ICP適合': s.dims.icp, '採用インテント': s.dims.intent,
       'データ品質': s.dims.data, 'タイミング': s.dims.timing,
       'インテント根拠': s.proxyIntent ? '代理推定(出稿データ無)' : '出稿データ',

@@ -1,0 +1,9 @@
+{
+  "_comment": "多系統ソースの宣言。system=系統(A採用メディア/B企業属性/C intent/D ネットワーク)、source=ソース名(KPI帰属の単位)、intent=既定★(0-5)、cost_per_company=1社あたり取得コスト(円)。",
+  "sources": [
+    { "file": "A-mynavi.csv",  "system": "A", "source": "マイナビ",   "intent": 3, "cost_per_company": 0 },
+    { "file": "B-gbiz.csv",    "system": "B", "source": "gBizINFO",  "intent": 1, "cost_per_company": 0 },
+    { "file": "C-prtimes.csv", "system": "C", "source": "PR TIMES",  "intent": 5, "cost_per_company": 0 },
+    { "file": "D-shitchu.csv", "system": "D", "source": "失注先",     "intent": 4, "cost_per_company": 0 }
+  ]
+}

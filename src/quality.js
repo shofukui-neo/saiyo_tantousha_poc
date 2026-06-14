@@ -108,28 +108,44 @@ function scoreIcp(rec, icp, c = cfg) {
 }
 
 // ===== ② 採用インテント =====
-// 求人出稿系の列（HRogリスト等で後付け可能）があればそれを最優先。無ければ採用ページ/担当者HITの代理シグナル。
-const INTENT_COLS = ['新卒出稿', '現在求人掲載中', '出稿媒体数', '予想出稿金額', '出稿継続性', '募集職種数', '採用予定人数'];
+// 設計の背骨：①「新卒採用フラグ」が立っていること が最重要シグナル（系統A）。
+// それに ②求人出稿データ（HRog等）と ③系統Cの"今動いている"トリガー（intent★）を重ねる。
+// いずれも無ければ採用ページ/担当者HITの代理シグナルで代替（インテント根拠=代理推定）。
+const INTENT_COLS = ['新卒フラグ', '新卒出稿', '現在求人掲載中', '掲載媒体数', '出稿媒体数', '予想出稿金額', '出稿継続性', '募集職種数', '採用予定人数', '採用予定人数'];
 function hasIntentData(rec) {
   return INTENT_COLS.some((k) => rec[k] != null && String(rec[k]).trim() !== '');
 }
+// intent★（0-5）を取得：merge.js が刻んだ intent★ 列を優先、無ければトリガー列の truthy 数。
+function getStars(rec, c = cfg) {
+  const explicit = parseEmployees(rec['intent★']);
+  const triggers = (c.INTENT_TRIGGER_COLS || []).filter((k) => truthy(rec[k]));
+  const stars = (explicit != null ? explicit : 0) || triggers.length;
+  return { stars: Math.max(0, Math.min(5, stars)), triggers };
+}
 function scoreIntent(rec, c = cfg) {
   const reasons = [];
+  const { stars, triggers } = getStars(rec, c);
+  // 系統Cトリガーで最大+30点を上乗せ（"今動いている"の割り込み）
+  const triggerBonus = Math.round(Math.min(1, stars / 5) * 30);
+  if (triggers.length) reasons.push('トリガー:' + triggers.join('/'));
+  else if (stars > 0) reasons.push(`intent★${stars}`);
+
   if (hasIntentData(rec)) {
-    // 出稿データに基づく本スコア（知見の配点: 新卒40/媒体25/継続20/費用15）
-    const shinsotsu = (truthy(rec['新卒出稿']) || truthy(rec['現在求人掲載中'])) ? 100 : 0;
-    const media = minmax(parseEmployees(rec['出稿媒体数']), 1, (c.INTENT_MEDIA_MAX || 5));
+    // 新卒フラグ/出稿データに基づく本スコア（配点: 新卒40/媒体25/継続20/費用15）
+    const shinsotsu = (truthy(rec['新卒フラグ']) || truthy(rec['新卒出稿']) || truthy(rec['現在求人掲載中'])) ? 100 : 0;
+    const mediaN = parseEmployees(rec['掲載媒体数']) != null ? parseEmployees(rec['掲載媒体数']) : parseEmployees(rec['出稿媒体数']);
+    const media = minmax(mediaN, 1, (c.INTENT_MEDIA_MAX || 5));
     const cont = truthy(rec['出稿継続性']) ? 100 : (rec['出稿継続性'] ? 50 : 0);
     const cost = logNorm(parseEmployees(rec['予想出稿金額']), (c.INTENT_COST_MAX || 10000000));
-    if (shinsotsu) reasons.push('新卒出稿中');
-    if (parseEmployees(rec['出稿媒体数'])) reasons.push(`媒体数${parseEmployees(rec['出稿媒体数'])}`);
-    const score = weightedAvg([
+    if (shinsotsu) reasons.push(truthy(rec['新卒フラグ']) ? '新卒フラグ確定' : '新卒出稿中');
+    if (mediaN) reasons.push(`媒体数${mediaN}`);
+    const base = weightedAvg([
       { score: shinsotsu, w: 0.40 },
       { score: media, w: 0.25 },
       { score: cont, w: 0.20 },
       { score: cost, w: 0.15 },
     ]);
-    return { score: Math.round(score), reasons, proxy: false };
+    return { score: Math.min(100, Math.round(base) + triggerBonus), reasons, proxy: false, stars };
   }
   // 代理シグナル（求人出稿データが無い場合）：採用ページ存在・担当者HIT
   let score = 20; // ベース
@@ -138,8 +154,10 @@ function scoreIntent(rec, c = cfg) {
   if (rec['採用担当者名']) { score += 40 + Math.round(20 * Math.min(1, hitConf)); reasons.push('採用担当者HIT'); }
   else if (recruitPage) { score += 25; reasons.push('採用ページ有'); }
   if (recruitPage && rec['採用担当者名']) { score += 5; }
-  score = Math.min(100, score);
-  return { score, reasons: reasons.length ? reasons : ['出稿データ無し(代理推定)'], proxy: true };
+  score = Math.min(100, score + triggerBonus);
+  // トリガー★があれば「代理推定」ではなく実シグナル扱い
+  const proxy = stars === 0;
+  return { score, reasons: reasons.length ? reasons : ['出稿データ無し(代理推定)'], proxy, stars };
 }
 
 // ===== ③ データ到達性・品質 =====
@@ -205,8 +223,22 @@ function monthSeason(month, c = cfg) {
 }
 function scoreTiming(rec, c = cfg, now) {
   const m = (now ? now : new Date()).getMonth() + 1;
-  const score = monthSeason(m, c);
-  return { score, reasons: [`${m}月=季節係数${score}`] };
+  let score = monthSeason(m, c);
+  const reasons = [`${m}月=季節係数${score}`];
+  // 二大ゴールデンタイム（設計#7）：辞退が出た直後 と 来期の採用設計期 はレコード単位で満点に引き上げ。
+  if (truthy(rec['辞退シグナル'])) { score = 100; reasons.push('辞退期=最刺さり'); }
+  else if (truthy(rec['来期検討'])) { score = Math.max(score, 90); reasons.push('来期設計期'); }
+  return { score, reasons };
+}
+
+// ===== 属性ランク（A/B/C）=====
+// 設計のスコアリング「A/B/Cランク(属性)× intent強度(★)」。属性=ICP適合スコアで階級分け。
+function gradeOf(dims, c = cfg) {
+  const a = c.GRADE_A_MIN != null ? c.GRADE_A_MIN : 75;
+  const b = c.GRADE_B_MIN != null ? c.GRADE_B_MIN : 50;
+  if (dims.icp >= a) return 'A';
+  if (dims.icp >= b) return 'B';
+  return 'C';
 }
 
 // ===== 総合 =====
@@ -249,16 +281,33 @@ function scoreRecord(rec, opt = {}) {
   const raw = icpR.score * w.icp + intentR.score * w.intent + dataR.score * w.data + timingR.score * w.timing;
   const total = Math.max(0, Math.min(100, Math.round(raw - neg.penalty)));
 
+  const dims = { icp: icpR.score, intent: intentR.score, data: dataR.score, timing: timingR.score };
+  const grade = gradeOf(dims, c);
+  const stars = intentR.stars || 0;
+
+  // 優先度：基本は総合スコア。ただし系統Cの強トリガー（★≥閾値）かつ属性がC級でなければ1段引き上げ。
+  let priority = priorityOf(total, c);
+  const overrideStars = c.INTENT_OVERRIDE_STARS != null ? c.INTENT_OVERRIDE_STARS : 3;
+  const mid = c.QUALITY_PRIORITY_MID != null ? c.QUALITY_PRIORITY_MID : 45;
+  let overridden = false;
+  if (stars >= overrideStars && grade !== 'C' && total >= mid && priority !== '今週架電') {
+    priority = '今週架電'; overridden = true;
+  }
+
   const reasons = []
     .concat(icpR.reasons.map((r) => 'ICP:' + r))
     .concat(intentR.reasons.map((r) => 'INT:' + r))
     .concat(dataR.reasons.map((r) => 'DAT:' + r))
+    .concat(timingR.reasons.filter((r) => /辞退|来期/.test(r)).map((r) => 'TIM:' + r))
     .concat(neg.reasons.map((r) => 'NEG:' + r));
+  if (overridden) reasons.push('OVR:intent★割り込み');
 
   return {
     total,
-    dims: { icp: icpR.score, intent: intentR.score, data: dataR.score, timing: timingR.score },
-    priority: priorityOf(total, c),
+    dims,
+    grade,
+    stars,
+    priority,
     proxyIntent: !!intentR.proxy,
     reasons,
   };
@@ -267,5 +316,5 @@ function scoreRecord(rec, opt = {}) {
 module.exports = {
   scoreRecord, scoreIcp, scoreIntent, scoreData, scoreTiming,
   priorityOf, monthSeason, parseEmployees, getWeights, DEFAULT_WEIGHTS,
-  hasIntentData, negativeAdjust,
+  hasIntentData, negativeAdjust, gradeOf, getStars,
 };

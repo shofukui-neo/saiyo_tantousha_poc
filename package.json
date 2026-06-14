@@ -10,6 +10,8 @@
     "app": "node src/app.js",
     "leads": "node src/app.js",
     "score": "node src/score-list.js",
+    "build-list": "node src/build-list.js --sources sources/manifest.json --out leads.master.csv",
+    "kpi": "node src/source-kpi.js --leads leads.master.csv --outcomes sources/outcomes.csv",
     "test": "node test/selftest.js"
   },
   "dependencies": {

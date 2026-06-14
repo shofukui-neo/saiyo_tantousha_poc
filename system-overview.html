@@ -1,0 +1,344 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>究極の営業リスト作成アプリ — システム概要 & データフロー</title>
+<style>
+  :root{
+    --bg:#0d1117; --panel:#161b22; --panel2:#1c2230; --line:#2d3748;
+    --txt:#e6edf3; --muted:#9aa6b2; --accent:#58a6ff; --accent2:#7ee787;
+    --warn:#f0b429; --pink:#ff7b9c; --purple:#bc8cff; --cyan:#56d4dd;
+    --l1:#4c9aff; --l2:#7ee787; --l3:#ffa657; --l4:#bc8cff; --l5:#ff7b9c;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:linear-gradient(160deg,#0d1117,#0b0e14 60%);color:var(--txt);
+    font-family:"Segoe UI","Hiragino Kaku Gothic ProN","Yu Gothic UI",Meiryo,sans-serif;
+    line-height:1.7;font-size:15px}
+  .wrap{max-width:1180px;margin:0 auto;padding:32px 22px 80px}
+  header.hero{border:1px solid var(--line);border-radius:18px;padding:30px 32px;
+    background:radial-gradient(120% 140% at 0% 0%,#1d2740 0%,#12151d 55%);margin-bottom:28px}
+  .hero h1{margin:0 0 6px;font-size:27px;letter-spacing:.3px}
+  .hero .sub{color:var(--muted);font-size:14.5px}
+  .badges{margin-top:16px;display:flex;flex-wrap:wrap;gap:8px}
+  .badge{font-size:12px;padding:4px 11px;border-radius:999px;border:1px solid var(--line);
+    background:#0e1320;color:var(--muted)}
+  .badge.on{color:#0d1117;background:var(--accent2);border-color:transparent;font-weight:600}
+  h2{font-size:20px;margin:42px 0 14px;padding-left:12px;border-left:4px solid var(--accent)}
+  h3{font-size:16px;margin:26px 0 10px;color:var(--cyan)}
+  p.note{color:var(--muted);font-size:13.6px;margin:6px 0 16px}
+  .grid{display:grid;gap:14px}
+  .cols-2{grid-template-columns:1fr 1fr}
+  .cols-3{grid-template-columns:repeat(3,1fr)}
+  @media(max-width:860px){.cols-2,.cols-3{grid-template-columns:1fr}}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:13px;padding:16px 18px}
+  .card h4{margin:0 0 8px;font-size:14.5px}
+  .card .file{font-family:"Cascadia Code",Consolas,monospace;font-size:12px;color:var(--accent)}
+  table{width:100%;border-collapse:collapse;margin:8px 0 6px;font-size:13.4px}
+  th,td{border:1px solid var(--line);padding:8px 10px;text-align:left;vertical-align:top}
+  th{background:#0f1622;color:var(--cyan);font-weight:600}
+  td code,p code,li code{background:#0e1320;padding:1px 6px;border-radius:5px;
+    font-family:"Cascadia Code",Consolas,monospace;font-size:12.4px;color:var(--accent2)}
+  .tag{display:inline-block;font-size:11px;padding:1px 8px;border-radius:6px;font-weight:600}
+  .t-key{background:#3a2e0a;color:var(--warn);border:1px solid #5a4a12}
+  .t-local{background:#0c2a16;color:var(--accent2);border:1px solid #1a4a2c}
+  /* ===== flow diagram ===== */
+  .flow{background:var(--panel2);border:1px solid var(--line);border-radius:14px;padding:22px;overflow-x:auto}
+  .layer{display:flex;align-items:stretch;gap:14px;margin:0 0 12px}
+  .lname{flex:0 0 130px;display:flex;flex-direction:column;justify-content:center;
+    border-radius:10px;padding:10px 12px;font-weight:700;font-size:13px;color:#0d1117}
+  .lname small{display:block;font-weight:500;font-size:11px;opacity:.8}
+  .lbody{flex:1;display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+  .node{background:#0e1422;border:1px solid var(--line);border-radius:10px;padding:9px 12px;
+    min-width:120px;position:relative}
+  .node .nt{font-size:13px;font-weight:600}
+  .node .nf{font-family:"Cascadia Code",Consolas,monospace;font-size:11px;color:var(--accent);display:block;margin-top:2px}
+  .node .nd{font-size:11.5px;color:var(--muted);margin-top:4px}
+  .arrow{color:var(--muted);font-size:20px;align-self:center}
+  .or{font-size:11px;color:var(--warn);align-self:center;font-weight:700}
+  .L1{background:var(--l1)} .L2{background:var(--l2)} .L3{background:var(--l3)}
+  .L4{background:var(--l4)} .L5{background:var(--l5)}
+  .bd-L1{border-left:3px solid var(--l1)} .bd-L2{border-left:3px solid var(--l2)}
+  .bd-L3{border-left:3px solid var(--l3)} .bd-L4{border-left:3px solid var(--l4)}
+  .bd-L5{border-left:3px solid var(--l5)}
+  .legend{display:flex;flex-wrap:wrap;gap:14px;margin:14px 0 0;font-size:12.5px;color:var(--muted)}
+  .legend span{display:inline-flex;align-items:center;gap:6px}
+  .dot{width:11px;height:11px;border-radius:3px;display:inline-block}
+  ul.clean{margin:6px 0;padding-left:20px}
+  ul.clean li{margin:4px 0}
+  .callout{border:1px solid #2a3a52;background:#0f1726;border-radius:11px;padding:13px 16px;margin:14px 0;font-size:13.6px}
+  .callout b{color:var(--accent)}
+  .step{counter-reset:none;display:flex;gap:12px;margin:9px 0;align-items:flex-start}
+  .step .n{flex:0 0 26px;height:26px;border-radius:50%;background:#1f2a3d;color:var(--accent);
+    display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px;border:1px solid var(--line)}
+  .step .c{flex:1}
+  .step .c b{color:var(--txt)}
+  .muted{color:var(--muted)}
+  footer{margin-top:50px;color:var(--muted);font-size:12px;text-align:center;border-top:1px solid var(--line);padding-top:18px}
+  .pill{font-family:"Cascadia Code",Consolas,monospace;font-size:11.5px;background:#0e1320;border:1px solid var(--line);padding:2px 8px;border-radius:6px;color:var(--cyan)}
+  .twocol{columns:2;column-gap:24px}
+  @media(max-width:860px){.twocol{columns:1}}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header class="hero">
+    <h1>究極の営業リスト作成アプリ — システム概要 &amp; データフロー</h1>
+    <div class="sub">企業選定（発掘）→ 名寄せ → 公式URL → 電話 / 採用担当者 → メール → Tier → 担当者マスタ出力 を <b>1コマンド</b>で実行する一気通貫パイプライン（Node.js / ローカル動作）</div>
+    <div class="badges">
+      <span class="badge">エントリ: <code style="color:#fff">node src/app.js</code></span>
+      <span class="badge">言語: Node.js (CommonJS)</span>
+      <span class="badge">依存: cheerio / playwright / googleapis / dotenv</span>
+      <span class="badge on">APIキー無しでも全工程が動作</span>
+      <span class="badge on">キー投入で高精度経路に自動点火</span>
+    </div>
+  </header>
+
+  <p class="note">本資料は <code>poc/src/</code> 配下の実装実体（全モジュール）を走査して作成した、現状のシステム概要図とデータフローのまとめです。設計思想は「<b>キー無しでも動き、キーがあれば点火する</b>」— 各レイヤは利用可能な API キーに応じてローカル経路 / 高精度経路を自動で切り替えます。</p>
+
+  <!-- ============ 全体データフロー ============ -->
+  <h2>1. 全体データフロー（メインパイプライン）</h2>
+  <p class="note">エントリ <span class="pill">src/app.js</span> → 司令塔 <span class="pill">src/pipeline.js</span> が 1 社ずつ全レイヤに通します。レイヤ L1–L5 は旧 GAS「採用リスト作成システム REV.3」の 6 レイヤをローカル移植したものです。</p>
+
+  <div class="flow">
+
+    <div class="layer">
+      <div class="lname L1">L1 ICP<small>理想顧客像</small></div>
+      <div class="lbody">
+        <div class="node"><span class="nt">ICP 生成</span><span class="nf">icp.js · getIcp()</span>
+          <div class="nd">商材説明 → 理想顧客プロファイル（業種/地域/従業員レンジ/部署）を正規化</div></div>
+        <span class="arrow">→</span>
+        <div class="node bd-L1"><span class="nt">Gemini 生成 <span class="tag t-key">GEMINI_KEY</span></span><span class="nf">gemini.js</span>
+          <div class="nd">PRODUCT_DESC から自動生成</div></div>
+        <span class="or">／</span>
+        <div class="node bd-L1"><span class="nt">手動 ICP <span class="tag t-local">既定</span></span><span class="nf">.env / config.js</span>
+          <div class="nd">ICP_INDUSTRIES / ICP_PREFECTURES / ICP_EMP_*</div></div>
+      </div>
+    </div>
+
+    <div class="layer">
+      <div class="lname L2">L2 発掘<small>企業選定</small></div>
+      <div class="lbody">
+        <div class="node"><span class="nt">統合発掘</span><span class="nf">discovery.js · discover()</span>
+          <div class="nd">業種×地域を展開し候補企業リストを生成・ICPスコア降順</div></div>
+        <span class="arrow">→</span>
+        <div class="node bd-L2"><span class="nt">gBizINFO 構造化発掘 <span class="tag t-key">GBIZ_TOKEN</span></span><span class="nf">gbiz.js</span>
+          <div class="nd">業種×地域検索＋従業員数選別／代表者・HP・設立年・補助金</div></div>
+        <span class="or">／</span>
+        <div class="node bd-L2"><span class="nt">Bing 発掘 <span class="tag t-local">既定</span></span><span class="nf">discover.js → search.js</span>
+          <div class="nd">検索結果＋一覧記事から法人格付き社名を抽出</div></div>
+      </div>
+    </div>
+
+    <div style="text-align:center;color:var(--muted);font-size:12px;margin:2px 0 12px">▼ 候補各社を <b>並列プール</b>（CONCURRENCY 既定3）で <code>processCompany()</code> に投入 ▼</div>
+
+    <div class="layer">
+      <div class="lname L2" style="background:#5bbf6e">L2 名寄せ<small>法人番号/代表者</small></div>
+      <div class="lbody">
+        <div class="node bd-L2"><span class="nt">商号→法人番号 <span class="tag t-key">NTA_APP_ID</span></span><span class="nf">nta.js</span>
+          <div class="nd">国税庁 法人番号 Web-API v4（XML）。所在地も取得</div></div>
+        <span class="arrow">→</span>
+        <div class="node bd-L2"><span class="nt">法人番号→詳細 <span class="tag t-key">GBIZ_TOKEN</span></span><span class="nf">gbiz.js · gbizGet()</span>
+          <div class="nd">代表者名 / 公式HP / 所在地（同名取り違え防止ヒント）</div></div>
+      </div>
+    </div>
+
+    <div class="layer">
+      <div class="lname L3">L3 取得<small>URL/巡回/抽出</small></div>
+      <div class="lbody">
+        <div class="node bd-L3"><span class="nt">公式URL確定</span><span class="nf">search.js · discoverUrl()</span>
+          <div class="nd">入力URL優先。無ければBing検索→スコアリング→ページ取得で社名＋所在地一致を検証</div></div>
+        <span class="arrow">→</span>
+        <div class="node bd-L3"><span class="nt">サイト巡回</span><span class="nf">fetch.js / robots.js / structured.js</span>
+          <div class="nd">robots遵守。静的取得→必要時Playwright描画。会社概要/問合せ/採用ページ＋sitemap＋定番パスを巡回</div></div>
+        <span class="arrow">→</span>
+        <div class="node bd-L3"><span class="nt">電話番号抽出</span><span class="nf">phone.js + structured.js</span>
+          <div class="nd">JSON-LD telephone 最優先→tel:リンク→正規表現。代表加点/FAX減点/市外局番整形</div></div>
+        <span class="arrow">→</span>
+        <div class="node bd-L3"><span class="nt">採用担当者抽出</span><span class="nf">recruiter.js</span>
+          <div class="nd">Gemini(AI) <span class="tag t-key">KEY</span> ／ 正規表現 <span class="tag t-local">既定</span> ＋ validate.js 検証ゲート</div></div>
+      </div>
+    </div>
+
+    <div class="layer">
+      <div class="lname L4">L4 メール<small>到達手段</small></div>
+      <div class="lbody">
+        <div class="node bd-L4"><span class="nt">メール推定</span><span class="nf">email.js · enrichEmail()</span>
+          <div class="nd">ドメインの MX を篩い → 役割アドレス（info@ / recruit@…）をパターン生成（確度0.4）</div></div>
+        <span class="arrow">→</span>
+        <div class="node bd-L4"><span class="nt">実在検証 <span class="tag t-key">HUNTER_KEY</span></span><span class="nf">Hunter.io</span>
+          <div class="nd">DO_EMAIL_VERIFY=true で確度更新</div></div>
+      </div>
+    </div>
+
+    <div class="layer">
+      <div class="lname L5">L5 出力<small>Tier/マスタ</small></div>
+      <div class="lbody">
+        <div class="node bd-L5"><span class="nt">Tier / 架電呼称</span><span class="nf">score.js</span>
+          <div class="nd">tierOf（A〜D）・callScript（呼称は氏名無しでも必ず生成）</div></div>
+        <span class="arrow">→</span>
+        <div class="node bd-L5"><span class="nt">担当者マスタ出力</span><span class="nf">master-io.js</span>
+          <div class="nd">CSV（leads.csv）は必ず出力＋設定があればSheetへ法人番号/企業名で upsert</div></div>
+        <span class="arrow">→</span>
+        <div class="node bd-L5"><span class="nt">集計サマリ</span><span class="nf">metrics.js</span>
+          <div class="nd">URL発見率 / 電話取得率 / 担当者HIT率 / Tier内訳</div></div>
+      </div>
+    </div>
+
+    <div class="legend">
+      <span><span class="dot L1"></span>L1 ICP</span>
+      <span><span class="dot L2"></span>L2 発掘・名寄せ</span>
+      <span><span class="dot L3"></span>L3 URL/巡回/抽出</span>
+      <span><span class="dot L4"></span>L4 メール</span>
+      <span><span class="dot L5"></span>L5 Tier/出力</span>
+      <span><span class="tag t-key">KEY</span> APIキーで点火する高精度経路</span>
+      <span><span class="tag t-local">既定</span> キー不要のローカル経路</span>
+    </div>
+  </div>
+
+  <div class="callout">
+    <b>キー無しの最短経路：</b> <code>手動ICP(.env)</code> → <code>Bing発掘(discover.js)</code> → <code>discoverUrl（検索＋検証）</code> → <code>正規表現で電話・担当者</code> → <code>MX篩いでメール</code> → <code>Tier・CSV出力</code>。1 つも API キーが無くても企業選定〜担当者マスタまで通ります。
+  </div>
+
+  <!-- ============ processCompany 詳細 ============ -->
+  <h2>2. 1 社の処理フロー（<code>pipeline.processCompany()</code> の内部）</h2>
+  <p class="note">候補 1 社が司令塔に入ってから「担当者マスタ 1 レコード」と「集計用 result」が出るまでの順序。</p>
+
+  <div class="card">
+    <div class="step"><div class="n">1</div><div class="c"><b>法人番号の名寄せ</b>（任意）— <code>nta.js</code>。<span class="muted">NTA_APP_ID があり、かつ法人番号が未設定なら商号で名寄せ。所在地も補完。</span></div></div>
+    <div class="step"><div class="n">2</div><div class="c"><b>gBizINFO で属性補完</b>（任意）— <code>gbiz.js gbizGet</code>。<span class="muted">代表者名・公式HP・所在地（＝同名取り違え防止の addressHint）を取得。</span></div></div>
+    <div class="step"><div class="n">3</div><div class="c"><b>公式URLの確定</b> — 入力/補完が無ければ <code>search.js discoverUrl</code>。<span class="muted">検索→候補スコアリング→上位を実取得して社名＋所在地一致を検証。未発見なら <code>NO_URL</code> で終了。</span></div></div>
+    <div class="step"><div class="n">4</div><div class="c"><b>robots 判定</b> — <code>robots.js</code>。<span class="muted">トップが Disallow なら <code>SKIP_ROBOTS</code> で終了。</span></div></div>
+    <div class="step"><div class="n">5</div><div class="c"><b>巡回ページの決定</b> — トップHTMLから <code>discoverPages</code>（ナビ）＋ <code>sitemap</code>（structured）＋ <code>guessContactPaths</code> ＋ <code>LOCATE_PATHS</code> を結合し重複除去、<code>MAX_PAGES_PER_SITE</code>（既定8）まで。</div></div>
+    <div class="step"><div class="n">6</div><div class="c"><b>各ページをループ取得・抽出</b> — <code>fetch.js</code>（静的→Playwright）。各ページで ①JSON-LD telephone → ②正規表現で電話（<code>phone.js</code>、会社概要系ページは加点）、③採用担当者（<code>recruiter.js</code>）。<span class="muted">担当者HIT かつ 電話確定で break。</span></div></div>
+    <div class="step"><div class="n">7</div><div class="c"><b>メール推定</b> — <code>email.js enrichEmail</code>（MX篩い＋パターン、任意でHunter検証）。</div></div>
+    <div class="step"><div class="n">8</div><div class="c"><b>finalize</b> — <code>score.js</code> で Tier 判定・架電呼称生成・所要時間確定 → レコードを返す。</div></div>
+  </div>
+
+  <div class="callout" style="border-color:#3a3252;background:#161226">
+    <b>採用担当者の検証ゲート（<code>validate.js</code>）：</b> 抽出結果は ①人名らしさ（会社名/部署/役割語でない）②採用/人事ロール語の近接 ③確度 ≥ <code>CONFIDENCE_THRESHOLD</code>（既定0.6）の全通過時のみ <code>HIT</code>。AI 経路・正規表現経路のどちらを使っても同じゲートを通します。
+  </div>
+
+  <!-- ============ 発掘層の詳細 ============ -->
+  <h2>3. 発掘層の 2 経路（企業名そのものの収集）</h2>
+  <div class="grid cols-2">
+    <div class="card bd-L2">
+      <h4>gBizINFO 構造化発掘 <span class="tag t-key">GBIZ_TOKEN</span></h4>
+      <span class="file">discovery.js · discoverViaGbiz / gbiz.js</span>
+      <ul class="clean">
+        <li>都道府県 × 業種(business_item) でページネーション検索（株式会社/合同会社に限定）</li>
+        <li>業種KW部分一致（事業概要＋営業品目）・設立年・従業員数レンジで選別</li>
+        <li>補助金採択フラグ（source=4 突合）を任意付与</li>
+        <li><code>discoveryIcpScore</code>（0–100）で降順ソート</li>
+      </ul>
+    </div>
+    <div class="card bd-L2">
+      <h4>Bing 発掘（API不要） <span class="tag t-local">既定</span></h4>
+      <span class="file">discover.js · discoverCompanies / search.js</span>
+      <ul class="clean">
+        <li>キーワード（業種・地域）でBing検索 → タイトル/スニペット＋上位ページ本文を抽出</li>
+        <li>または企業一覧ページURL（会員名簿等）の構造要素から抽出</li>
+        <li>法人格（株式会社…）の前後関係＋助詞除去で社名コアを一意化（過剰一致抑制）</li>
+        <li>社名コアで重複除去。確信が持てない断片は不採用（精度優先）</li>
+      </ul>
+    </div>
+  </div>
+  <p class="note">※ <code>app.js --discover "&lt;KW&gt;"</code> / <code>--discover-url &lt;URL&gt;</code> で明示クエリを渡した場合は、トークンの有無に関わらず Bing 経路が優先されます。</p>
+
+  <!-- ============ モジュールマップ ============ -->
+  <h2>4. モジュール責務一覧（<code>poc/src/</code>）</h2>
+  <table>
+    <tr><th>レイヤ</th><th>ファイル</th><th>責務</th><th>経路</th></tr>
+    <tr><td>—</td><td><code>app.js</code></td><td>メインCLI・司令塔起動・並列プール・サマリ表示</td><td><span class="tag t-local">中核</span></td></tr>
+    <tr><td>—</td><td><code>pipeline.js</code></td><td>1社を全レイヤに通し record/result を生成（<code>processCompany</code>）</td><td><span class="tag t-local">中核</span></td></tr>
+    <tr><td>—</td><td><code>config.js</code></td><td>.env を集約。閾値・除外ドメイン・ヒント語・ヘッダ定義</td><td><span class="tag t-local">設定</span></td></tr>
+    <tr><td>L1</td><td><code>icp.js</code> / <code>gemini.js</code></td><td>ICP取得（Gemini生成 or 手動）／Gemini薄クライアント</td><td><span class="tag t-key">KEY</span><span class="tag t-local">既定</span></td></tr>
+    <tr><td>L2</td><td><code>discovery.js</code></td><td>発掘の統合層（gBiz or Bing を選択）</td><td><span class="tag t-local">分岐</span></td></tr>
+    <tr><td>L2</td><td><code>discover.js</code></td><td>Bing検索/一覧ページからの社名抽出（純ロジック）</td><td><span class="tag t-local">既定</span></td></tr>
+    <tr><td>L2</td><td><code>gbiz.js</code></td><td>gBizINFO REST（検索/詳細/補助金/業種・設立フィルタ）</td><td><span class="tag t-key">KEY</span></td></tr>
+    <tr><td>L2</td><td><code>nta.js</code></td><td>国税庁 法人番号 Web-API v4（商号→法人番号・所在地）</td><td><span class="tag t-key">KEY</span></td></tr>
+    <tr><td>L3</td><td><code>search.js</code></td><td>企業名→公式URL発見（検索・スコアリング・社名/住所検証）</td><td><span class="tag t-local">既定</span></td></tr>
+    <tr><td>L3</td><td><code>fetch.js</code></td><td>HTTP取得・Playwright描画エスカレーション・ページ発見・定番パス推測・本文抽出</td><td><span class="tag t-local">中核</span></td></tr>
+    <tr><td>L3</td><td><code>robots.js</code></td><td>robots.txt 取得・解析・許可判定（origin キャッシュ）</td><td><span class="tag t-local">既定</span></td></tr>
+    <tr><td>L3</td><td><code>structured.js</code></td><td>JSON-LD(schema.org)組織情報抽出・sitemap.xml ページ発見</td><td><span class="tag t-local">既定</span></td></tr>
+    <tr><td>L3</td><td><code>phone.js</code> / <code>areacode.js</code></td><td>電話番号抽出・正規化／市外局番→都道府県テーブル</td><td><span class="tag t-local">既定</span></td></tr>
+    <tr><td>L3</td><td><code>recruiter.js</code> / <code>extract.js</code> / <code>validate.js</code></td><td>採用担当者抽出（Gemini/Ollama/正規表現）→人名判定→検証ゲート</td><td><span class="tag t-key">KEY</span><span class="tag t-local">既定</span></td></tr>
+    <tr><td>L4</td><td><code>email.js</code></td><td>MX篩い＋役割アドレス生成＋Hunter検証（任意）</td><td><span class="tag t-key">KEY</span><span class="tag t-local">既定</span></td></tr>
+    <tr><td>L5</td><td><code>score.js</code></td><td>ドメイン正規化・ICPスコア・Tier判定・架電呼称生成</td><td><span class="tag t-local">既定</span></td></tr>
+    <tr><td>L5</td><td><code>master-io.js</code></td><td>担当者マスタCSV出力＋Sheets upsert（法人番号/企業名キー）</td><td><span class="tag t-key">KEY</span><span class="tag t-local">既定</span></td></tr>
+    <tr><td>L5</td><td><code>metrics.js</code></td><td>取得率・平均確度・処理時間の集計とコンソール表示</td><td><span class="tag t-local">既定</span></td></tr>
+  </table>
+
+  <!-- ============ 補助エントリ ============ -->
+  <h2>5. 補助エントリポイント &amp; 周辺コンポーネント</h2>
+  <div class="grid cols-2">
+    <div class="card">
+      <h4>品質スコアリングCLI</h4>
+      <span class="file">src/score-list.js → src/quality.js</span>
+      <p class="muted" style="font-size:13px;margin:8px 0 0">担当者マスタ <code>leads.csv</code> を読み、テレアポ向け 4 ディメンション加重モデル（① ICP適合 30% / ② 採用インテント 35% / ③ データ品質 20% / ④ タイミング 15%）で採点し <code>leads.scored.csv</code> を出力。優先度を「今週架電 / ナーチャリング / 後回し」に振り分け。</p>
+    </div>
+    <div class="card">
+      <h4>1000件バッチドライバ</h4>
+      <span class="file">src/run1000.js / src/build-gbiz.js</span>
+      <p class="muted" style="font-size:13px;margin:8px 0 0"><code>run1000</code>：業種×地域の多様なクエリでBing発掘→フル取得。<code>build-gbiz</code>：gBizINFO のみで代表者名つき1000件を高速ビルド。いずれも数件ごとにCSV＋再開ジャーナル（<code>data/*.json</code>）をフラッシュしクラッシュ/レート制限に耐える。</p>
+    </div>
+    <div class="card">
+      <h4>標準PoCのI/Oアダプタ（旧経路）</h4>
+      <span class="file">src/sheets.js / src/gas.js / src/io-common.js</span>
+      <p class="muted" style="font-size:13px;margin:8px 0 0">企業名リストのシートを読み、結果を <b>C〜R 列</b>に書き戻す方式。方式①Sheets API（サービスアカウント）／方式②GASウェブアプリ橋渡し（<code>gas-bridge/Code.gs</code>）。統合アプリ（app.js）は <code>master-io.js</code> 側を使用。</p>
+    </div>
+    <div class="card">
+      <h4>セルフテスト</h4>
+      <span class="file">test/selftest.js（npm test）</span>
+      <p class="muted" style="font-size:13px;margin:8px 0 0">ネットワーク・APIキー不要。抽出→検証→集計と、I/Oの純ロジック（行マッピング・ONLY_PENDING抽出・結果整形）を検証。<code>test/fixture*.html</code> を使用。</p>
+    </div>
+  </div>
+
+  <!-- ============ 外部依存とフォールバック ============ -->
+  <h2>6. 外部依存とフォールバック（点火マトリクス）</h2>
+  <table>
+    <tr><th>環境変数 / 接続</th><th>外部サービス</th><th>点火する高精度経路</th><th>無いときのフォールバック</th></tr>
+    <tr><td><code>GBIZ_TOKEN</code></td><td>gBizINFO REST API</td><td>業種×地域の構造化発掘＋従業員数選別・代表者/HP取得</td><td>Bing検索ベースの発掘（<code>discover.js</code>）</td></tr>
+    <tr><td><code>NTA_APP_ID</code></td><td>国税庁 法人番号API v4</td><td>商号→法人番号の名寄せ・所在地取得</td><td>名寄せスキップ（法人番号空欄）</td></tr>
+    <tr><td><code>GEMINI_KEY</code></td><td>Google Gemini（無料枠）</td><td>ICP自動生成＋採用担当者AI抽出</td><td>手動ICP(.env)＋正規表現抽出</td></tr>
+    <tr><td><code>OLLAMA_URL</code></td><td>ローカルLLM（課金なし）</td><td>担当者抽出をローカルLLMで（<code>extract.js</code>）</td><td>正規表現＋人名判定</td></tr>
+    <tr><td><code>HUNTER_KEY</code>＋<code>DO_EMAIL_VERIFY</code></td><td>Hunter.io</td><td>メール実在検証で確度更新</td><td>MX篩い＋パターン推測（確度0.4）</td></tr>
+    <tr><td><code>SHEET_ID</code>＋SA鍵</td><td>Google Sheets API</td><td>「担当者マスタ」タブへ upsert 出力</td><td>ローカルCSV（<code>leads.csv</code>）のみ</td></tr>
+    <tr><td><span class="tag t-local">常時</span></td><td>Bing / DuckDuckGo HTML</td><td colspan="2">URL発見・発掘の検索基盤（キー不要・無料）。<code>SEARCH_ENGINE</code> で切替</td></tr>
+    <tr><td><span class="tag t-local">常時</span></td><td>Playwright (Chromium)</td><td colspan="2">JS描画ページのみ静的取得からエスカレーション。未導入なら静的のまま続行</td></tr>
+  </table>
+
+  <!-- ============ データモデル ============ -->
+  <h2>7. 出力データモデル（担当者マスタ 21 列）</h2>
+  <p class="note"><code>master-io.js</code> の <code>MASTER_HEADERS</code>。各社 1 行。Sheets 出力時は <b>法人番号 → 企業名</b> の順で upsert（重複行を作らない）。</p>
+  <div class="twocol" style="font-size:13.3px">
+    <code>企業名</code> · <code>法人番号</code> · <code>採用担当者名</code> · <code>役職</code> · <code>部署</code> · <code>代表者名</code> · <code>メール</code> · <code>メール確度</code> · <code>担当者確度</code> · <code>電話番号</code> · <code>公式URL</code> · <code>Tier</code> · <code>取得元媒体</code> · <code>根拠URL</code> · <code>架電呼称</code> · <code>業種</code> · <code>都道府県</code> · <code>従業員数</code> · <code>補助金</code> · <code>設立年</code> · <code>取得日</code>
+  </div>
+  <h3>Tier 判定ロジック（<code>score.js tierOf</code>）</h3>
+  <table>
+    <tr><th>Tier</th><th>条件</th><th>意味</th></tr>
+    <tr><td><b>A</b></td><td>担当者確度 ≥ 0.8 かつ メール確度 ≥ 0.8</td><td>担当者＆メールとも高確度</td></tr>
+    <tr><td><b>B</b></td><td>担当者確度 ≥ 閾値(0.6) または メール確度 ≥ 0.8</td><td>どちらかが高確度</td></tr>
+    <tr><td><b>C</b></td><td>代表者名あり</td><td>代表者名フォールバック可</td></tr>
+    <tr><td><b>D</b></td><td>上記いずれも該当せず</td><td>要架電確認</td></tr>
+  </table>
+
+  <!-- ============ 設計原則 ============ -->
+  <h2>8. 設計原則（横断的に効いている方針）</h2>
+  <div class="grid cols-3">
+    <div class="card"><h4>① キー無しでも動く</h4><p class="muted" style="font-size:12.8px;margin:6px 0 0">全レイヤがローカル経路を持ち、<code>*Available()</code> 判定で自動分岐。コード変更なしでキー投入が効く。</p></div>
+    <div class="card"><h4>② 礼儀正しいクロール</h4><p class="muted" style="font-size:12.8px;margin:6px 0 0"><code>robots.js</code> 遵守・<code>POLITE_DELAY_MS</code>・説明的UA・媒体内は1社ずつ。対象は公開ページのみ。</p></div>
+    <div class="card"><h4>③ 精度優先（ゴミを流さない）</h4><p class="muted" style="font-size:12.8px;margin:6px 0 0">検証ゲート・社名/住所一致・確信できない断片の不採用で、後段に誤データを渡さない。</p></div>
+    <div class="card"><h4>④ 構造化データ最優先</h4><p class="muted" style="font-size:12.8px;margin:6px 0 0">JSON-LD telephone &gt; tel:リンク &gt; 正規表現の順。sitemap でページ発見を補強。</p></div>
+    <div class="card"><h4>⑤ 同名取り違え対策</h4><p class="muted" style="font-size:12.8px;margin:6px 0 0">gBiz/NTA の所在地を addressHint にして URL 検証で都道府県＋市区一致を要求。</p></div>
+    <div class="card"><h4>⑥ 結果を失わない</h4><p class="muted" style="font-size:12.8px;margin:6px 0 0">CSV は常に出力。バッチは再開ジャーナル。Sheet 書き戻し失敗時も CSV は残る。</p></div>
+  </div>
+
+  <footer>
+    調査対象: <code>poc/src/</code>（25 モジュール）＋ <code>test/</code>・<code>gas-bridge/</code> ／ 生成日: 2026-06-14 ／ メインエントリ: <code>node src/app.js</code>
+  </footer>
+
+</div>
+</body>
+</html>

@@ -89,6 +89,10 @@ async function gbizSearch(params = {}, c = cfg) {
   if (params.city) q.push('city=' + encodeURIComponent(params.city));
   if (params.businessItem) q.push('business_item=' + encodeURIComponent(params.businessItem));
   if (params.corporateType) q.push('corporate_type=' + encodeURIComponent(params.corporateType));
+  // 従業員数レンジ（データ充実企業の絞り込みに有効。代表者名/HP保有率が大幅に上がる）
+  if (params.employeeFrom != null && params.employeeFrom !== '') q.push('employee_number_from=' + encodeURIComponent(params.employeeFrom));
+  if (params.employeeTo != null && params.employeeTo !== '') q.push('employee_number_to=' + encodeURIComponent(params.employeeTo));
+  if (params.foundedYearFrom != null && params.foundedYearFrom !== '') q.push('founded_year=' + encodeURIComponent(params.foundedYearFrom));
   if (params.source) q.push('source=' + encodeURIComponent(params.source)); // 4=補助金採択等の情報源で絞り込み
   q.push('page=' + encodeURIComponent(params.page || 1));
   q.push('limit=' + encodeURIComponent(params.limit || c.GBIZ_LIMIT));

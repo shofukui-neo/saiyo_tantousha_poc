@@ -373,6 +373,99 @@ function testQualityLogic() {
   return fail;
 }
 
+function testCsvKeys() {
+  let fail = 0;
+  const ok = (label, cond) => { if (cond) console.log('✓ ' + label); else { console.log('✗ ' + label); fail++; } };
+  const { normCorpNumber, normCompanyName, mergeKey, truthy } = require('../src/csv');
+  ok('normCorpNumber: 13桁抽出', normCorpNumber('法人番号 1010001000001 ') === '1010001000001');
+  ok('normCorpNumber: 桁不足はnull扱い', normCorpNumber('12345') === '');
+  ok('normCompanyName: 法人格除去で一致', normCompanyName('株式会社イータ') === normCompanyName('イータ㈱'));
+  ok('normCompanyName: （株）表記も除去', normCompanyName('（株）アルファ') === normCompanyName('アルファ株式会社'));
+  ok('mergeKey: 法人番号を優先', mergeKey({ '法人番号': '1010001000001', '企業名': 'X' }) === 'C:1010001000001');
+  ok('mergeKey: 番号無しは正規化社名', mergeKey({ '企業名': '株式会社イータ' }) === 'N:イータ');
+  ok('truthy: ○/掲載中/1 を真と判定', truthy('○') && truthy('掲載中') && truthy('1') && !truthy(''));
+  return fail;
+}
+
+function testMergeLogic() {
+  let fail = 0;
+  const ok = (label, cond) => { if (cond) console.log('✓ ' + label); else { console.log('✗ ' + label); fail++; } };
+  const { mergeSources } = require('../src/merge');
+  const c = require('../src/config');
+  const sources = [
+    { system: 'A', source: 'マイナビ', intent: 3, records: [{ '企業名': '株式会社アルファ', '法人番号': '1010001000001', '新卒フラグ': '○', '掲載媒体数': '2' }] },
+    { system: 'B', source: 'gBizINFO', intent: 1, records: [{ '企業名': 'アルファ株式会社', '法人番号': '1010001000001', '従業員数': '180', '都道府県': '東京都', '代表者名': '山田太郎' }] },
+    { system: 'C', source: 'PR TIMES', intent: 5, records: [{ '企業名': '株式会社アルファ', '法人番号': '1010001000001', 'プレスリリース': '増員', '採用ページ更新': '○' }] },
+    { system: 'B', source: 'gBizINFO', intent: 1, records: [{ '企業名': '株式会社ベータ', '法人番号': '2020002000002', '従業員数': '120' }] },
+  ];
+  const { master, stats } = mergeSources(sources, c);
+  const alpha = master.find((m) => m['法人番号'] === '1010001000001');
+  ok('mergeSources: 法人番号で3ソースが1社に統合', master.length === 2 && alpha && alpha['ソース数'] === 3);
+  ok('mergeSources: 役割固定で属性=B由来(従業員数/代表者名)', alpha['従業員数'] === '180' && alpha['代表者名'] === '山田太郎');
+  ok('mergeSources: 新卒フラグ=A由来で立つ', alpha['新卒フラグ'] === '○');
+  ok('mergeSources: intent★=系統C(5)＋トリガーで最大化', alpha['intent★'] === 5);
+  ok('mergeSources: 取得元媒体に全ソースを連結', /マイナビ/.test(alpha['取得元媒体']) && /gBizINFO/.test(alpha['取得元媒体']) && /PR TIMES/.test(alpha['取得元媒体']));
+  ok('mergeSources: 起点=系統A(新卒メディア)', alpha['起点系統'] === 'A');
+  ok('mergeSources: 統計 unique=2 / 重複排除=2', stats.unique === 2 && stats.dedupRemoved === 2);
+  return fail;
+}
+
+function testQualityExtras() {
+  let fail = 0;
+  const ok = (label, cond) => { if (cond) console.log('✓ ' + label); else { console.log('✗ ' + label); fail++; } };
+  const { scoreRecord, gradeOf, scoreTiming, scoreIntent } = require('../src/quality');
+  const c = require('../src/config');
+  const icp = { target_industries: ['SaaS'], geography: ['東京都'] };
+  const now = new Date('2026-08-15T00:00:00+09:00'); // 8月＝中だるみ(55)
+  // 新卒フラグは出稿データ無しでも実シグナル扱い
+  const flagged = scoreIntent({ '新卒フラグ': '○' }, c);
+  ok('scoreIntent: 新卒フラグで proxy=false（背骨）', flagged.proxy === false && flagged.score >= 40);
+  // intent★トリガーで proxy が外れる
+  const trig = scoreIntent({ 'プレスリリース': '増員', '採用ページ更新': '○' }, c);
+  ok('scoreIntent: 系統Cトリガーで★加点・proxy外れ', trig.stars >= 1 && trig.proxy === false);
+  // 属性ランク
+  ok('gradeOf: ICP高=A', gradeOf({ icp: 80 }, c) === 'A');
+  ok('gradeOf: ICP中=B', gradeOf({ icp: 60 }, c) === 'B');
+  ok('gradeOf: ICP低=C', gradeOf({ icp: 30 }, c) === 'C');
+  // ゴールデンタイム：辞退シグナルで8月でもタイミング満点
+  const t = scoreTiming({ '辞退シグナル': '○' }, c, now);
+  ok('scoreTiming: 辞退シグナルで満点(ゴールデンタイム)', t.score === 100);
+  // intent★割り込み：属性B以上＋★5でナーチャ→今週架電に昇格
+  const rec = { '従業員数': '150', '業種': 'SaaS', '都道府県': '東京都', 'プレスリリース': 'x', '採用ページ更新': '○', 'インテント': '調査', '辞退シグナル': '○', 'intent★': '5' };
+  const s = scoreRecord(rec, { icp, now, c });
+  ok('scoreRecord: grade/stars を返す', ['A', 'B', 'C'].includes(s.grade) && typeof s.stars === 'number');
+  return fail;
+}
+
+function testSourceKpiLogic() {
+  let fail = 0;
+  const ok = (label, cond) => { if (cond) console.log('✓ ' + label); else { console.log('✗ ' + label); fail++; } };
+  const { computeSourceKpi, buildOutcomeIndex, sourcesOf, oNum } = require('../src/source-kpi');
+  const c = require('../src/config');
+  ok('oNum: 数値はそのまま', oNum('3') === 3);
+  ok('oNum: ○は1', oNum('○') === 1);
+  ok('oNum: 空は0', oNum('') === 0);
+  ok('sourcesOf: origin=起点ソースのみ', JSON.stringify(sourcesOf({ '取得元媒体': 'A+B', '起点ソース': 'A' }, 'origin')) === '["A"]');
+  ok('sourcesOf: touch=全ソース', JSON.stringify(sourcesOf({ '取得元媒体': 'A+B', '起点ソース': 'A' }, 'touch')) === '["A","B"]');
+  const leads = [
+    { '企業名': 'A社', '法人番号': '1010001000001', '取得元媒体': 'マイナビ', '起点ソース': 'マイナビ', '品質スコア': '80' },
+    { '企業名': 'B社', '法人番号': '2020002000002', '取得元媒体': 'マイナビ', '起点ソース': 'マイナビ', '品質スコア': '40' },
+    { '企業名': 'C社', '法人番号': '3030003000003', '取得元媒体': 'gBizINFO', '起点ソース': 'gBizINFO', '品質スコア': '70' },
+  ];
+  const outcomes = [
+    { '法人番号': '1010001000001', '接続': '1', 'アポ': '1', '受注': '1', 'コスト': '3000' },
+    { '法人番号': '2020002000002', '接続': '1', 'アポ': '0', '受注': '0', 'コスト': '2000' },
+    { '法人番号': '3030003000003', '接続': '0', 'アポ': '0', '受注': '0', 'コスト': '2500' },
+  ];
+  const idx = buildOutcomeIndex(outcomes, c);
+  const { rows } = computeSourceKpi(leads, idx, { attr: 'origin', c });
+  const mynavi = rows.find((r) => r.source === 'マイナビ');
+  ok('computeSourceKpi: マイナビ件数2', mynavi && mynavi.count === 2);
+  ok('computeSourceKpi: マイナビ受注率=50%', mynavi && Math.abs(mynavi.wonRate - 0.5) < 1e-9);
+  ok('computeSourceKpi: マイナビ適合率=50%(80点のみ)', mynavi && Math.abs(mynavi.fitRate - 0.5) < 1e-9);
+  return fail;
+}
+
 async function run() {
   const cases = [
     { name: 'サンプル株式会社', file: 'fixture.html', expect: 'HIT' },
@@ -424,6 +517,14 @@ async function run() {
   failures += testGbizLogic();
   console.log('\n--- リスト品質スコアリング（4ディメンション加重）検証 ---');
   failures += testQualityLogic();
+  console.log('\n--- CSV/名寄せキー（法人番号・社名正規化）検証 ---');
+  failures += testCsvKeys();
+  console.log('\n--- 多系統マージ・名寄せ（役割固定/intent★/出所）検証 ---');
+  failures += testMergeLogic();
+  console.log('\n--- スコアリング拡張（新卒フラグ軸/トリガー★/属性ランク/ゴールデンタイム）検証 ---');
+  failures += testQualityExtras();
+  console.log('\n--- ソース別KPI（下流・利回り評価）検証 ---');
+  failures += testSourceKpiLogic();
 
   if (failures > 0) { console.error(`\nSELFTEST FAILED: ${failures} case(s)`); process.exit(1); }
   console.log('\nSELFTEST PASSED ✓  (抽出→検証→集計 ＋ スプレッドシートI/O ロジックが正常動作)');
