@@ -73,7 +73,9 @@ async function callOllama(text, companyName) {
         stream: false,
         format: 'json', // 有効なJSONのみを出力させる
         system: OLLAMA_SYSTEM,
-        prompt: `対象企業: ${companyName || ''}\n以下の本文から採用/人事の担当者名を抽出してください。\n=== 本文 ===\n${text}\n=== 本文ここまで ===`,
+        // 本文は文脈長に収まるよう抑制（VRAM4GBの3B級で安定させる）
+        prompt: `対象企業: ${companyName || ''}\n以下の本文から採用/人事の担当者名を抽出してください。\n=== 本文 ===\n${String(text || '').slice(0, cfg.OLLAMA_PROMPT_CHARS)}\n=== 本文ここまで ===`,
+        options: { num_ctx: cfg.OLLAMA_NUM_CTX, num_predict: 200, temperature: 0 },
       }),
     });
     if (!res.ok) throw new Error('Ollama HTTP ' + res.status);

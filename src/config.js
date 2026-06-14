@@ -50,8 +50,10 @@ module.exports = {
   // ===== ローカルLLM（Ollama） — 任意。外部API課金なし。未設定なら使用しない =====
   // 例: OLLAMA_URL=http://localhost:11434  OLLAMA_MODEL=qwen2.5:7b
   OLLAMA_URL: process.env.OLLAMA_URL || '',
-  OLLAMA_MODEL: process.env.OLLAMA_MODEL || 'qwen2.5:7b',
-  OLLAMA_TIMEOUT_MS: int(process.env.OLLAMA_TIMEOUT_MS, 20000),
+  OLLAMA_MODEL: process.env.OLLAMA_MODEL || 'qwen2.5:3b',
+  OLLAMA_TIMEOUT_MS: int(process.env.OLLAMA_TIMEOUT_MS, 60000),
+  OLLAMA_NUM_CTX: int(process.env.OLLAMA_NUM_CTX, 4096),        // 文脈長（VRAM4GBの3B級で安定する範囲）
+  OLLAMA_PROMPT_CHARS: int(process.env.OLLAMA_PROMPT_CHARS, 4000), // LLMへ渡す本文の上限（文脈長に収める）
 
   // 公式サイトでは「ない」ドメイン（求人媒体 / SNS / 企業DB / ニュース等）。これらは候補から除外。
   EXCLUDE_DOMAINS: [
