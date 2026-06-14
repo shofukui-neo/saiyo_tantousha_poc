@@ -14,10 +14,28 @@
 //   node src/build-media.js --discover "介護 東京;新卒 営業 大阪" --out sources/E-hiring.csv
 const fs = require('fs');
 const path = require('path');
-const { readCsv, toCsv, truthy } = require('./csv');
+const { readCsv, toCsv, truthy, mergeKey } = require('./csv');
 const { checkRecruitPage } = require('./recruit-page');
 const { checkMediaListing, discoverHiringCompanies } = require('./scrape-media');
 const { closeBrowser } = require('./fetch');
+
+// ---- 堅牢化: undici(組み込みfetch)の keep-alive 接続終了アサーション対策 ----
+// 接続再利用を抑え、特定サーバでの `assert(!this.paused)` 致命例外の発生を減らす。
+try {
+  const undici = require('undici');
+  undici.setGlobalDispatcher(new undici.Agent({ pipelining: 0, keepAliveTimeout: 1000, keepAliveMaxTimeout: 1000 }));
+} catch (_) { /* undici非公開ビルドなら無視 */ }
+// それでも稀に非同期で投げられる致命例外でプロセスごと落ちないよう、ログして継続する。
+// （該当fetchのpromiseは解決しないため、各社処理は下の withTimeout で必ず打ち切る）
+process.on('uncaughtException', (e) => { console.error('[uncaught]', String(e && e.message || e).slice(0, 120)); });
+
+// 指定msで必ず解決するタイムアウトラッパ（ワーカーが未解決promiseで無限待ちになるのを防ぐ）
+function withTimeout(promise, ms, onTimeout) {
+  return new Promise((resolve) => {
+    const t = setTimeout(() => resolve(typeof onTimeout === 'function' ? onTimeout() : onTimeout), ms);
+    promise.then((v) => { clearTimeout(t); resolve(v); }, () => { clearTimeout(t); resolve(onTimeout && onTimeout()); });
+  });
+}
 
 function getArg(name, def) {
   const i = process.argv.indexOf('--' + name);
@@ -70,10 +88,25 @@ async function runEnrich() {
   const out = [];
   const OUTABS = path.resolve(OUT);
   fs.mkdirSync(path.dirname(OUTABS), { recursive: true });
-  let done = 0;
-  const flush = () => fs.writeFileSync(OUTABS, toCsv(headers, out));
 
-  await pool(records, CONC, async (rec) => {
+  // ---- 再開: 既存出力を読み込み、処理済みキーをスキップ ----
+  const doneKeys = new Set();
+  if (!process.argv.includes('--fresh') && fs.existsSync(OUTABS)) {
+    try {
+      const prev = readCsv(fs.readFileSync(OUTABS, 'utf8')).records;
+      for (const r of prev) { const k = mergeKey(r); if (k) { doneKeys.add(k); out.push(r); } }
+      if (doneKeys.size) log(`再開: 既存 ${doneKeys.size}社をスキップ`);
+    } catch (_) {}
+  }
+  const todo = records.filter((r) => { const k = mergeKey(r); return !k || !doneKeys.has(k); });
+  log(`未処理 ${todo.length}社を処理`);
+
+  let done = 0;
+  // アトミック書き込み（クラッシュ時の途中切れ防止: tmp に書いて rename）
+  const flush = () => { const tmp = OUTABS + '.tmp'; fs.writeFileSync(tmp, toCsv(headers, out)); fs.renameSync(tmp, OUTABS); };
+  const PER_COMPANY_MS = parseInt(getArg('company-timeout', '90000'), 10) || 90000;
+
+  await pool(todo, CONC, async (rec) => {
     const name = rec['企業名'] || rec['company_name'] || '';
     const url = rec['公式URL'] || rec['url'] || '';
     const row = {
@@ -82,29 +115,32 @@ async function runEnrich() {
       '取得日': new Date().toISOString().slice(0, 10),
       '採用ページ有無': '', '採用ページURL': '', '新卒言及': '', '職種': '', '外部採用媒体': '', '根拠': '',
     };
-    try {
-      if (DO_RECRUIT && url) {
-        const rp = await checkRecruitPage(url);
-        Object.assign(row, {
-          '採用ページ有無': rp['採用ページ有無'], '採用ページURL': rp['採用ページURL'],
-          '新卒言及': rp['新卒言及'], '職種': rp['職種'], '外部採用媒体': rp['外部採用媒体'], '根拠': rp['根拠'],
-        });
-        if (truthy(rp['新卒言及'])) row['新卒フラグ'] = '○';
-      }
-      if (DO_MEDIA && name) {
-        const m = await checkMediaListing(name);
-        row['掲載媒体'] = m.掲載媒体.join('/');
-        row['掲載媒体数'] = m.掲載媒体数;
-        // 外部採用媒体に新卒媒体が出ていれば新卒フラグを補強
-        if (/リクナビ|マイナビ|ワンキャリア/.test(row['外部採用媒体'] || '') || m.掲載媒体数 > 0) {
-          if (!row['新卒フラグ']) row['新卒フラグ'] = m.掲載媒体.length ? '○' : '';
+    // 1社分の処理を timeout で必ず打ち切る（undici致命例外で未解決のまま固まるのを防ぐ）
+    await withTimeout((async () => {
+      try {
+        if (DO_RECRUIT && url) {
+          const rp = await checkRecruitPage(url);
+          Object.assign(row, {
+            '採用ページ有無': rp['採用ページ有無'], '採用ページURL': rp['採用ページURL'],
+            '新卒言及': rp['新卒言及'], '職種': rp['職種'], '外部採用媒体': rp['外部採用媒体'], '根拠': rp['根拠'],
+          });
+          if (truthy(rp['新卒言及'])) row['新卒フラグ'] = '○';
         }
+        if (DO_MEDIA && name) {
+          const m = await checkMediaListing(name);
+          row['掲載媒体'] = m.掲載媒体.join('/');
+          row['掲載媒体数'] = m.掲載媒体数;
+          // 外部採用媒体に新卒媒体が出ていれば新卒フラグを補強
+          if (/リクナビ|マイナビ|ワンキャリア/.test(row['外部採用媒体'] || '') || m.掲載媒体数 > 0) {
+            if (!row['新卒フラグ']) row['新卒フラグ'] = m.掲載媒体.length ? '○' : '';
+          }
+        }
+      } catch (e) {
+        row['根拠'] = (row['根拠'] ? row['根拠'] + ';' : '') + 'err:' + String(e && e.message || e).slice(0, 40);
       }
-    } catch (e) {
-      row['根拠'] = (row['根拠'] ? row['根拠'] + ';' : '') + 'err:' + String(e && e.message || e).slice(0, 40);
-    }
+    })(), PER_COMPANY_MS, () => { row['根拠'] = (row['根拠'] ? row['根拠'] + ';' : '') + 'timeout'; });
     out.push(row);
-    if (++done % 10 === 0) { flush(); log(`  ${done}/${records.length}（媒体ヒット計 ${out.filter((r) => r.掲載媒体数 > 0).length}）`); }
+    if (++done % 10 === 0) { flush(); log(`  ${done}/${todo.length}（採用ページ有 累計 ${out.filter((r) => truthy(r['採用ページ有無'])).length}）`); }
   });
   flush();
   const withRecruit = out.filter((r) => truthy(r['採用ページ有無'])).length;
