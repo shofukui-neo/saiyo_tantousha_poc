@@ -19,21 +19,28 @@ function geminiAvailable(c = cfg) {
  */
 async function geminiJson(prompt, opt = {}, c = cfg) {
   if (!geminiAvailable(c)) return null;
-  const url = `${c.LLM_ENDPOINT}${c.LLM_MODEL}:generateContent?key=${encodeURIComponent(c.GEMINI_KEY)}`;
+  // 認証はヘッダ x-goog-api-key で行う（新形式 "AQ." 認可キー・従来 "AIza" キー共通）。
+  // ?key= クエリと併用すると "Multiple authentication credentials" になるため、クエリは付けない。
+  const url = `${c.LLM_ENDPOINT}${c.LLM_MODEL}:generateContent`;
+  const generationConfig = {
+    temperature: opt.temperature != null ? opt.temperature : 0.1,
+    maxOutputTokens: opt.maxTokens || 800,
+    responseMimeType: 'application/json',
+  };
+  // Gemini 3.x の thinking はこの抽出タスクでは不要。budget=0 で無効化（高速・低コスト・トークン枯渇回避）。
+  if (c.GEMINI_THINKING_BUDGET != null && c.GEMINI_THINKING_BUDGET >= 0) {
+    generationConfig.thinkingConfig = { thinkingBudget: c.GEMINI_THINKING_BUDGET };
+  }
   const ctrl = new AbortController();
   const t = setTimeout(() => ctrl.abort(), c.PER_PAGE_TIMEOUT_MS || 15000);
   try {
     const res = await fetch(url, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', 'x-goog-api-key': c.GEMINI_KEY },
       signal: ctrl.signal,
       body: JSON.stringify({
         contents: [{ parts: [{ text: prompt }] }],
-        generationConfig: {
-          temperature: opt.temperature != null ? opt.temperature : 0.1,
-          maxOutputTokens: opt.maxTokens || 800,
-          responseMimeType: 'application/json',
-        },
+        generationConfig,
       }),
     });
     if (!res.ok) return null;

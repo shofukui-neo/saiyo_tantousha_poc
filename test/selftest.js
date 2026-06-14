@@ -156,6 +156,30 @@ function testName() {
   return fail;
 }
 
+// ---- 採用担当者「個人名」取得層（Wantedly/ハローワーク）純ロジック検証（ネットワーク不要） ----
+function testNameScraping() {
+  const { firstFullName, extractPersonName, pickDetailUrls } = require('../src/scrape-names');
+  let fail = 0;
+  const ok = (label, cond) => { if (cond) console.log('✓ ' + label); else { console.log('✗ ' + label); fail++; } };
+  // firstFullName: 姓辞書(jp-names)で検証。肩書き連結・分かち書きを許容し、一般語は弾く。
+  ok('firstFullName: 「山田 太郎 | 人事担当」→山田太郎', firstFullName('山田 太郎 | 人事担当') === '山田太郎');
+  ok('firstFullName: 連結「佐藤花子」を許容', firstFullName('佐藤花子') === '佐藤花子');
+  ok('firstFullName: 役割語「採用担当」は人名にしない', firstFullName('採用担当') === null);
+  ok('firstFullName: 法人格付き社名は人名にしない', firstFullName('株式会社テスト') === null);
+  // extractPersonName: (1)採用文脈は高確度、(2)投稿者セレクタは中確度
+  const ctx = extractPersonName('<body><p>採用担当：高橋 健一</p></body>');
+  ok('extractPersonName: 採用文脈から高橋健一(conf0.7)', !!ctx && ctx.name === '高橋健一' && ctx.confidence === 0.7);
+  const auth = extractPersonName('<body><div class="UserName">中村 さくら</div></body>', { authorSel: ['[class*="UserName"]'] });
+  ok('extractPersonName: 投稿者セレクタから中村さくら(conf0.5)', !!auth && auth.name === '中村さくら' && auth.where === 'author');
+  ok('extractPersonName: 個人名が無ければnull', extractPersonName('<body><p>採用担当者まで</p></body>') === null);
+  // pickDetailUrls: 対象セレクタのリンクのみ・絶対URL化・上限
+  const urls = pickDetailUrls('<body><a href="/projects/1">A</a><a href="/projects/2">B</a><a href="/x">x</a></body>',
+    'https://www.wantedly.com/search', ['a[href*="/projects/"]'], 'テスト', 2);
+  ok('pickDetailUrls: projectsリンクのみ2件を絶対URLで返す',
+    urls.length === 2 && urls[0] === 'https://www.wantedly.com/projects/1');
+  return fail;
+}
+
 // ---- 企業名の自動発見（テキストからの抽出）検証（ネットワーク不要） ----
 function testDiscover() {
   let fail = 0;
@@ -498,6 +522,8 @@ async function run() {
   failures += testPhone();
   console.log('\n--- 担当者名ヒューリスティック 検証 ---');
   failures += testName();
+  console.log('\n--- 採用担当者名取得層（Wantedly/ハローワーク）ロジック検証 ---');
+  failures += testNameScraping();
   console.log('\n--- 企業名 自動発見 検証 ---');
   failures += testDiscover();
   console.log('\n--- 構造化抽出(JSON-LD/sitemap) 検証 ---');

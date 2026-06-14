@@ -130,7 +130,33 @@ async function checkMediaListing(companyName, { adapters = MEDIA_ADAPTERS } = {}
   return { 掲載媒体: hit, 掲載媒体数: hit.length, 詳細: detail };
 }
 
+// 既知の企業名で求人検索エンジンを引き、「今採用中か」を判定（法人番号を保持したまま穴埋めに使う）。
+// 戻り値: { 採用中:bool, 発見媒体:[...名], 求人件数, 職種:[...] }
+async function lookupCompanyHiring(companyName, { engines = JOB_ENGINES } = {}) {
+  const media = new Set();
+  let count = 0;
+  const jobs = new Set();
+  for (const eng of engines) {
+    const url = eng.searchUrl(companyName, 1);
+    const r = await politeGet(url);
+    if (!r || r.blocked || r.error || !r.html) continue;
+    // 同名企業が結果に出るか（企業名要素 or 本文で照合）
+    if (resultMatches(r.html, eng.companySel, companyName)) {
+      media.add(eng.name);
+      // ヒット件数の目安（企業名要素の出現数）
+      const $ = cheerio.load(r.html);
+      const names = extractCompanies($, eng.companySel);
+      const target = normCompanyName(companyName);
+      count += names.filter((nm) => { const n = normCompanyName(nm); return n && (n === target || n.includes(target) || target.includes(n)); }).length || 1;
+      // 職種語の軽い抽出（本文から）
+      const body = $('body').text();
+      for (const k of ['エンジニア', '営業', '総合職', '技術職', '事務', '企画', '施工管理', '介護', '看護', '販売', 'マーケティング']) if (body.includes(k)) jobs.add(k);
+    }
+  }
+  return { 採用中: media.size > 0, 発見媒体: [...media], 求人件数: count, 職種: [...jobs].slice(0, 5) };
+}
+
 module.exports = {
-  discoverHiringCompanies, checkMediaListing,
+  discoverHiringCompanies, checkMediaListing, lookupCompanyHiring,
   JOB_ENGINES, MEDIA_ADAPTERS, extractCompanies, resultMatches,
 };

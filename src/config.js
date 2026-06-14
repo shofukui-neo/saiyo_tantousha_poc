@@ -95,10 +95,13 @@ module.exports = {
   // （現状キーが無くても discoverUrl＋正規表現＋MX篩い だけで一気通貫が動く）
   // ===================================================================================
 
-  // --- LLM（Gemini 無料枠）。GEMINI_KEY があれば ICP生成・採用担当者抽出をAIで行う ---
+  // --- LLM（Gemini）。GEMINI_KEY があれば ICP生成・採用担当者抽出をAIで行う ---
+  // 認証はヘッダ x-goog-api-key（新形式 "AQ." 認可キー / 従来 "AIza" キー 共通）。gemini.js 参照。
   GEMINI_KEY: process.env.GEMINI_KEY || '',
   LLM_ENDPOINT: process.env.LLM_ENDPOINT || 'https://generativelanguage.googleapis.com/v1beta/models/',
-  LLM_MODEL: process.env.LLM_MODEL || 'gemini-flash-latest',
+  LLM_MODEL: process.env.LLM_MODEL || 'gemini-3.5-flash',
+  // Gemini 3.x の思考トークン予算。抽出タスクは不要なので 0 で無効化（高速・低コスト）。-1 で未指定（モデル既定）。
+  GEMINI_THINKING_BUDGET: int(process.env.GEMINI_THINKING_BUDGET, 0),
 
   // --- 国税庁 法人番号 Web-API v4（商号→法人番号の名寄せ。アプリID申請に数週間）---
   NTA_APP_ID: process.env.NTA_APP_ID || '',
