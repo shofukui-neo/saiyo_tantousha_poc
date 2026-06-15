@@ -15,6 +15,13 @@
     "backfill": "node src/build-media.js --backfill leads-daihyou-1000.csv --out sources/E-hiring.csv --empty-only",
     "names": "node src/build-names.js --in leads-daihyou-1000.csv --out sources/A-names.csv",
     "build-list": "node src/build-list.js --sources sources/manifest.json --out leads.master.csv",
+    "mochica": "node src/build-mochica-list.js --in leads-telapo-1000.csv --merge leads-daihyou-1000.csv,leads.master.csv --out leads-mochica.scored.csv",
+    "mochica:enrich": "node src/build-mochica-list.js --in leads-telapo-1000.csv --merge leads-daihyou-1000.csv,leads.master.csv --out leads-mochica.scored.csv --enrich 40 --enrich-empty-only",
+    "mynavi": "node src/scrape-mynavi.js",
+    "pages": "node src/scrape-pages.js --in leads-daihyou-1000.csv --out sources/A-pages.csv --sites rikunabi,careertasu",
+    "rikunabi": "node src/scrape-rikunabi.js",
+    "careertasu": "node src/scrape-careertasu.js",
+    "onecareer": "node src/scrape-onecareer.js",
     "kpi": "node src/source-kpi.js --leads leads.master.csv --outcomes sources/outcomes.csv",
     "test": "node test/selftest.js"
   },

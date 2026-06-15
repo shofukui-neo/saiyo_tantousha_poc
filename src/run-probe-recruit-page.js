@@ -25,7 +25,7 @@ const LIMIT = parseInt(getArg('limit', '30'), 10);
 const CONC = parseInt(getArg('concurrency', '3'), 10) || 3;
 const RESET = !!getArg('reset', false);
 
-const HEADERS = ['企業名', '公式URL', '採用担当者名', '役職', '部署', '確度', '取得元', '根拠URL', '根拠'];
+const HEADERS = ['企業名', '公式URL', '採用担当者名', '役職', '部署', '確度', '取得元', 'エンジン', '根拠URL', '根拠'];
 const keyOf = (r) => String(r['法人番号'] || r['企業名'] || '');
 
 async function main() {
@@ -59,14 +59,15 @@ async function main() {
       doneKeys.add(keyOf(rec));
       try { fs.writeFileSync(DONE, JSON.stringify({ done: [...doneKeys], hits })); } catch (_) {}
       try {
-        const r = await probeRecruitPage(rec['公式URL']);
+        const r = await probeRecruitPage(rec['公式URL'], { companyName: rec['企業名'] });
         if (r) {
           hits.push({
             '企業名': rec['企業名'], '公式URL': rec['公式URL'],
             '採用担当者名': r.name, '役職': r.role, '部署': r.department,
-            '確度': r.confidence.toFixed(2), '取得元': r.source, '根拠URL': r.sourceUrl, '根拠': r.evidence,
+            '確度': (r.confidence || 0).toFixed(2), '取得元': r.source, 'エンジン': r.engine || '',
+            '根拠URL': r.sourceUrl, '根拠': r.evidence,
           });
-          console.log(`  ✓ ${rec['企業名']} → ${r.name}（${r.role || '役職?'}・確度${r.confidence.toFixed(2)}）`);
+          console.log(`  ✓ ${rec['企業名']} → ${r.name}（${r.role || '役職?'}・${r.engine || '?'}・確度${(r.confidence || 0).toFixed(2)}）`);
         }
       } catch (_) { /* 個社失敗はスキップ */ }
       done++;

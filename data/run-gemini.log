@@ -1,0 +1,44 @@
+
+対象 577社（公式URLあり・未処理）｜既処理 0社・既HIT 0件｜並列1｜採用ページ特化・正規表現（API不要）
+  …20/577（累計HIT 0）
+  …40/577（累計HIT 0）
+  …60/577（累計HIT 0）
+  …80/577（累計HIT 0）
+  …100/577（累計HIT 0）
+  …120/577（累計HIT 0）
+  …140/577（累計HIT 0）
+  …160/577（累計HIT 0）
+  …180/577（累計HIT 0）
+  ✓ 株式会社公文教育研究会 → 武田忠昌（人事・regex・確度0.74）
+  …200/577（累計HIT 1）
+  ✓ 東邦レオ株式会社 → 吉川稔（新卒採用・regex・確度0.74）
+  …220/577（累計HIT 2）
+  …240/577（累計HIT 2）
+  …260/577（累計HIT 2）
+  …280/577（累計HIT 2）
+  …300/577（累計HIT 2）
+  …320/577（累計HIT 2）
+  …340/577（累計HIT 2）
+  …360/577（累計HIT 2）
+  …380/577（累計HIT 2）
+  …400/577（累計HIT 2）
+UNCAUGHT The expression evaluated to a falsy value:
+
+  assert(!this.paused)
+
+[loop] attempt 1 exit=2 done=405
+対象 172社（公式URLあり・未処理）｜既処理 405社・既HIT 2件｜並列1｜採用ページ特化・正規表現（API不要）
+  …20/172（累計HIT 2）
+  …40/172（累計HIT 2）
+  …60/172（累計HIT 2）
+  …80/172（累計HIT 2）
+  …100/172（累計HIT 2）
+  …120/172（累計HIT 2）
+  …140/172（累計HIT 2）
+  …160/172（累計HIT 2）
+  ✓ 株式会社ビック → 安部真理子（人事担当・regex・確度0.74）
+
+===== 完了 ｜ 累計HIT 3/577社（歩留まり 0.5%）｜752秒 =====
+出力: C:\Users\shofu\Desktop\saiyo_tantousha_poc\poc\data\recruiter-gemini.csv
+[loop] attempt 2 exit=0 done=577
+[loop] completed done=577

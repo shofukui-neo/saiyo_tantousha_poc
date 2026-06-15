@@ -1,0 +1,4 @@
+企業名,公式URL,採用担当者名,役職,部署,確度,取得元,エンジン,根拠URL,根拠
+株式会社公文教育研究会,https://www.kumon.ne.jp/job/culture/environment.html,武田忠昌,人事,人事本部,0.74,自社採用ページ,regex,https://www.kumon.ne.jp/job/culture/environment.html,人事本部長 武田忠昌
+東邦レオ株式会社,http://www.toho-leo.co.jp/,吉川稔,新卒採用,,0.74,自社採用ページ,regex,https://www.toho-leo.co.jp/recruit/blog,新卒採用吉川稔
+株式会社ビック,https://www.bicc.jp,安部真理子,人事担当,人事担当安部,0.74,自社採用ページ,regex,https://www.bicc.jp/recruit/,人事担当安部真理子

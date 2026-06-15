@@ -17,8 +17,21 @@ function geminiAvailable(c = cfg) {
  * @param {object} [c] config（テスト時差し替え）
  * @returns {Promise<object|null>}
  */
+// 無料枠のRPM制限を避ける簡易スロットル（プロセス内で直列化）。GEMINI_MIN_INTERVAL_MS で調整可。
+let _lastCall = 0, _chain = Promise.resolve();
+function _throttle(c) {
+  const minGap = parseInt((c && c.GEMINI_MIN_INTERVAL_MS) || process.env.GEMINI_MIN_INTERVAL_MS || '4500', 10);
+  _chain = _chain.then(async () => {
+    const wait = _lastCall + minGap - Date.now();
+    if (wait > 0) await new Promise((r) => setTimeout(r, wait));
+    _lastCall = Date.now();
+  });
+  return _chain;
+}
+
 async function geminiJson(prompt, opt = {}, c = cfg) {
   if (!geminiAvailable(c)) return null;
+  await _throttle(c);
   // 認証はヘッダ x-goog-api-key で行う（新形式 "AQ." 認可キー・従来 "AIza" キー共通）。
   // ?key= クエリと併用すると "Multiple authentication credentials" になるため、クエリは付けない。
   const url = `${c.LLM_ENDPOINT}${c.LLM_MODEL}:generateContent`;

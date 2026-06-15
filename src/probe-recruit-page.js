@@ -12,6 +12,16 @@ const { findRecruitLinks } = require('./recruit-page');
 const { looksLikePersonName } = require('./extract');
 const { isFullName, isKnownSurname } = require('./jp-names');
 const { validateHit } = require('./validate');
+const cfg = require('./config');
+const { geminiAvailable } = require('./gemini');
+const { extractRecruiterFromText } = require('./recruiter');
+
+// Geminiに投げる価値があるか。無料枠RPMが厳しいので「個人が登場する兆候」のあるページに限定する。
+//  採用担当者紹介/スタッフ紹介/人事部長/採用責任者/採用ブログ/メッセージ等＝実名が載りやすいページ。
+function geminiWorthCalling(text) {
+  const t = String(text || '');
+  return /(採用担当者紹介|採用スタッフ|スタッフ紹介|社員紹介|メンバー紹介|人事部長|人事本部長|人事担当者|採用責任者|採用担当者|採用ブログ|先輩社員|社員インタビュー|採用担当.{0,8}(メッセージ|より|から|です|紹介))/.test(t);
+}
 
 // 日本語の姓+名らしさ（extract.js と同じ字種定義。姓1〜4字＋任意空白＋名1〜5字）
 const NAME = '([\\u4e00-\\u9fa5々]{1,4}[ \\u3000]?[\\u4e00-\\u9fa5々\\u3040-\\u309f\\u30a0-\\u30ffー]{1,5})';
@@ -110,6 +120,10 @@ async function probeRecruitPage(officialUrl, opts = {}) {
   // 先に採用リンク先（=候補配列の2件目以降）を見て、最後にトップ。採用ページの方が氏名が濃い。
   const order = candidates.length > 1 ? [...candidates.slice(1), candidates[0]] : candidates;
 
+  // Geminiフォールバック用に、最も有力な採用ページのコーパスを1つ保持しておく
+  const useGemini = opts.gemini != null ? opts.gemini : geminiAvailable(cfg);
+  let bestCorpus = null, bestUrl = null;
+
   for (const pageUrl of order) {
     let html = pageUrl === baseUrl ? top.html : null;
     if (!html) {
@@ -117,20 +131,34 @@ async function probeRecruitPage(officialUrl, opts = {}) {
       if (!r || r.blocked || r.error || !r.html) continue;
       html = r.html;
     }
-    const hit = extractFromRecruitText(pageCorpus(html));
+    const corpus = pageCorpus(html);
+    // Gemini価値ありの兆候があるページを優先保持（個人名が載りやすい採用スタッフ紹介系）。
+    if (!bestCorpus && geminiWorthCalling(corpus)) { bestCorpus = corpus; bestUrl = pageUrl; }
+
+    const hit = extractFromRecruitText(corpus);
     if (!hit) continue;
     // 検証ゲート（人名らしさ＋ロール語＋しきい値）を通ったものだけ確定
     const v = validateHit({ ...hit }, {});
     if (!v.hit) continue;
     return {
-      name: hit.name,
-      role: hit.role || '',
-      department: hit.department || '',
-      confidence: hit.confidence,
-      evidence: hit.evidence,
-      sourceUrl: pageUrl,
-      source: '自社採用ページ',
+      name: hit.name, role: hit.role || '', department: hit.department || '',
+      confidence: hit.confidence, evidence: hit.evidence,
+      sourceUrl: pageUrl, source: '自社採用ページ', engine: 'regex',
     };
+  }
+
+  // 正規表現が全ページで外れた場合のみ、最有力ページのコーパスをGeminiに1回投げる（レイアウト依存の氏名対策）
+  if (useGemini && bestCorpus) {
+    try {
+      const g = await extractRecruiterFromText(bestCorpus, { name: opts.companyName || '' }, cfg);
+      if (g && g.engine === 'gemini' && g.name) {
+        return {
+          name: g.name, role: g.role || '', department: g.department || '',
+          confidence: g.confidence || 0.7, evidence: g.evidence || '',
+          sourceUrl: bestUrl, source: '自社採用ページ', engine: 'gemini',
+        };
+      }
+    } catch (_) { /* Gemini失敗時は無視（正規表現で取れなかった社として扱う） */ }
   }
   return null;
 }
