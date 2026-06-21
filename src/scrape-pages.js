@@ -81,7 +81,7 @@ async function main() {
   const LIMIT = parseInt(getArg('limit', '0'), 10) || 0;
   const PER_COMPANY_MS = parseInt(getArg('company-timeout', '120000'), 10) || 120000;
   const FRESH = process.argv.includes('--fresh');
-  const siteKeys = String(getArg('sites', 'rikunabi,careertasu'))
+  const siteKeys = String(getArg('sites', 'rikunabi,careertasu,onecareer'))
     .split(/[,;]/).map((s) => s.trim().toLowerCase()).filter((s) => SITES[s]);
   if (!siteKeys.length) { console.error('有効な --sites がありません（rikunabi,careertasu,onecareer,mynavi）'); process.exit(1); }
 

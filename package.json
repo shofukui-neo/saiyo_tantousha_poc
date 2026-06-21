@@ -4,7 +4,9 @@
   "private": true,
   "description": "企業名起点で 公式URL/電話番号/採用担当者名 を自動取得するPoC（外部AI API不使用・ローカル処理のみ）",
   "type": "commonjs",
-  "engines": { "node": ">=18" },
+  "engines": {
+    "node": ">=18"
+  },
   "scripts": {
     "start": "node src/app.js",
     "app": "node src/app.js",
@@ -14,16 +16,28 @@
     "discover": "node src/build-media.js --discover \"新卒 営業 東京;新卒 エンジニア 大阪\" --out sources/E-hiring.csv",
     "backfill": "node src/build-media.js --backfill leads-daihyou-1000.csv --out sources/E-hiring.csv --empty-only",
     "names": "node src/build-names.js --in leads-daihyou-1000.csv --out sources/A-names.csv",
+    "names:wantedly": "node src/harvest-wantedly.js --out data/recruiter-wantedly.csv --target 1000 --max-fetch 8000",
     "build-list": "node src/build-list.js --sources sources/manifest.json --out leads.master.csv",
-    "mochica": "node src/build-mochica-list.js --in leads-telapo-1000.csv --merge leads-daihyou-1000.csv,leads.master.csv --out leads-mochica.scored.csv",
-    "mochica:enrich": "node src/build-mochica-list.js --in leads-telapo-1000.csv --merge leads-daihyou-1000.csv,leads.master.csv --out leads-mochica.scored.csv --enrich 40 --enrich-empty-only",
+    "mochica": "node src/build-mochica-list.js --in leads-telapo-1000.csv --merge leads-daihyou-1000.csv,leads.master.csv,sources/A-pages.csv --out leads-mochica.scored.csv",
+    "mochica:enrich": "node src/build-mochica-list.js --in leads-telapo-1000.csv --merge leads-daihyou-1000.csv,leads.master.csv,sources/A-pages.csv --out leads-mochica.scored.csv --enrich 40 --enrich-empty-only",
     "mynavi": "node src/scrape-mynavi.js",
-    "pages": "node src/scrape-pages.js --in leads-daihyou-1000.csv --out sources/A-pages.csv --sites rikunabi,careertasu",
+    "pages": "node src/scrape-pages.js --in leads-daihyou-1000.csv --out sources/A-pages.csv --sites rikunabi,careertasu,onecareer",
     "rikunabi": "node src/scrape-rikunabi.js",
     "careertasu": "node src/scrape-careertasu.js",
     "onecareer": "node src/scrape-onecareer.js",
+    "monitor": "node src/monitor/run.js --once",
+    "monitor:watch": "node src/monitor/run.js --watch --interval 60",
+    "monitor:test": "node test/monitor.test.js",
     "kpi": "node src/source-kpi.js --leads leads.master.csv --outcomes sources/outcomes.csv",
-    "test": "node test/selftest.js"
+    "sf:merge": "node src/sf-merge.js --sf sources/SF-leads.csv --list leads-daihyou-1000.csv --out-new leads.new-only.csv --out-annotated leads.sf-annotated.csv",
+    "sf:merge:sample": "node src/sf-merge.js --sf sources/SF-leads.sample.csv --list leads-daihyou-1000.csv --out-new leads.new-only.csv --out-annotated leads.sf-annotated.csv",
+    "test": "node test/selftest.js",
+    "audit:names": "node src/audit-names.js",
+    "audit:names:company": "node src/audit-names.js --mode company",
+    "audit:names:recall": "node src/audit-names.js --mode recall",
+    "names:from-cache": "node src/audit-names.js --mode wantedly --out sources/A-names-from-cache.csv",
+    "names:enrich": "node src/enrich-targets.js",
+    "mynavi:names": "node src/build-mynavi-names.js --in leads-daihyou-1000.csv --out sources/A-mynavi-names.csv"
   },
   "dependencies": {
     "cheerio": "^1.0.0",

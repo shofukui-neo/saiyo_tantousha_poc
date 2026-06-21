@@ -2,6 +2,20 @@
 // 採用・人事担当者の「氏名」抽出。
 // ※ 外部AI API（Anthropic等）は一切使用しない。ページ本文に対する正規表現＋人名らしさ判定のみで動作する。
 const cfg = require('./config');
+const { stripNonName, isFullName, completeSurname } = require('./jp-names');
+
+// 氏名候補の語尾に貪欲一致で付く敬称・助詞（「山田太郎さん」「鈴木一郎より」「中村課長 まで」等）。
+// これらを剥がさないと役職/敬称/助詞を含む氏名が下流(validateHit等)を素通りして誤検出になる。
+const NAME_TAIL_RE = /[ 　]*(?:でした|ちゃん|くん|さん|サン|さま|どの|への|から|より|まで|です|各位|様|氏|君|殿|宛|行|へ)$/;
+
+// 抽出した氏名候補から、役割語/役職/地名（stripNonName）と語尾の敬称/助詞を剥がす。
+// 辞書照合はしない（heuristicは寛容に拾い、確定は呼出側のisFullName/validateHitに委ねる方針）。
+function cleanName(raw) {
+  let s = stripNonName(String(raw || '')).replace(/[ 　]{2,}/g, ' ').trim();
+  let prev;
+  do { prev = s; s = s.replace(NAME_TAIL_RE, '').trim(); } while (s !== prev);
+  return s;
+}
 
 // 人名ではない典型語（誤検出を弾くためのブロックリスト）。
 // 例:「舞台裏（人事）」のような見出し語、役割語、組織語など。
@@ -12,6 +26,8 @@ const NON_NAME_WORDS = [
   'お問', '問合', '連絡', '電話', '受付', '対応', '詳細', '一覧', '以下', '上記', '皆様', '私たち',
   // 姓辞書の1字目を含む一般語の誤検出止め（例:「採用関連」→関連、「池田宛」→宛、「ご応募」→応募）
   '関連', '宛', '応募', '紹介', '注目', '今回', '本件', '関係', '案内', '掲載', '更新', '専用', '希望',
+  // 組織語（社名・施設名の断片が「姓＋組織語」に化けるのを防ぐ。例:「大塚商会は」→商会、「南大学」→大学）
+  '商会', '商店', '大学', '学校', '学院', '銀行', '信用', '研修', '工業', '製作', '製造', '物産', '興業', '産業',
 ];
 
 // 日本語の姓＋名らしさ（漢字またはカナ）。1〜4字＋（任意の空白）＋1〜5字。
@@ -44,13 +60,19 @@ function heuristicExtract(text) {
   ];
   for (const { re, conf } of patterns) {
     const m = text.match(re);
-    if (m && m[1] && looksLikePersonName(m[1])) {
-      const idx = text.indexOf(m[0]);
-      const around = text.slice(Math.max(0, idx - 24), idx + m[0].length + 24);
-      const role = (around.match(/(採用責任者|採用担当|人事担当|採用部|人事部|人事|採用)/) || [])[0] || '';
-      const dept = (around.match(/([一-龥]{2,6}部)/) || [])[0] || '';
-      return { found: true, name: m[1].trim(), role, department: dept, evidence: m[0].trim(), confidence: conf, reason: 'heuristic pattern match' };
-    }
+    if (!m || !m[1]) continue;
+    // 役職/敬称/助詞の貪欲取り込み（中村課長 まで 等）を剥がしてから人名らしさを判定する。
+    const cleaned = cleanName(m[1]);
+    if (!cleaned || !looksLikePersonName(cleaned)) continue;
+    // 姓辞書で人名性を担保する。正規表現の貪欲一致＋(者)?の取りこぼしで生じる実データのノイズ
+    //（「者とのコミュ」「業務部」「月曜日」等）を排除。validateHitはこれらを弾けないため抽出側で塞ぐ。
+    const compact = cleaned.replace(/[ 　]/g, '');
+    if (!isFullName(compact) && !completeSurname(compact)) continue;
+    const idx = text.indexOf(m[0]);
+    const around = text.slice(Math.max(0, idx - 24), idx + m[0].length + 24);
+    const role = (around.match(/(採用責任者|採用担当|人事担当|採用部|人事部|人事|採用)/) || [])[0] || '';
+    const dept = (around.match(/([一-龥]{2,6}部)/) || [])[0] || '';
+    return { found: true, name: cleaned, role, department: dept, evidence: m[0].trim(), confidence: conf, reason: 'heuristic pattern match' };
   }
   return { found: false, name: null, role: null, department: null, evidence: null, confidence: 0, reason: 'no pattern matched (heuristic)' };
 }

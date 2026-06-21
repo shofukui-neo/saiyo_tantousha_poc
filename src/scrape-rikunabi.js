@@ -1,85 +1,75 @@
 'use strict';
 /**
- * リクナビ新卒 Playwright スクレイパ（調査報告の本命）
+ * リクナビ新卒 Playwright スクレイパ（実DOM較正済 2026-06）
  * =====================================================================
- * リクナビ新卒(job.rikunabi.com)の企業ページは、非会員にも
- *   電話番号 / 従業員数 / 採用予定人数 / 募集職種 / 住所
- * を公開している（報告書 2026-06 時点）。ただし2026/2027版は Next.js 製 SPA で、
- * 生のGETでは _next シェルしか返らないため、ヘッドレスブラウザでのレンダリングが必須。
+ * リクナビは2027卒刷新で卒年度別サイト(/2027/等)を廃止し、全学年統合の
+ * フィード型SPA(job.rikunabi.com)へ移行済み（実地確認）。本スクレイパは現行構造に対応:
  *
- * 手順:
- *   1) 企業名で検索（/{年度}/search/?kw=...）
- *   2) 結果から対象社の企業ページリンク(/{年度}/company/{id}/)を特定して開く
- *   3) 会社概要(本体)＋採用情報(/employ/)を読み、ファクトとインテントを回収
+ *   1. フリーワード検索(GET): /job_search/?kw=社名
+ *      → 結果見出し「{社名}の…一覧 N件」。該当が無いと「該当する募集がありません」。
+ *      → 各募集は /company_jobs/{id}/ リンクで表現される（先頭が最上位ヒット）。
+ *   2. 企業ページ: /company_jobs/{id}/?mode=selection（本選考ビュー）に
+ *      会社名・卒年(例 27年卒)・職種・勤務エリア・募集タイトルが載る。
+ *      ?mode=intern はインターン一覧。
  *
- * 使い方: node src/scrape-rikunabi.js "株式会社サンプル" ...
+ * ※ 現行リクナビは旧構造と異なり、企業ページに電話/従業員数/採用担当者名は載らない
+ *   （フィード型）。本スクレイパが回収するのは「掲載有無・卒年・職種・エリア」の新卒インテント。
+ *
+ * 使い方: node src/scrape-rikunabi.js "アイリスオーヤマ" ...
  * モジュール: const { RikunabiScraper } = require('./scrape-rikunabi')
  */
-const { BaseMediaScraper, emptyResult, humanType, humanClick, sleep } = require('./scrape-base');
+const { BaseMediaScraper, emptyResult, sleep } = require('./scrape-base');
 const { normCompanyName } = require('./csv');
 
 const CONFIG = {
-  gradYear: process.env.RIKUNABI_GRAD_YEAR || '2027', // 卒年度別サブサイト（27卒=本命）。2026も可。
-  searchEntries: (gy) => [
-    `https://job.rikunabi.com/${gy}/search/?kw=__Q__`,
-    `https://job.rikunabi.com/${gy}/search/list/?kw=__Q__`,
-    `https://job.rikunabi.com/${gy}/`,
-  ],
-  searchBoxSel: ['input[name="kw"]', 'input[type="search"]',
-    'input[placeholder*="企業"]', 'input[placeholder*="検索"]', 'input[type="text"]'],
-  searchBtnSel: ['button[type="submit"]', 'input[type="submit"]', 'button:has-text("検索")', 'a:has-text("検索")'],
-  // 検索結果の企業ページリンク（/company/{id}/）
-  resultLinkSel: ['a[href*="/company/"]', '.js-companyName a', '.castDataArea a', 'h2 a', 'h3 a'],
-  // 採用情報（初任給・従業員・採用予定人数）面へのタブ/リンク文言
-  employTabHints: ['採用情報', '募集要項', '採用データ', '会社概要', '企業情報'],
+  searchUrl: (q) => `https://job.rikunabi.com/job_search/?kw=${encodeURIComponent(q)}`,
+  companyUrl: (id) => `https://job.rikunabi.com/company_jobs/${id}/?mode=selection`,
+  internUrl: (id) => `https://job.rikunabi.com/company_jobs/${id}/?mode=intern`,
+  companyLinkRe: /\/company_jobs\/(\d+)\//,
+  noHitText: '該当する募集がありません',
+  // 本選考ビューの職種・エリア（テキスト抽出のフォールバックも持つ）
+  occupationLabels: ['営業', 'エンジニア', '企画', 'マーケティング', '事務', '販売', '技術', '研究',
+    '人事', '広報', '経理', '財務', 'デザイン', 'コンサル', 'SE', '生産', '購買', '物流'],
 };
 
 class RikunabiScraper extends BaseMediaScraper {
-  constructor(opts = {}) {
-    super({ label: 'rikunabi', ...opts });
-    this.gradYear = opts.gradYear || CONFIG.gradYear;
-  }
+  constructor(opts = {}) { super({ label: 'rikunabi', ...opts }); }
 
-  /**
-   * 1社をリクナビ新卒で検索→企業ページを読み、ファクト/インテントを回収。
-   * @returns 共通スキーマ + { リクナビ掲載 }
-   */
+  /** @returns 共通スキーマ + { リクナビ掲載 } */
   async scrapeCompany(name) {
     const result = emptyResult(name, 'リクナビ掲載');
     const page = await this.newPage();
     try {
       const target = normCompanyName(name);
-      let opened = false;
-      for (const tmpl of CONFIG.searchEntries(this.gradYear)) {
-        const url = tmpl.replace('__Q__', encodeURIComponent(name));
-        await this.goto(page, url);
-        // 検索ボックスが見えれば人手操作で再検索（SPA描画トリガ）
-        const box = await this._firstVisible(page, CONFIG.searchBoxSel);
-        if (box) {
-          await humanType(page, box, name);
-          await sleep(200);
-          const btn = await this._firstVisible(page, CONFIG.searchBtnSel);
-          if (btn) await humanClick(page, btn); else await page.keyboard.press('Enter');
-          await page.waitForLoadState('networkidle', { timeout: 8000 }).catch(() => {});
-        }
-        await this._dump(page, 'search:' + name);
-        // 直接企業ページに飛んでいる場合
-        if (/\/company\//.test(page.url())) { opened = true; await this._readCompany(page, result); break; }
-        const link = await this.matchingResultLink(page, CONFIG.resultLinkSel, target);
-        if (link) {
-          await humanClick(page, link);
-          await page.waitForLoadState('networkidle', { timeout: 8000 }).catch(() => {});
-          opened = true;
-          await this._readCompany(page, result);
+      // 1) フリーワード検索
+      await this.goto(page, CONFIG.searchUrl(name));
+      await this._dump(page, 'search:' + name);
+      const text = await this.bodyText(page);
+      if (text.includes(CONFIG.noHitText)) { result.根拠 = 'リクナビ該当募集なし'; return result; }
+
+      // 2) 先頭の company_jobs リンク（最上位ヒット）を取得
+      const ids = await page.$$eval('a[href*="/company_jobs/"]', (els) =>
+        [...new Set(els.map((e) => {
+          const m = (e.getAttribute('href') || '').match(/\/company_jobs\/(\d+)\//);
+          return m ? m[1] : null;
+        }).filter(Boolean))]).catch(() => []);
+      if (!ids.length) { result.根拠 = 'リクナビ検索ヒット無し'; return result; }
+
+      // 3) 候補を最大3社まで開き、会社名が一致するものを採用（おすすめ枠の取り違え防止）
+      for (const id of ids.slice(0, 3)) {
+        await this.goto(page, CONFIG.companyUrl(id));
+        await this._dump(page, 'company:' + name);
+        const ctext = await this.bodyText(page);
+        const cnNorm = normCompanyName(ctext.slice(0, 200)); // ページ冒頭に会社名が出る
+        if (target && (cnNorm.includes(target) || target.includes(cnNorm.slice(0, target.length)) || ctext.includes(name))) {
+          result.リクナビ掲載 = '○'; result.掲載 = '○'; result.掲載媒体 = 'リクナビ';
+          result.採用ページURL = CONFIG.companyUrl(id);
+          this._readNewGrad(ctext, result);
+          result.根拠 = '企業ページ(本選考)から新卒情報抽出';
           break;
         }
-        await sleep(this.delay);
       }
-      if (opened) {
-        result.リクナビ掲載 = '○'; result.掲載 = '○'; result.掲載媒体 = 'リクナビ';
-      } else {
-        result.根拠 = result.根拠 || 'リクナビ検索ヒット無し';
-      }
+      if (!result.リクナビ掲載) result.根拠 = 'リクナビ社名一致せず（おすすめのみ）';
     } catch (e) {
       result.根拠 = 'error:' + String(e && e.message || e).slice(0, 80);
     } finally {
@@ -88,39 +78,16 @@ class RikunabiScraper extends BaseMediaScraper {
     return result;
   }
 
-  // 企業ページ本体を読み、採用情報(/employ/)面も巡回してファクトを補完
-  async _readCompany(page, result) {
-    result.採用ページURL = result.採用ページURL || page.url();
-    await this._dump(page, 'company:' + result.企業名);
-    await this.readInto(page, result);
-
-    // /employ/（採用情報）面が別URLなら直接開く（従業員数・採用予定人数が載りやすい）
-    const employUrl = this._employUrl(page.url());
-    if (employUrl && employUrl !== page.url()) {
-      await this.goto(page, employUrl);
-      await this._dump(page, 'employ:' + result.企業名);
-      await this.readInto(page, result);
-    }
-    // タブ型UIの場合はリンク文言で採用情報面を辿る
-    if (!result.採用予定人数 || !result.従業員数) {
-      for (const hint of CONFIG.employTabHints) {
-        const tab = page.locator(`a:has-text("${hint}")`).first();
-        if (!(await tab.count().catch(() => 0)) || !(await tab.isVisible().catch(() => false))) continue;
-        await humanClick(page, tab);
-        await page.waitForLoadState('networkidle', { timeout: 6000 }).catch(() => {});
-        await this.readInto(page, result);
-        if (result.採用予定人数 && result.従業員数) break;
-        await sleep(600);
-      }
-    }
-  }
-
-  // /{年度}/company/{id}/ → /{年度}/company/{id}/employ/
-  _employUrl(url) {
-    try {
-      const m = url.match(/(https?:\/\/[^/]+\/\d{4}\/company\/[^/]+\/)/);
-      return m ? m[1] + 'employ/' : '';
-    } catch { return ''; }
+  // 本選考ビュー本文から 卒年/職種/エリア を抽出
+  _readNewGrad(text, result) {
+    const t = String(text || '').replace(/[ \t　]+/g, ' ');
+    const gy = t.match(/(20[2-9]\d年卒|2[7-9]年卒)/);
+    if (gy) result.卒年 = gy[1];
+    // 職種は読点区切りの一覧で出る（「営業、SCM/生産管理…、人事、広報/IR、商品企画…」）
+    const occ = CONFIG.occupationLabels.filter((o) => t.includes(o));
+    if (occ.length) { result.募集職種 = occ.slice(0, 8).join('・'); result.募集職種数 = String(occ.length); }
+    // 採用職種列にも入れる（系統A用）
+    if (result.募集職種) result.採用職種 = result.募集職種;
   }
 }
 
@@ -128,7 +95,7 @@ async function main() {
   const names = process.argv.slice(2);
   if (!names.length) {
     console.error('使い方: node src/scrape-rikunabi.js "会社名1" "会社名2" ...');
-    console.error('  環境変数: SCRAPE_HEADFUL=1 SCRAPE_DEBUG=1 RIKUNABI_GRAD_YEAR=2027');
+    console.error('  環境変数: SCRAPE_HEADFUL=1 SCRAPE_DEBUG=1 SCRAPE_SETTLE_MS=4000');
     process.exit(1);
   }
   const sc = new RikunabiScraper();
@@ -138,9 +105,7 @@ async function main() {
       process.stdout.write(`\n[リクナビ] ${nm} … `);
       const r = await sc.scrapeCompany(nm);
       console.log(JSON.stringify({
-        掲載: r.リクナビ掲載 || '×', 担当者: r.採用担当者名 || '—',
-        職種: r.募集職種 || '', 人数: r.採用予定人数 || '', 従業員: r.従業員数 || '',
-        資本金: r.資本金 || '', 設立: r.設立 || '', 電話: r.電話番号 || '', メール: r.メール || '',
+        掲載: r.リクナビ掲載 || '×', 卒年: r.卒年 || '', 職種: r.募集職種 || '',
         根拠: r.根拠, URL: r.採用ページURL || '',
       }, null, 0));
       await sleep(sc.delay);

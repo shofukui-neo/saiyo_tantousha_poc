@@ -13,7 +13,7 @@
 const cheerio = require('cheerio');
 const { politeGet } = require('./polite');
 const { normCompanyName } = require('./csv');
-const { isFullName, splitName } = require('./jp-names');
+const { isFullName, splitName, stripNonName, completeSurname, normalizeNameKanji } = require('./jp-names');
 const { heuristicExtract, looksLikePersonName } = require('./extract');
 
 // 取得モード。既定 'static'（plain HTTP・Chromium不使用＝低メモリ）。
@@ -24,22 +24,30 @@ const RENDER = process.env.NAMES_RENDER === 'auto' ? 'auto' : 'static';
 // 文字列中から最初の「姓＋名（フルネーム）」を取り出す。
 // 例: "山田 太郎 | 人事担当" -> "山田太郎"。姓辞書で検証できなければ null。
 function firstFullName(str) {
-  const s = String(str || '');
+  // 異体字を標準化（小松﨑→小松崎）。﨑等は基本漢字範囲外で字種分割を壊すため、分割前に正規化する。
+  // 続けて役割語/役職/地名を剥がす（「田中花子採用担当」→「田中花子」/「関東支店」→「」/「中村課長」→「中村」）。
+  const s = stripNonName(normalizeNameKanji(String(str || '')));
   // 日本語人名に使える字種（漢字・かな・長音・区切り空白）以外で分割
   const runs = s.split(/[^一-龥々぀-ゟ゠-ヿー 　]+/);
   for (const run of runs) {
     const t = run.trim();
     if (!t) continue;
     const compact = t.replace(/[ 　]/g, '');
+    if (!compact) continue;
     // 「山田太郎」連結 もしくは「山田 太郎」分かち書き の両方を許容
     if (isFullName(compact)) return compact;
     if (isFullName(t)) return compact;
-    // 長い行は先頭の姓+名(最大5字)だけ切り出して再判定（肩書き連結への保険）
+    // 名が長すぎる場合は先頭1-2字に詰めて再検証（肩書き連結の保険。一般的な名は1-2字、3字は最後）
     const sp = splitName(compact);
     if (sp && sp.mei) {
-      const cand = sp.sei + sp.mei.slice(0, 3);
-      if (isFullName(cand)) return cand;
+      for (const n of [2, 1, 3]) {
+        const cand = sp.sei + sp.mei.slice(0, n);
+        if (isFullName(cand)) return cand;
+      }
     }
+    // 名を伴わない単独姓は辞書完全一致のみ採用（中村/小田=採用、地名片 関東/中央=不採用）
+    const sur = completeSurname(compact);
+    if (sur) return sur;
   }
   return null;
 }
@@ -52,19 +60,10 @@ function firstFullName(str) {
 function extractPersonName(html, { authorSel = [] } = {}) {
   const $ = cheerio.load(html);
   $('script,style,noscript').remove();
-  const text = $('body').text().replace(/\s+/g, ' ');
 
-  // (1) 採用文脈つきの氏名（最も確実）
-  const h = heuristicExtract(text);
-  if (h.found && isFullName(String(h.name).replace(/[ 　]/g, ''))) {
-    return {
-      name: String(h.name).replace(/[ 　]/g, ''),
-      role: h.role || '', department: h.department || '',
-      confidence: h.confidence, where: 'context',
-    };
-  }
-
-  // (2) 投稿者/担当者セレクタ（媒体特有。文脈語を伴わない個人名）
+  // (1) 投稿者/担当者セレクタ（媒体の構造化された投稿者名＝最も確実）。本文ヒューリスティックより優先する。
+  //   ※本文を先に見ると、募集説明文の「採用担当 ○○ 小学…」等のノイズが正しい投稿者名を上書きしてしまう
+  //     （実例: 大畑健小学/鈴木その他/上田これ ← 真の投稿者は 大畑健/萩原勇輝/黒澤一男）。
   for (const sel of authorSel) {
     let hit = null;
     $(sel).each((_, el) => {
@@ -75,6 +74,18 @@ function extractPersonName(html, { authorSel = [] } = {}) {
       if (fn && looksLikePersonName(fn)) hit = fn;
     });
     if (hit) return { name: hit, role: '', department: '', confidence: 0.5, where: 'author' };
+  }
+
+  // (2) 採用文脈つきの氏名（本文ヒューリスティック）。セレクタが無い/取れない場合のフォールバック。
+  //   辞書フルネームで厳密検証（役職/助詞が混じる貪欲一致は不採用＝精度優先）。
+  const text = $('body').text().replace(/\s+/g, ' ');
+  const h = heuristicExtract(text);
+  if (h.found && isFullName(String(h.name).replace(/[ 　]/g, ''))) {
+    return {
+      name: String(h.name).replace(/[ 　]/g, ''),
+      role: h.role || '', department: h.department || '',
+      confidence: h.confidence, where: 'context',
+    };
   }
 
   return null;
@@ -97,8 +108,10 @@ const NAME_ADAPTERS = [
     // ※ 全文検索のため対象社と無関係な人気募集も混じる → companySel で会社一致を必須化する。
     searchUrl: (name) => `https://www.wantedly.com/projects?q=${encodeURIComponent(name)}`,
     detailSel: ['a[href*="/projects/"]'],
-    // 募集ページのメンバー氏名（実DOMで確認: ProjectMemberName / FocusedMemberName）
-    authorSel: ['[class*="MemberName"]', '[class*="UserName"]', '[data-testid*="user"]'],
+    // 募集ページのメンバー氏名。FocusedMemberName＝募集の投稿者(＝採用窓口)を最優先する。
+    // 実DOM検証: 各募集に3-12名のメンバーが載るが、先頭のFocused名が投稿者。明示優先でDOM順依存を排除。
+    // （実キャッシュ4963件で MemberName先頭 と FocusedMemberName は完全一致を確認済み＝出力不変・堅牢化）
+    authorSel: ['[class*="FocusedMemberName"]', '[class*="MemberName"]', '[class*="UserName"]', '[data-testid*="user"]'],
     // 募集ページ上の掲載企業（会社一致の判定に使う）
     companySel: ['a[href*="/companies/"]'],
     // 全文検索は社名スコープでなく上位が変動するため、一致する募集を取りこぼさない範囲で深めに探す

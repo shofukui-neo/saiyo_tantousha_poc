@@ -1,0 +1,464 @@
+{
+  "cycle": "2026-06-19T00:47:16.993Z",
+  "companies": {
+    "リクルートスタッフィング関西オフィス": {
+      "企業名": "株式会社リクルートスタッフィング 関西オフィス",
+      "totalJobs": 1,
+      "gradYears": [],
+      "recencyDays": 23,
+      "sources": {
+        "求人ボックス": {
+          "jobCount": 1,
+          "jobs": [
+            "経理・会計・財務／時給1600円 時短未経験OK土日休み 残業少なめ経..."
+          ],
+          "queries": [
+            "新卒 経理 京都"
+          ],
+          "recencyDays": 23
+        }
+      }
+    },
+    "アデコ": {
+      "企業名": "アデコ株式会社",
+      "totalJobs": 1,
+      "gradYears": [],
+      "recencyDays": 9,
+      "sources": {
+        "求人ボックス": {
+          "jobCount": 1,
+          "jobs": [
+            "一般事務・OA事務／未経験大歓迎フォロー体制ばっちり経理事務"
+          ],
+          "queries": [
+            "新卒 経理 京都"
+          ],
+          "recencyDays": 9
+        }
+      }
+    },
+    "ジャパンエレベーターサービスホールディングス株式": {
+      "企業名": "ジャパンエレベーターサービスホールディングス株式...",
+      "totalJobs": 1,
+      "gradYears": [],
+      "recencyDays": null,
+      "sources": {
+        "求人ボックス": {
+          "jobCount": 1,
+          "jobs": [
+            "日本橋／経理担当 東証プライム上場／業界トップクラスの実績を誇る安定企..."
+          ],
+          "queries": [
+            "新卒 経理 京都"
+          ],
+          "recencyDays": null
+        }
+      }
+    },
+    "アデコスマートファクトリー営業部西日本": {
+      "企業名": "アデコ株式会社 スマートファクトリー営業部 西日本",
+      "totalJobs": 1,
+      "gradYears": [],
+      "recencyDays": null,
+      "sources": {
+        "求人ボックス": {
+          "jobCount": 1,
+          "jobs": [
+            "経理・会計・財務／業績管理事務即日可 コーヒーメーカーでの人事"
+          ],
+          "queries": [
+            "新卒 経理 京都"
+          ],
+          "recencyDays": null
+        }
+      }
+    },
+    "タイヨーアクリス": {
+      "企業名": "株式会社タイヨーアクリス",
+      "totalJobs": 1,
+      "gradYears": [],
+      "recencyDays": 21,
+      "sources": {
+        "求人ボックス": {
+          "jobCount": 1,
+          "jobs": [
+            "京都／亀岡／人事総務 転勤無し／社宅制度有／土日休み／18期連続黒字"
+          ],
+          "queries": [
+            "新卒 経理 京都"
+          ],
+          "recencyDays": 21
+        }
+      }
+    },
+    "日新電機": {
+      "企業名": "日新電機株式会社",
+      "totalJobs": 1,
+      "gradYears": [],
+      "recencyDays": null,
+      "sources": {
+        "求人ボックス": {
+          "jobCount": 1,
+          "jobs": [
+            "東京／経理 社会を支えるトップインフラメーカー／年休129日"
+          ],
+          "queries": [
+            "新卒 経理 京都"
+          ],
+          "recencyDays": null
+        }
+      }
+    },
+    "ネクステージ京都伏見店": {
+      "企業名": "ネクステージ京都伏見店",
+      "totalJobs": 1,
+      "gradYears": [],
+      "recencyDays": null,
+      "sources": {
+        "求人ボックス": {
+          "jobCount": 1,
+          "jobs": [
+            "総合職／未経験OK／研修充実／早期キャリアUP"
+          ],
+          "queries": [
+            "新卒 経理 京都"
+          ],
+          "recencyDays": null
+        }
+      }
+    },
+    "オリナス": {
+      "企業名": "株式会社オリナス",
+      "totalJobs": 1,
+      "gradYears": [],
+      "recencyDays": null,
+      "sources": {
+        "求人ボックス": {
+          "jobCount": 1,
+          "jobs": [
+            "西梅田／バックオフィス 人事労務メイン／年休129日／電子デバイス専門商社／東証"
+          ],
+          "queries": [
+            "新卒 経理 京都"
+          ],
+          "recencyDays": null
+        }
+      }
+    },
+    "hsb": {
+      "企業名": "合同会社HSB",
+      "totalJobs": 1,
+      "gradYears": [],
+      "recencyDays": null,
+      "sources": {
+        "求人ボックス": {
+          "jobCount": 1,
+          "jobs": [
+            "経理／経理事務スタッフ 企業の成長を支える重要なポジションで活躍できる..."
+          ],
+          "queries": [
+            "新卒 経理 京都"
+          ],
+          "recencyDays": null
+        }
+      }
+    },
+    "エクシードジャパン": {
+      "企業名": "株式会社エクシードジャパン",
+      "totalJobs": 1,
+      "gradYears": [],
+      "recencyDays": 7,
+      "sources": {
+        "求人ボックス": {
+          "jobCount": 1,
+          "jobs": [
+            "一般事務／推し活優先でOK!／年間休日129日／未経験からオフィスワークデビュー"
+          ],
+          "queries": [
+            "新卒 経理 京都"
+          ],
+          "recencyDays": 7
+        }
+      }
+    },
+    "ネクステージ京都八幡店": {
+      "企業名": "ネクステージ京都八幡店",
+      "totalJobs": 1,
+      "gradYears": [],
+      "recencyDays": null,
+      "sources": {
+        "求人ボックス": {
+          "jobCount": 1,
+          "jobs": [
+            "総合職／未経験OK／研修充実／早期キャリアUP"
+          ],
+          "queries": [
+            "新卒 経理 京都"
+          ],
+          "recencyDays": null
+        }
+      }
+    },
+    "日新イオン機器": {
+      "企業名": "日新イオン機器株式会社",
+      "totalJobs": 1,
+      "gradYears": [],
+      "recencyDays": null,
+      "sources": {
+        "求人ボックス": {
+          "jobCount": 1,
+          "jobs": [
+            "京都／経理 トップシェア機械装置メーカー／家賃補助など福利厚生充実"
+          ],
+          "queries": [
+            "新卒 経理 京都"
+          ],
+          "recencyDays": null
+        }
+      }
+    },
+    "湯淺ホールディングス": {
+      "企業名": "湯淺ホールディングス株式会社",
+      "totalJobs": 1,
+      "gradYears": [],
+      "recencyDays": null,
+      "sources": {
+        "求人ボックス": {
+          "jobCount": 1,
+          "jobs": [
+            "東京／江東区／総務 経理や給与計算を幅広くお任せ 年休124日"
+          ],
+          "queries": [
+            "新卒 経理 京都"
+          ],
+          "recencyDays": null
+        }
+      }
+    },
+    "マンパワーグループ": {
+      "企業名": "マンパワーグループ株式会社",
+      "totalJobs": 1,
+      "gradYears": [],
+      "recencyDays": null,
+      "sources": {
+        "求人ボックス": {
+          "jobCount": 1,
+          "jobs": [
+            "下京区 年間休日122日@精密部品商社の経理事務"
+          ],
+          "queries": [
+            "新卒 経理 京都"
+          ],
+          "recencyDays": null
+        }
+      }
+    },
+    "novis": {
+      "企業名": "株式会社novis",
+      "totalJobs": 1,
+      "gradYears": [],
+      "recencyDays": null,
+      "sources": {
+        "求人ボックス": {
+          "jobCount": 1,
+          "jobs": [
+            "京都・宇治／人事採用・未経験で人事にチャレンジ／太陽光発電システムの商..."
+          ],
+          "queries": [
+            "新卒 経理 京都"
+          ],
+          "recencyDays": null
+        }
+      }
+    },
+    "成基": {
+      "企業名": "株式会社成基",
+      "totalJobs": 1,
+      "gradYears": [],
+      "recencyDays": null,
+      "sources": {
+        "求人ボックス": {
+          "jobCount": 1,
+          "jobs": [
+            "京都／烏丸／人事 採用・企画等／採用 研修企画まで幅広い業務／転勤無し"
+          ],
+          "queries": [
+            "新卒 経理 京都"
+          ],
+          "recencyDays": null
+        }
+      }
+    },
+    "サンワ": {
+      "企業名": "サンワ株式会社",
+      "totalJobs": 1,
+      "gradYears": [],
+      "recencyDays": 13,
+      "sources": {
+        "求人ボックス": {
+          "jobCount": 1,
+          "jobs": [
+            "大手機械メーカーで経理事務／週3日～OK／17時退社／残業相談OK"
+          ],
+          "queries": [
+            "新卒 経理 京都"
+          ],
+          "recencyDays": 13
+        }
+      }
+    },
+    "共栄工業": {
+      "企業名": "共栄工業株式会社",
+      "totalJobs": 1,
+      "gradYears": [],
+      "recencyDays": null,
+      "sources": {
+        "求人ボックス": {
+          "jobCount": 1,
+          "jobs": [
+            "滋賀県／湖南市／工場総務／定時退社が基本／マイカー通勤可／創業70年以上のオフィ"
+          ],
+          "queries": [
+            "新卒 経理 京都"
+          ],
+          "recencyDays": null
+        }
+      }
+    },
+    "パーソルテンプスタッフ": {
+      "企業名": "パーソルテンプスタッフ株式会社",
+      "totalJobs": 1,
+      "gradYears": [],
+      "recencyDays": 24,
+      "sources": {
+        "求人ボックス": {
+          "jobCount": 1,
+          "jobs": [
+            "データ入力・タイピング／テンプの仲間も活躍中未経験から始める経理のお仕..."
+          ],
+          "queries": [
+            "新卒 経理 京都"
+          ],
+          "recencyDays": 24
+        }
+      }
+    },
+    "hitoricco": {
+      "企業名": "合同会社hitoricco",
+      "totalJobs": 1,
+      "gradYears": [],
+      "recencyDays": null,
+      "sources": {
+        "求人ボックス": {
+          "jobCount": 1,
+          "jobs": [
+            "経理事務／請求書処理・データ入力・経費精算サポート"
+          ],
+          "queries": [
+            "新卒 経理 京都"
+          ],
+          "recencyDays": null
+        }
+      }
+    },
+    "キャリアエンジン": {
+      "企業名": "株式会社キャリアエンジン",
+      "totalJobs": 1,
+      "gradYears": [],
+      "recencyDays": 0,
+      "sources": {
+        "求人ボックス": {
+          "jobCount": 1,
+          "jobs": [
+            "経理・簿記 経理·財務 年商100億円超の商社／完全週休二日"
+          ],
+          "queries": [
+            "新卒 経理 京都"
+          ],
+          "recencyDays": 0
+        }
+      }
+    },
+    "birth": {
+      "企業名": "株式会社Birth",
+      "totalJobs": 1,
+      "gradYears": [],
+      "recencyDays": 0,
+      "sources": {
+        "求人ボックス": {
+          "jobCount": 1,
+          "jobs": [
+            "27新卒・総合職／人事や企画など多様なキャリアあり・土日祝休み／プライベートと両"
+          ],
+          "queries": [
+            "新卒 経理 京都"
+          ],
+          "recencyDays": 0
+        }
+      }
+    },
+    "税理士法人サガノ": {
+      "企業名": "税理士法人サガノ",
+      "totalJobs": 1,
+      "gradYears": [],
+      "recencyDays": 8,
+      "sources": {
+        "求人ボックス": {
+          "jobCount": 1,
+          "jobs": [
+            "「京都嵐山」税理士補助スタッフ"
+          ],
+          "queries": [
+            "新卒 経理 京都"
+          ],
+          "recencyDays": 8
+        }
+      }
+    },
+    "キャリアエッジ": {
+      "企業名": "株式会社キャリアエッジ",
+      "totalJobs": 1,
+      "gradYears": [],
+      "recencyDays": null,
+      "sources": {
+        "求人ボックス": {
+          "jobCount": 1,
+          "jobs": [
+            "経理／未経験から始める経理事務 残業なしで安心／新卒"
+          ],
+          "queries": [
+            "新卒 経理 京都"
+          ],
+          "recencyDays": null
+        }
+      }
+    },
+    "mate": {
+      "企業名": "MATE合同会社",
+      "totalJobs": 1,
+      "gradYears": [],
+      "recencyDays": 0,
+      "sources": {
+        "求人ボックス": {
+          "jobCount": 1,
+          "jobs": [
+            "新卒向け経理事務／請求・支払サポート"
+          ],
+          "queries": [
+            "新卒 経理 京都"
+          ],
+          "recencyDays": 0
+        }
+      }
+    }
+  },
+  "stats": {
+    "perSource": {
+      "求人ボックス": {
+        "cards": 25,
+        "companies": 25
+      }
+    },
+    "staleSources": []
+  }
+}

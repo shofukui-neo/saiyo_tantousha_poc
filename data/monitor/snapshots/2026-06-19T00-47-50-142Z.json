@@ -1,0 +1,472 @@
+{
+  "cycle": "2026-06-19T00:47:50.142Z",
+  "companies": {
+    "hsb": {
+      "企業名": "合同会社HSB",
+      "totalJobs": 1,
+      "gradYears": [
+        "2026"
+      ],
+      "recencyDays": null,
+      "sources": {
+        "求人ボックス": {
+          "jobCount": 1,
+          "jobs": [
+            "26卒新卒／総務／社内運営サポート"
+          ],
+          "queries": [
+            "新卒 総務 神戸"
+          ],
+          "recencyDays": null
+        }
+      }
+    },
+    "三菱電機エンジニアリング": {
+      "企業名": "三菱電機エンジニアリング株式会社",
+      "totalJobs": 1,
+      "gradYears": [],
+      "recencyDays": null,
+      "sources": {
+        "求人ボックス": {
+          "jobCount": 1,
+          "jobs": [
+            "兵庫／神戸／人事総務 まずは新卒採用 将来的に幅広い業務を担当"
+          ],
+          "queries": [
+            "新卒 総務 神戸"
+          ],
+          "recencyDays": null
+        }
+      }
+    },
+    "三菱電機プラントエンジニアリング": {
+      "企業名": "三菱電機プラントエンジニアリング株式会社",
+      "totalJobs": 1,
+      "gradYears": [],
+      "recencyDays": 14,
+      "sources": {
+        "求人ボックス": {
+          "jobCount": 1,
+          "jobs": [
+            "神戸／総務人事「新卒採用メイン」 三菱電機G・社会インフラを支える"
+          ],
+          "queries": [
+            "新卒 総務 神戸"
+          ],
+          "recencyDays": 14
+        }
+      }
+    },
+    "人材プロオフィス": {
+      "企業名": "人材プロオフィス株式会社",
+      "totalJobs": 1,
+      "gradYears": [],
+      "recencyDays": null,
+      "sources": {
+        "求人ボックス": {
+          "jobCount": 1,
+          "jobs": [
+            "人事総務部での一般事務スタッフ"
+          ],
+          "queries": [
+            "新卒 総務 神戸"
+          ],
+          "recencyDays": null
+        }
+      }
+    },
+    "srcホールディングス": {
+      "企業名": "株式会社SRCホールディングス",
+      "totalJobs": 1,
+      "gradYears": [],
+      "recencyDays": null,
+      "sources": {
+        "求人ボックス": {
+          "jobCount": 1,
+          "jobs": [
+            "神戸／人事 グループ6社の採用・育成・制度に携わる／残業少／フレックス"
+          ],
+          "queries": [
+            "新卒 総務 神戸"
+          ],
+          "recencyDays": null
+        }
+      }
+    },
+    "トーコー": {
+      "企業名": "株式会社トーコー",
+      "totalJobs": 1,
+      "gradYears": [],
+      "recencyDays": 14,
+      "sources": {
+        "求人ボックス": {
+          "jobCount": 1,
+          "jobs": [
+            "大阪／枚方／総務人事 制度企画／総合人材サービス業／無借金経営の安定性"
+          ],
+          "queries": [
+            "新卒 総務 神戸"
+          ],
+          "recencyDays": 14
+        }
+      }
+    },
+    "ネクステージ神戸北店": {
+      "企業名": "ネクステージ神戸北店",
+      "totalJobs": 1,
+      "gradYears": [],
+      "recencyDays": null,
+      "sources": {
+        "求人ボックス": {
+          "jobCount": 1,
+          "jobs": [
+            "総合職／未経験OK／研修充実／早期キャリアUP"
+          ],
+          "queries": [
+            "新卒 総務 神戸"
+          ],
+          "recencyDays": null
+        }
+      }
+    },
+    "ジーエークロッシング": {
+      "企業名": "株式会社ジーエークロッシング",
+      "totalJobs": 1,
+      "gradYears": [],
+      "recencyDays": 28,
+      "sources": {
+        "求人ボックス": {
+          "jobCount": 1,
+          "jobs": [
+            "神戸／人事担当 採用企画・給与社保・人事制度など幅広くお任せ"
+          ],
+          "queries": [
+            "新卒 総務 神戸"
+          ],
+          "recencyDays": 28
+        }
+      }
+    },
+    "日精": {
+      "企業名": "日精株式会社",
+      "totalJobs": 1,
+      "gradYears": [],
+      "recencyDays": null,
+      "sources": {
+        "求人ボックス": {
+          "jobCount": 1,
+          "jobs": [
+            "東京／日本橋／管理部スタッフ 経理中心・総務兼務／年休125日"
+          ],
+          "queries": [
+            "新卒 総務 神戸"
+          ],
+          "recencyDays": null
+        }
+      }
+    },
+    "アデコ": {
+      "企業名": "アデコ株式会社",
+      "totalJobs": 1,
+      "gradYears": [],
+      "recencyDays": 0,
+      "sources": {
+        "求人ボックス": {
+          "jobCount": 1,
+          "jobs": [
+            "一般事務・OA事務／長期人気の航空業界総務&経理事務 1600円"
+          ],
+          "queries": [
+            "新卒 総務 神戸"
+          ],
+          "recencyDays": 0
+        }
+      }
+    },
+    "テクノスジャパン": {
+      "企業名": "株式会社テクノスジャパン",
+      "totalJobs": 1,
+      "gradYears": [],
+      "recencyDays": null,
+      "sources": {
+        "求人ボックス": {
+          "jobCount": 1,
+          "jobs": [
+            "姫路／転勤なし／人事総務 主任／福祉機器メーカ／ビュッフェ形式の社員食..."
+          ],
+          "queries": [
+            "新卒 総務 神戸"
+          ],
+          "recencyDays": null
+        }
+      }
+    },
+    "ブイテクノロジー": {
+      "企業名": "株式会社ブイ・テクノロジー",
+      "totalJobs": 1,
+      "gradYears": [],
+      "recencyDays": null,
+      "sources": {
+        "求人ボックス": {
+          "jobCount": 1,
+          "jobs": [
+            "横須賀／人事労務・総務・転勤無／年休125日／東証上場企業"
+          ],
+          "queries": [
+            "新卒 総務 神戸"
+          ],
+          "recencyDays": null
+        }
+      }
+    },
+    "suvland神戸ネクステージ": {
+      "企業名": "SUV LAND神戸／株式会社ネクステージ",
+      "totalJobs": 1,
+      "gradYears": [],
+      "recencyDays": null,
+      "sources": {
+        "求人ボックス": {
+          "jobCount": 1,
+          "jobs": [
+            "総合職／未経験歓迎／20代30代活躍中!年収900万円可／年休125日／東証プラ"
+          ],
+          "queries": [
+            "新卒 総務 神戸"
+          ],
+          "recencyDays": null
+        }
+      }
+    },
+    "メイショク": {
+      "企業名": "株式会社メイショク",
+      "totalJobs": 1,
+      "gradYears": [],
+      "recencyDays": null,
+      "sources": {
+        "求人ボックス": {
+          "jobCount": 1,
+          "jobs": [
+            "加古川・転勤無／総務 労務管理メイン／食品メーカー／食卓に並ぶ「あの商..."
+          ],
+          "queries": [
+            "新卒 総務 神戸"
+          ],
+          "recencyDays": null
+        }
+      }
+    },
+    "明石機械工業": {
+      "企業名": "明石機械工業株式会社",
+      "totalJobs": 1,
+      "gradYears": [],
+      "recencyDays": null,
+      "sources": {
+        "求人ボックス": {
+          "jobCount": 1,
+          "jobs": [
+            "加古郡／人事 採用等／トヨタ自動車及びダイハツ工業の連結対象子会社／年休121日"
+          ],
+          "queries": [
+            "新卒 総務 神戸"
+          ],
+          "recencyDays": null
+        }
+      }
+    },
+    "creer": {
+      "企業名": "株式会社Creer",
+      "totalJobs": 1,
+      "gradYears": [
+        "2027"
+      ],
+      "recencyDays": 0,
+      "sources": {
+        "求人ボックス": {
+          "jobCount": 1,
+          "jobs": [
+            "「27卒」アニメ・マンガ制作会社のバックオフィススタッフ正社員／残業少なめ・第2"
+          ],
+          "queries": [
+            "新卒 総務 神戸"
+          ],
+          "recencyDays": 0
+        }
+      }
+    },
+    "インターテクノ": {
+      "企業名": "株式会社インターテクノ",
+      "totalJobs": 1,
+      "gradYears": [],
+      "recencyDays": null,
+      "sources": {
+        "求人ボックス": {
+          "jobCount": 1,
+          "jobs": [
+            "メーカーで総務事務／土日祝休み／車通勤OK"
+          ],
+          "queries": [
+            "新卒 総務 神戸"
+          ],
+          "recencyDays": null
+        }
+      }
+    },
+    "牧野技術サービス": {
+      "企業名": "株式会社牧野技術サービス",
+      "totalJobs": 1,
+      "gradYears": [],
+      "recencyDays": null,
+      "sources": {
+        "求人ボックス": {
+          "jobCount": 1,
+          "jobs": [
+            "神奈川県愛甲郡／未経験歓迎／人事職 採用／年休124日／プライム上場牧野フライス"
+          ],
+          "queries": [
+            "新卒 総務 神戸"
+          ],
+          "recencyDays": null
+        }
+      }
+    },
+    "コベルコシンワ": {
+      "企業名": "コベルコシンワ株式会社",
+      "totalJobs": 1,
+      "gradYears": [],
+      "recencyDays": 10,
+      "sources": {
+        "求人ボックス": {
+          "jobCount": 1,
+          "jobs": [
+            "兵庫県／明石市／総務課長 人事労務がメイン／神戸製鋼グループの安定企業"
+          ],
+          "queries": [
+            "新卒 総務 神戸"
+          ],
+          "recencyDays": 10
+        }
+      }
+    },
+    "alsok兵庫": {
+      "企業名": "ALSOK兵庫株式会社",
+      "totalJobs": 1,
+      "gradYears": [],
+      "recencyDays": null,
+      "sources": {
+        "求人ボックス": {
+          "jobCount": 1,
+          "jobs": [
+            "金融機関施設警備員"
+          ],
+          "queries": [
+            "新卒 総務 神戸"
+          ],
+          "recencyDays": null
+        }
+      }
+    },
+    "ジョブパワー": {
+      "企業名": "株式会社ジョブパワー",
+      "totalJobs": 1,
+      "gradYears": [],
+      "recencyDays": 8,
+      "sources": {
+        "求人ボックス": {
+          "jobCount": 1,
+          "jobs": [
+            "工事部総務課担当者"
+          ],
+          "queries": [
+            "新卒 総務 神戸"
+          ],
+          "recencyDays": 8
+        }
+      }
+    },
+    "elm": {
+      "企業名": "株式会社ELM",
+      "totalJobs": 1,
+      "gradYears": [
+        "2027"
+      ],
+      "recencyDays": 0,
+      "sources": {
+        "求人ボックス": {
+          "jobCount": 1,
+          "jobs": [
+            "「27卒」ペット・動物関連会社のバックオフィススタッフ／第2新卒歓迎／交通費全額"
+          ],
+          "queries": [
+            "新卒 総務 神戸"
+          ],
+          "recencyDays": 0
+        }
+      }
+    },
+    "elシステム": {
+      "企業名": "株式会社ELシステム",
+      "totalJobs": 1,
+      "gradYears": [
+        "2027"
+      ],
+      "recencyDays": 0,
+      "sources": {
+        "求人ボックス": {
+          "jobCount": 1,
+          "jobs": [
+            "「27卒」エンタメ・音楽会社のバックオフィススタッフ「残業少なめ・MOS資格取得"
+          ],
+          "queries": [
+            "新卒 総務 神戸"
+          ],
+          "recencyDays": 0
+        }
+      }
+    },
+    "グローバルネットワークコーポレーション": {
+      "企業名": "株式会社グローバルネットワークコーポレーション",
+      "totalJobs": 1,
+      "gradYears": [],
+      "recencyDays": null,
+      "sources": {
+        "求人ボックス": {
+          "jobCount": 1,
+          "jobs": [
+            "社員の働きやすさを支える総務スタッフ募集!未経験から成長できる環境"
+          ],
+          "queries": [
+            "新卒 総務 神戸"
+          ],
+          "recencyDays": null
+        }
+      }
+    },
+    "柏原マルタマフーズ名谷病院内厨房": {
+      "企業名": "柏原マルタマフーズ株式会社 名谷病院内厨房",
+      "totalJobs": 1,
+      "gradYears": [],
+      "recencyDays": null,
+      "sources": {
+        "求人ボックス": {
+          "jobCount": 1,
+          "jobs": [
+            "調理補助・総合職／新卒／その他・学歴不問"
+          ],
+          "queries": [
+            "新卒 総務 神戸"
+          ],
+          "recencyDays": null
+        }
+      }
+    }
+  },
+  "stats": {
+    "perSource": {
+      "求人ボックス": {
+        "cards": 25,
+        "companies": 25
+      }
+    },
+    "staleSources": []
+  }
+}

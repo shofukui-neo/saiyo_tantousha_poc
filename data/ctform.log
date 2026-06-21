@@ -1,0 +1,365 @@
+FORMS [
+ {
+  "action": "/condition-search/postResult/",
+  "method": "post",
+  "inputs": [
+   {
+    "name": "keyword",
+    "type": "hidden",
+    "ph": ""
+   },
+   {
+    "name": "industryLCd",
+    "type": "hidden",
+    "ph": ""
+   },
+   {
+    "name": "occupationLCd",
+    "type": "hidden",
+    "ph": ""
+   },
+   {
+    "name": "opeAreaCd",
+    "type": "hidden",
+    "ph": ""
+   },
+   {
+    "name": "topFg",
+    "type": "hidden",
+    "ph": ""
+   },
+   {
+    "name": "pcSearchTabCompKeyword",
+    "type": "search",
+    "ph": "企業名やキーワードを入力する"
+   },
+   {
+    "name": "spSearchTabCompKeyword",
+    "type": "search",
+    "ph": "企業名やキーワードを入力する"
+   },
+   {
+    "name": "SearchTabCompIndustryLCd",
+    "type": "select-one"
+   }
+  ]
+ },
+ {
+  "action": "/intern-search/postResult/",
+  "method": "post",
+  "inputs": [
+   {
+    "name": "keyword",
+    "type": "hidden",
+    "ph": ""
+   },
+   {
+    "name": "industryLCd",
+    "type": "hidden",
+    "ph": ""
+   },
+   {
+    "name": "isSkdCd",
+    "type": "hidden",
+    "ph": ""
+   },
+   {
+    "name": "isPrefCd",
+    "type": "hidden",
+    "ph": ""
+   },
+   {
+    "name": "topFg",
+    "type": "hidden",
+    "ph": ""
+   },
+   {
+    "name": "searchTabInCompKeyword__pc",
+    "type": "search",
+    "ph": "企業名やキーワードを入力する"
+   },
+   {
+    "name": "searchTabInCompKeyword__sp",
+    "type": "search",
+    "ph": "企業名やキーワードを入力する"
+   },
+   {
+    "name": "searchTabInCompIndustryLCd",
+    "type": "select-one"
+   }
+  ]
+ },
+ {
+  "action": "/employment-search/postResult/",
+  "method": "post",
+  "inputs": [
+   {
+    "name": "keyword",
+    "type": "hidden",
+    "ph": ""
+   },
+   {
+    "name": "industryLCd",
+    "type": "hidden",
+    "ph": ""
+   },
+   {
+    "name": "occupationLCd",
+    "type": "hidden",
+    "ph": ""
+   },
+   {
+    "name": "opeAreaCd",
+    "type": "hidden",
+    "ph": ""
+   },
+   {
+    "name": "topFg",
+    "type": "hidden",
+    "ph": ""
+   },
+   {
+    "name": "pcSearchTabAdoptionKeyword",
+    "type": "search",
+    "ph": "企業名やキーワードを入力する"
+   },
+   {
+    "name": "spSearchTabAdoptionKeyword",
+    "type": "search",
+    "ph": "企業名やキーワードを入力する"
+   },
+   {
+    "name": "searchTabAdoptionIndustryLCd",
+    "type": "select-one"
+   }
+  ]
+ },
+ {
+  "action": "/seminar-search/postResult/",
+  "method": "post",
+  "inputs": [
+   {
+    "name": "keyword",
+    "type": "hidden",
+    "ph": ""
+   },
+   {
+    "name": "days",
+    "type": "hidden",
+    "ph": ""
+   },
+   {
+    "name": "smnPrefCd",
+    "type": "hidden",
+    "ph": ""
+   },
+   {
+    "name": "industryLCd",
+    "type": "hidden",
+    "ph": ""
+   },
+   {
+    "name": "topFg",
+    "type": "hidden",
+    "ph": ""
+   },
+   {
+    "name": "pcSearchTabSeminarKeyword",
+    "type": "search",
+    "ph": "企業名やキーワードを入力する"
+   },
+   {
+    "name": "spSearchTabSeminarKeyword",
+    "type": "search",
+    "ph": "企業名やキーワードを入力する"
+   },
+   {
+    "name": "searchTabSeminarEventDate",
+    "type": "hidden",
+    "ph": "開催日から探す"
+   }
+  ]
+ },
+ {
+  "action": "/counterplan-search/postResult/",
+  "method": "post",
+  "inputs": [
+   {
+    "name": "tcd",
+    "type": "hidden",
+    "ph": ""
+   },
+   {
+    "name": "keyword",
+    "type": "hidden",
+    "ph": ""
+   },
+   {
+    "name": "testCd",
+    "type": "hidden",
+    "ph": ""
+   },
+   {
+    "name": "testDetailCd",
+    "type": "hidden",
+    "ph": ""
+   },
+   {
+    "name": "activityExpCd",
+    "type": "hidden",
+    "ph": ""
+   },
+   {
+    "name": "pcSearchTabCounterPlanKeyword",
+    "type": "search",
+    "ph": "企業名やキーワードを入力する"
+   },
+   {
+    "name": "spSearchTabCounterPlanKeyword",
+    "type": "search",
+    "ph": "企業名やキーワードを入力する"
+   },
+   {
+    "name": "testCd",
+    "type": "select-one"
+   }
+  ]
+ },
+ {
+  "action": "/condition-search/postResult/",
+  "method": "post",
+  "inputs": [
+   {
+    "name": "keyword",
+    "type": "hidden",
+    "ph": ""
+   },
+   {
+    "name": "industryLCd",
+    "type": "hidden",
+    "ph": ""
+   },
+   {
+    "name": "occupationLCd",
+    "type": "hidden",
+    "ph": ""
+   },
+   {
+    "name": "opeAreaCd",
+    "type": "hidden",
+    "ph": ""
+   },
+   {
+    "name": "topFg",
+    "type": "hidden",
+    "ph": ""
+   },
+   {
+    "name": "pcfixedTabBarKeyword",
+    "type": "text",
+    "ph": "企業名やキーワードを入力する"
+   },
+   {
+    "name": "spfixedTabBarKeyword",
+    "type": "search",
+    "ph": "企業名やキーワードを入力する"
+   },
+   {
+    "name": "conditionIndustry",
+    "type": "select-one"
+   }
+  ]
+ },
+ {
+  "action": "/employment-search/postResult/",
+  "method": "post",
+  "inputs": [
+   {
+    "name": "keyword",
+    "type": "hidden",
+    "ph": ""
+   },
+   {
+    "name": "industryLCd",
+    "type": "hidden",
+    "ph": ""
+   },
+   {
+    "name": "occupationLCd",
+    "type": "hidden",
+    "ph": ""
+   },
+   {
+    "name": "opeAreaCd",
+    "type": "hidden",
+    "ph": ""
+   },
+   {
+    "name": "topFg",
+    "type": "hidden",
+    "ph": ""
+   },
+   {
+    "name": "pcfixedTabBarEmploymentKeyword",
+    "type": "text",
+    "ph": "企業名やキーワードを入力する"
+   },
+   {
+    "name": "spfixedTabBarEmploymentKeyword",
+    "type": "text",
+    "ph": "企業名やキーワードを入力する"
+   },
+   {
+    "name": "employmentIndustry",
+    "type": "select-one"
+   }
+  ]
+ },
+ {
+  "action": "/seminar-search/postResult/",
+  "method": "post",
+  "inputs": [
+   {
+    "name": "keyword",
+    "type": "hidden",
+    "ph": ""
+   },
+   {
+    "name": "days",
+    "type": "hidden",
+    "ph": ""
+   },
+   {
+    "name": "smnPrefCd",
+    "type": "hidden",
+    "ph": ""
+   },
+   {
+    "name": "industryLCd",
+    "type": "hidden",
+    "ph": ""
+   },
+   {
+    "name": "topFg",
+    "type": "hidden",
+    "ph": ""
+   },
+   {
+    "name": "pcfixedTabBarSeminarKeyword",
+    "type": "text",
+    "ph": "企業名やキーワードを入力する"
+   },
+   {
+    "name": "spfixedTabBarSeminarKeyword",
+    "type": "text",
+    "ph": "企業名やキーワードを入力する"
+   },
+   {
+    "name": "seminarEventDate",
+    "type": "hidden",
+    "ph": "開催日から探す"
+   }
+  ]
+ }
+]
+INPUTS [{"name":"","type":"search","ph":"企業名やキーワードを入力する","id":"HeaderSearchKeyword"},{"name":"pcSearchTabCompKeyword","type":"search","ph":"企業名やキーワードを入力する","id":"pcSearchTabCompKeyword"},{"name":"spSearchTabCompKeyword","type":"search","ph":"企業名やキーワードを入力する","id":"spSearchTabCompKeyword"},{"name":"searchTabInCompKeyword__pc","type":"search","ph":"企業名やキーワードを入力する","id":"searchTabInCompKeyword__pc"},{"name":"searchTabInCompKeyword__sp","type":"search","ph":"企業名やキーワードを入力する","id":"searchTabInCompKeyword__sp"},{"name":"pcSearchTabAdoptionKeyword","type":"search","ph":"企業名やキーワードを入力する","id":"pcSearchTabAdoptionKeyword"},{"name":"spSearchTabAdoptionKeyword","type":"search","ph":"企業名やキーワードを入力する","id":"spSearchTabAdoptionKeyword"},{"name":"pcSearchTabSeminarKeyword","type":"search","ph":"企業名やキーワードを入力する","id":"pcSearchTabSeminarKeyword"},{"name":"spSearchTabSeminarKeyword","type":"search","ph":"企業名やキーワードを入力する","id":"spSearchTabSeminarKeyword"},{"name":"","type":"text","ph":"開催日から探す","id":""},{"name":"pcSearchTabCounterPlanKeyword","type":"search","ph":"企業名やキーワードを入力する","id":"pcSearchTabCounterPlanKeyword"},{"name":"spSearchTabCounterPlanKeyword","type":"search","ph":"企業名やキーワードを入力する","id":"spSearchTabCounterPlanKeyword"}]

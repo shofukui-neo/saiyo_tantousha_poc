@@ -153,6 +153,65 @@ function testName() {
   // 明示的な「採用担当：氏名」は拾う
   const good = heuristicExtract('採用担当：佐藤 花子 までお問い合わせください');
   ok('heuristicExtract: 「採用担当：佐藤 花子」を抽出', good.found === true && good.name === '佐藤 花子');
+  // 語尾の敬称/助詞/役職の貪欲取り込みを剥がす（精度：validateHitは課長/さん等を弾けないため抽出側で除去）
+  const hh = (t) => { const h = heuristicExtract(t); return h.found ? h.name.replace(/[ 　]/g, '') : ''; };
+  ok('heuristicExtract: 「山田太郎さん」→山田太郎（敬称を剥がす）', hh('人事ご担当 山田太郎さん') === '山田太郎');
+  ok('heuristicExtract: 「鈴木一郎より」→鈴木一郎（助詞を剥がす）', hh('採用担当 鈴木一郎より') === '鈴木一郎');
+  ok('heuristicExtract: 「田中花子です」→田中花子', hh('採用担当者：田中花子です') === '田中花子');
+  ok('heuristicExtract: 「中村課長 まで」→中村（役職＋助詞を剥がす）', hh('採用担当：中村課長 まで') === '中村');
+  ok('heuristicExtract: ひらがな名「渡辺さくら」は保持', hh('人事担当：渡辺さくら への連絡') === '渡辺さくら');
+  // 実データ由来の精度: 正規表現の(者)?＋貪欲一致で生じる「者＋後続」ノイズを姓辞書ゲートで排除
+  ok('heuristicExtract: 「採用担当者からのメッセージ」を氏名にしない', heuristicExtract('採用担当者からのメッセージ').found === false);
+  ok('heuristicExtract: 「採用担当者とのコミュニケーション」を氏名にしない', heuristicExtract('採用担当者とのコミュニケーション').found === false);
+  return fail;
+}
+
+// ---- 姓ガゼッティア（jp-names）の再現率／精度の回帰固定 ----
+// 実データ(代表者名)由来で拡充した姓が解決でき、地名片を姓と誤認しないことを固定する。
+function testSurnameDict() {
+  let fail = 0;
+  const { isFullName, completeSurname, splitName } = require('../src/jp-names');
+  const ok = (label, cond) => { if (cond) console.log('✓ ' + label); else { console.log('✗ ' + label); fail++; } };
+  // 拡充した実在姓はフルネームとして解決できる（再現率）
+  for (const f of ['小田太郎', '安達健一', '島袋美咲', '齊藤隆', '廣瀬学', '宮脇彩', '葛西亮']) {
+    ok(`isFullName: 拡充姓「${f}」を解決`, isFullName(f) === true);
+  }
+  // Wantedly実データ却下分から採取した姓（再現率: 抽出率68.6%→80.3%に寄与）
+  for (const f of ['奥田翔', '天野彩', '綿貫翼', '都築博志', '永野健', '福永祐大', '井口卓也', '多田健一', '荻原昌真']) {
+    ok(`isFullName: Wantedly採取姓「${f}」を解決`, isFullName(f) === true);
+  }
+  // 3字姓は3字で照合（2字片が辞書姓でも誤分節しない / 従来nullだった姓を救う）
+  ok('splitName: 「久保田聖也」→久保田+聖也（久保で誤分節しない）', JSON.stringify(splitName('久保田聖也')) === JSON.stringify({ sei: '久保田', mei: '聖也' }));
+  ok('splitName: 「宇都宮元樹」→宇都宮+元樹（従来nullを救う）', JSON.stringify(splitName('宇都宮元樹')) === JSON.stringify({ sei: '宇都宮', mei: '元樹' }));
+  ok('splitName: 2字姓「久保裕子」は久保+裕子のまま（3字姓追加で壊さない）', JSON.stringify(splitName('久保裕子')) === JSON.stringify({ sei: '久保', mei: '裕子' }));
+  // 異体字（﨑/髙/邉/澤…）を標準字に正規化して辞書照合（Wantedly投稿者名に54種出現）
+  const { normalizeNameKanji } = require('../src/jp-names');
+  ok('normalizeNameKanji: 髙→高/﨑→崎/邉→辺', normalizeNameKanji('髙橋山﨑渡邉') === '高橋山崎渡辺');
+  ok('isFullName: 異体字「髙橋美羽」を解決（→高橋）', isFullName('髙橋美羽') === true);
+  ok('isFullName: 異体字「小松﨑泰広」を解決（→小松崎・3字姓）', isFullName('小松﨑泰広') === true);
+  ok('splitName: 「山﨑将司」→山崎+将司（正規化）', JSON.stringify(splitName('山﨑将司')) === JSON.stringify({ sei: '山崎', mei: '将司' }));
+  ok('completeSurname: 異体字単独姓「髙」は不可だが「山﨑」→山崎', completeSurname('山﨑') === '山崎');
+  // 単独姓は辞書完全一致のみ採用（拡充姓は採る）
+  ok('completeSurname: 「小田」を単独姓として採用', completeSurname('小田') === '小田');
+  // 地名片・一般語は姓にしない（精度。名古屋の部分片 古屋 も入れていない）
+  for (const w of ['中央', '関東', '関西', '中国', '四国', '名古屋', '古屋', '大阪', '東京']) {
+    ok(`completeSurname: 地名片「${w}」は姓にしない`, completeSurname(w) === '');
+  }
+  // 実データ由来: 都市/拠点語が氏名に貼り付くケース（佐藤東京/中野事務所/西信用金庫）を stripNonName で剥がす
+  const { stripNonName } = require('../src/jp-names');
+  ok('stripNonName: 「佐藤東京」→佐藤（都市名を剥がす）', stripNonName('佐藤東京').replace(/[ 　]/g, '') === '佐藤');
+  ok('stripNonName: 「中野事務所」→中野（拠点語を剥がす）', stripNonName('中野事務所').replace(/[ 　]/g, '') === '中野');
+  ok('stripNonName: 「西信用金庫」→西（信用金庫を剥がす）', stripNonName('西信用金庫').replace(/[ 　]/g, '') === '西');
+  ok('stripNonName: 「池田宛」→池田（宛先語を剥がす）', stripNonName('池田宛').replace(/[ 　]/g, '') === '池田');
+  ok('stripNonName: 「山田御中」→山田（御中を剥がす）', stripNonName('山田御中').replace(/[ 　]/g, '') === '山田');
+  // 「行」は給名語尾(正行/和行)に頻出→剥がさない（安全性）
+  ok('stripNonName: 「田中正行」は保持（行を給名語尾として剥がさない）', stripNonName('田中正行').replace(/[ 　]/g, '') === '田中正行');
+  // 役員系の役職（代表/社長/取締役/会長…）も氏名に貼り付くので剥がす（Wantedly投稿者名/会社ページで頻出）
+  ok('stripNonName: 「山田代表」→山田', stripNonName('山田代表').replace(/[ 　]/g, '') === '山田');
+  ok('stripNonName: 「渡辺代表取締役」→渡辺', stripNonName('渡辺代表取締役').replace(/[ 　]/g, '') === '渡辺');
+  ok('stripNonName: 「佐藤社長」→佐藤', stripNonName('佐藤社長').replace(/[ 　]/g, '') === '佐藤');
+  // 安全性: 1字名に役職字が含まれても、役職“語”でなければ剥がさない
+  ok('stripNonName: 「田中理」は保持（理事の理単独は剥がさない）', stripNonName('田中理').replace(/[ 　]/g, '') === '田中理');
   return fail;
 }
 
@@ -167,12 +226,19 @@ function testNameScraping() {
   ok('firstFullName: 連結「佐藤花子」を許容', firstFullName('佐藤花子') === '佐藤花子');
   ok('firstFullName: 役割語「採用担当」は人名にしない', firstFullName('採用担当') === null);
   ok('firstFullName: 法人格付き社名は人名にしない', firstFullName('株式会社テスト') === null);
+  // 役割語/役職/地名が氏名に貼り付く現実形（jp-names.stripNonName 共有ガード）
+  ok('firstFullName: 「田中花子採用担当」→田中花子（役割語を剥がす）', firstFullName('田中花子採用担当') === '田中花子');
+  ok('firstFullName: 「採用担当 中村課長」→中村（役職を剥がし単独姓を採用）', firstFullName('採用担当 中村課長') === '中村');
+  ok('firstFullName: 地名片「関東支店」は人名にしない', firstFullName('関東支店') === null);
   // extractPersonName: (1)採用文脈は高確度、(2)投稿者セレクタは中確度
   const ctx = extractPersonName('<body><p>採用担当：高橋 健一</p></body>');
   ok('extractPersonName: 採用文脈から高橋健一(conf0.7)', !!ctx && ctx.name === '高橋健一' && ctx.confidence === 0.7);
   const auth = extractPersonName('<body><div class="UserName">中村 さくら</div></body>', { authorSel: ['[class*="UserName"]'] });
   ok('extractPersonName: 投稿者セレクタから中村さくら(conf0.5)', !!auth && auth.name === '中村さくら' && auth.where === 'author');
   ok('extractPersonName: 個人名が無ければnull', extractPersonName('<body><p>採用担当者まで</p></body>') === null);
+  // 投稿者セレクタを本文ヒューリスティックより優先（本文の募集説明ノイズで正しい投稿者名を上書きしない）
+  const pri = extractPersonName('<body><div class="MemberName">大畑 健</div><p>採用担当 大畑健 小学校教員出身</p></body>', { authorSel: ['[class*="MemberName"]'] });
+  ok('extractPersonName: 投稿者セレクタを本文より優先（大畑健、小学ノイズを上書きしない）', !!pri && pri.name === '大畑健' && pri.where === 'author');
   // pickDetailUrls: 対象セレクタのリンクのみ・絶対URL化・上限
   const urls = pickDetailUrls('<body><a href="/projects/1">A</a><a href="/projects/2">B</a><a href="/x">x</a></body>',
     'https://www.wantedly.com/search', ['a[href*="/projects/"]'], 'テスト', 2);
@@ -497,6 +563,113 @@ function testSourceKpiLogic() {
   return fail;
 }
 
+// ---- 媒体ページ・スクレイパの純抽出ロジック検証（実DOM由来のfixtureで回帰固定・ネットワーク不要）----
+function testMediaScrapers() {
+  let fail = 0;
+  const ok = (label, cond) => { if (cond) console.log('✓ ' + label); else { console.log('✗ ' + label); fail++; } };
+  const { extractCompanyFacts, extractIntentSignals, extractRecruiterName, emptyResult } = require('../src/scrape-base');
+  const { RikunabiScraper } = require('../src/scrape-rikunabi');
+
+  // 共通スキーマの空テンプレ
+  const tpl = emptyResult('株式会社サンプル', 'リクナビ掲載');
+  ok('emptyResult: 共通スキーマ＋媒体掲載列を持つ', tpl.企業名 === '株式会社サンプル' && 'リクナビ掲載' in tpl && '従業員数' in tpl);
+
+  // キャリタス corp 実テキスト（probeで捕獲：アフラック生命保険）
+  const ctText = 'アフラック生命保険株式会社 4.08 2,938 フォロワー 企業データ 総資産： 13兆926億円 従業員数 4874人 創業/設立 1974 受付状況 本選考エントリー受付中';
+  const ctFacts = extractCompanyFacts({ text: ctText });
+  ok('キャリタス: 従業員数 4874 を抽出', ctFacts.従業員数 === '4874');
+  ok('キャリタス: 設立 1974 を抽出', ctFacts.設立 === '1974');
+
+  // ONE CAREER 企業ページ実テキスト（probeで捕獲：ワンキャリア社）
+  const ocText = '企業情報 本社：東京都 資本金：59百万円 売上高：7,576百万円 従業員数：307名（平均臨時雇用者数148名）※2026年3月時点';
+  const ocFacts = extractCompanyFacts({ text: ocText });
+  ok('ONE CAREER: 従業員数 307 を抽出', ocFacts.従業員数 === '307');
+  ok('ONE CAREER: 資本金 59百万円 を抽出（百万円表記）', ocFacts.資本金 === '59百万円');
+
+  // リクナビ 本選考ビュー実テキスト（probeで捕獲：アイリスオーヤマ）
+  const rkText = '新卒採用 アイリスオーヤマ株式会社 半導体・電子機器メーカー、食品・飲料メーカー、製造・メーカー 27年卒 宮城県、埼玉県、東京都 営業、SCM/生産管理/購買/物流、人事、広報/IR、商品企画、マーケティング・広告・宣伝 デザイン職';
+  const rres = emptyResult('アイリスオーヤマ', 'リクナビ掲載');
+  new RikunabiScraper()._readNewGrad(rkText, rres);
+  ok('リクナビ: 卒年 27年卒 を抽出', rres.卒年 === '27年卒');
+  ok('リクナビ: 職種を複数抽出（営業/人事/広報/企画等）',
+    /営業/.test(rres.募集職種) && /人事/.test(rres.募集職種) && Number(rres.募集職種数) >= 4);
+
+  // 従業員数: 体験談ノイズ("社員1人")を避け、本来の従業員数を採る
+  ok('従業員数: 体験談"社員1人"を拾わず従業員数を採る',
+    extractCompanyFacts({ text: '社員1人が活躍中 … 従業員数 5,000名' }).従業員数 === '5000');
+  ok('従業員数: 括弧ラベル付き"従業員数（単体）21,404人"を採る',
+    extractCompanyFacts({ text: '従業員数（単体）21,404人' }).従業員数 === '21404');
+  // 募集職種: 職種語を含まない断片ノイズ（"ント"等）は採らない
+  ok('募集職種: 断片ノイズ"ント"を弾く', !extractIntentSignals('マネジメント職').募集職種 || /営業|企画|職/.test(extractIntentSignals('募集職種 営業').募集職種));
+  ok('募集職種: 職種語を含む実体は採る', /営業/.test(extractIntentSignals('募集職種：営業、エンジニア').募集職種));
+
+  // 卒年表記ゆれ
+  ok('卒年: "2027" を拾う', extractIntentSignals('2027年度採用').卒年 === '2027' || extractIntentSignals('2027年度採用').卒年 === '2027年');
+  ok('卒年: "28卒" を拾う', extractIntentSignals('28卒 募集中').卒年 === '28卒');
+
+  // 採用担当者名（人名辞書ゲート）
+  const nm = extractRecruiterName('人事部 採用担当 早瀬 峻介 へお問い合わせください');
+  ok('担当者名: 「早瀬 峻介」を抽出し部署/役職も付随', nm.name === '早瀬 峻介' && /人事/.test(nm.dept) && /採用担当/.test(nm.role));
+  ok('担当者名: 役割語のみ（採用担当）は人名にしない', !extractRecruiterName('採用担当 までご連絡').name);
+  // 採用窓口の部署(人事/総務/採用/管理)直後の氏名は採るが、事業部の社員インタビュー名は採らない（正しさ）
+  ok('担当者名: 「総務部 松田龍治」は採用窓口→抽出', extractRecruiterName('連絡先 総務部 松田 龍治 TEL').name.replace(/[ 　]/g, '') === '松田龍治');
+  ok('担当者名: 「マーケティング部 新垣凜」(社員インタビュー)は抽出しない', !extractRecruiterName('社員インタビュー トレードマーケティング部 新垣 凜').name);
+  ok('担当者名: 「営業部 宇野修平」(先輩の声)は抽出しない', !extractRecruiterName('先輩インタビュー 営業部 宇野 修平 read more').name);
+  // 姓＋一般語の誤検出（人事関連→関連）を looksLikePersonName ブロックリストで弾く
+  ok('担当者名: 「人事関連」は氏名にしない（関連=一般語）', !extractRecruiterName('組織・人事関連 Recruit').name);
+  ok('担当者名: 実在の関姓「採用担当 関根太郎」は抽出', extractRecruiterName('人事部 採用担当 関根 太郎').name.replace(/[ 　]/g, '') === '関根太郎');
+  // 役職/地名が氏名に貼り付く現実形（jp-names.stripNonName 共有化で精度/再現率を両立）
+  const baseName = (t) => (extractRecruiterName(t).name || '').replace(/[ 　]/g, '');
+  ok('担当者名: 「中村課長」→中村（役職を氏名に含めない）', baseName('問合せ先 人事部 採用担当 中村課長 03-1111-1111') === '中村');
+  ok('担当者名: 「山田太郎部長」→山田太郎', baseName('人事部 採用担当 山田太郎部長') === '山田太郎');
+  ok('担当者名: 「田中花子採用担当」→田中花子（役割語を剥がす）', baseName('お問合せ 人事部 田中花子採用担当 mail@x.jp') === '田中花子');
+  ok('担当者名: 「関東支店」は氏名にしない（地名片を弾く）', baseName('問合せ先 人事課 関東支店 048-000-0000') === '');
+  ok('担当者名: 地名片「中央」は氏名にしない', baseName('管理部 中央 までご連絡') === '');
+
+  // 採用メールのローカル部から姓を推定（中堅大手の数少ない個人名レバー。マイナビ実取得 Tsagara@→相良 で実証）
+  const { nameFromEmail } = require('../src/romaji-name');
+  const surOf = (e) => { const r = nameFromEmail(e); return r ? r.surname : ''; };
+  ok('nameFromEmail: 「Tsagara@…」→相良（先頭イニシャル除去）', surOf('Tsagara@tos-kk.co.jp') === '相良');
+  ok('nameFromEmail: 「ksato@…」→佐藤', surOf('ksato@x.co.jp') === '佐藤');
+  ok('nameFromEmail: 「yamada.t@…」→山田', surOf('yamada.t@x.jp') === '山田');
+  ok('nameFromEmail: ロール系「recruit@/saiyou@/info@」は姓にしない', !surOf('recruit@x.jp') && !surOf('saiyou@x.jp') && !surOf('info@x.jp'));
+  // 拡張した姓（ランク~200）も拾う（マイナビ実走の取りこぼし補完: ogura→小倉, takeda→武田 等）
+  ok('nameFromEmail: 「ogura.a@」→小倉（拡張姓）', surOf('ogura.a@tsuuden.co.jp') === '小倉');
+  ok('nameFromEmail: 「seiichiro_takeda@」→武田（given_surname形）', surOf('seiichiro_takeda@x.co.jp') === '武田');
+  ok('nameFromEmail: 「yoshimi.inoue@」→井上', surOf('yoshimi.inoue@x.co.jp') === '井上');
+  return fail;
+}
+
+// ---- マイナビ『問合せ先』ブロックの構造分解（実産出経路）の精度回帰固定 ----
+// 役割語/役職/地名が氏名に貼り付く・部署の直後に来る現実のレイアウトで、再現率と精度の両立を固定する。
+function testMynaviContact() {
+  let fail = 0;
+  const { parseContactBlock } = require('../src/scrape-mynavi');
+  const ok = (label, cond) => { if (cond) console.log('✓ ' + label); else { console.log('✗ ' + label); fail++; } };
+  const nameOf = (t) => (parseContactBlock(t).採用担当者名 || '').replace(/[ 　]/g, '');
+  // 実取得の本命形（部署→氏名→電話→メール）
+  ok('問合せ先: 「人事総務部 野崎瑠美 …」→野崎瑠美（辞書外姓を構造で救出）', nameOf('問合せ先 人事総務部 野崎瑠美 03-6878-3814 saiyo@x.co.jp') === '野崎瑠美');
+  // 氏名に役割語が貼り付く（再現率：旧来は取りこぼし）
+  ok('問合せ先: 「田中花子採用担当」→田中花子（役割語を剥がす）', nameOf('お問合せ 人事部 田中花子採用担当 mail@x.jp') === '田中花子');
+  ok('問合せ先: 「採用担当 山田太郎」→山田太郎', nameOf('お問い合わせ 人事部 採用担当 山田太郎 TEL:03-1234-5678') === '山田太郎');
+  // 氏名に役職が貼り付く（部署照合が役職の「課」を飲み込まないこと）
+  ok('問合せ先: 「中村課長」→中村（役職を剥がし、部署に飲ませない）', nameOf('問合せ先 人事部 採用担当 中村課長 03-1111-1111') === '中村');
+  ok('問合せ先: 「山田太郎部長」→山田太郎', nameOf('問合せ先 人事部 山田太郎部長 03-1111-1111') === '山田太郎');
+  // 多部署連結でも氏名を取れる
+  ok('問合せ先: 「総務部人事課 佐々木」→佐々木', nameOf('問合せ先 総務部人事課 佐々木 03-1111-2222') === '佐々木');
+  // 村/市で終わる頻出姓を地名と誤って捨てない（辞書完全一致の単独姓は採る）
+  ok('問合せ先: 「西村」→西村（村で終わる姓を救う）', nameOf('問合せ先 人事部 西村 03-1111-1111') === '西村');
+  // 精度：地名・組織語・役割のみは氏名にしない
+  ok('問合せ先: 「関東支店」は氏名にしない', nameOf('問合せ先 人事課 関東支店 048-000-0000') === '');
+  ok('問合せ先: 地名片「中央」は氏名にしない（辞書完全姓でない）', nameOf('問合せ先 管理部 中央 03-1111-1111') === '');
+  ok('問合せ先: 「採用グループ」役割のみは氏名にしない', nameOf('問合せ先 人材開発部 採用グループ 03-0000-0000') === '');
+  ok('問合せ先: 部署キーワードが無い面では辞書フルネームのみ（経営企画室 新規事業→∅）', nameOf('問合せ先 経営企画室 新規事業 03-2222-3333') === '');
+  // 姓＋一般語の誤検出（人事関連→関連）を共通ブロックリストで弾く（scrape-base/scrape-namesと一貫）
+  ok('問合せ先: 「人事部 関連」は氏名にしない（関連=一般語）', nameOf('問合せ先 人事部 関連 03-1-1') === '');
+  ok('問合せ先: 実在の関姓「人事部 関根太郎」は抽出', nameOf('問合せ先 人事部 関根太郎 03-1-1') === '関根太郎');
+  return fail;
+}
+
 async function run() {
   const cases = [
     { name: 'サンプル株式会社', file: 'fixture.html', expect: 'HIT' },
@@ -529,6 +702,8 @@ async function run() {
   failures += testPhone();
   console.log('\n--- 担当者名ヒューリスティック 検証 ---');
   failures += testName();
+  console.log('\n--- 姓ガゼッティア（再現率拡充／地名片の精度）検証 ---');
+  failures += testSurnameDict();
   console.log('\n--- 採用担当者名取得層（Wantedly/ハローワーク）ロジック検証 ---');
   failures += testNameScraping();
   console.log('\n--- 企業名 自動発見 検証 ---');
@@ -558,6 +733,10 @@ async function run() {
   failures += testQualityExtras();
   console.log('\n--- ソース別KPI（下流・利回り評価）検証 ---');
   failures += testSourceKpiLogic();
+  console.log('\n--- 媒体ページ・スクレイパ（リクナビ/キャリタス/ONE CAREER）抽出ロジック検証 ---');
+  failures += testMediaScrapers();
+  console.log('\n--- マイナビ『問合せ先』構造分解（担当者名の精度／再現率）検証 ---');
+  failures += testMynaviContact();
 
   if (failures > 0) { console.error(`\nSELFTEST FAILED: ${failures} case(s)`); process.exit(1); }
   console.log('\nSELFTEST PASSED ✓  (抽出→検証→集計 ＋ スプレッドシートI/O ロジックが正常動作)');

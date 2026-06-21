@@ -1,28 +1,29 @@
 'use strict';
 /**
- * ONE CAREER Playwright スクレイパ（調査報告で最難・best-effort）
+ * ONE CAREER Playwright スクレイパ（実DOM較正済 2026-06）
  * =====================================================================
- * ONE CAREER(www.onecareer.jp)は Nuxt 製 SPA。企業ページ(/companies/{id})自体は
- * 従業員数などを非会員に公開するが、クチコミ/ES等の主要コンテンツは会員限定。
- * よって取得できるのは「掲載有無＋公開された企業ファクト（従業員数等）」が中心。
- * クチコミ/ES等の会員限定領域は取得しない（規約・不正競争防止法リスク）。
+ * ONE CAREER(www.onecareer.jp)はNuxt製SPA。クチコミ/ES等の主要コンテンツは会員限定だが、
+ * 企業ページ /companies/{id} は会社概要を非会員に公開する（実地確認）:
+ *   「本社：東京都 資本金：59百万円 売上高：7,576百万円 従業員数：307名 ※2026年3月時点」
  *
- * 使い方: node src/scrape-onecareer.js "株式会社サンプル" ...
+ * 検索: トップの検索ボックス input#search-company（name=company-keyword,
+ *   placeholder「企業、職種、勤務地など」）に社名を入れ Enter → クライアント側で企業検索へ遷移。
+ *   結果の /companies/{id} リンクを社名一致で特定 → 企業ページで会社概要を抽出。
+ *
+ * ※ クチコミ/通過ES等の会員限定領域は取得しない（規約・不正競争防止法リスク）。
+ *
+ * 使い方: node src/scrape-onecareer.js "ワンキャリア" ...
  * モジュール: const { OnecareerScraper } = require('./scrape-onecareer')
  */
-const { BaseMediaScraper, emptyResult, humanType, humanClick, sleep } = require('./scrape-base');
+const { BaseMediaScraper, emptyResult, humanType, sleep } = require('./scrape-base');
 const { normCompanyName } = require('./csv');
 
 const CONFIG = {
-  searchEntries: () => [
-    'https://www.onecareer.jp/companies/search?keyword=__Q__',
-    'https://www.onecareer.jp/companies?keyword=__Q__',
-    'https://www.onecareer.jp/companies',
-  ],
-  searchBoxSel: ['input[name="keyword"]', 'input[type="search"]',
-    'input[placeholder*="企業"]', 'input[placeholder*="検索"]', 'input[type="text"]'],
-  searchBtnSel: ['button[type="submit"]', 'button:has-text("検索")', 'a:has-text("検索")'],
-  resultLinkSel: ['a[href*="/companies/"]', '.company-name a', '[class*="company"] a', 'h2 a', 'h3 a'],
+  topUrl: 'https://www.onecareer.jp/',
+  searchBoxSel: ['input#search-company', 'input[name="company-keyword"]',
+    'input[placeholder*="企業"]', 'input[type="text"][placeholder*="会社"]'],
+  companyUrl: (id) => `https://www.onecareer.jp/companies/${id}`,
+  companyLinkRe: /\/companies\/(\d+)(?:[/?#]|$)/,
 };
 
 class OnecareerScraper extends BaseMediaScraper {
@@ -34,35 +35,39 @@ class OnecareerScraper extends BaseMediaScraper {
     const page = await this.newPage();
     try {
       const target = normCompanyName(name);
-      let opened = false;
-      for (const tmpl of CONFIG.searchEntries()) {
-        const url = tmpl.replace('__Q__', encodeURIComponent(name));
-        await this.goto(page, url);
-        const box = await this._firstVisible(page, CONFIG.searchBoxSel);
-        if (box) {
-          await humanType(page, box, name);
-          await sleep(200);
-          const btn = await this._firstVisible(page, CONFIG.searchBtnSel);
-          if (btn) await humanClick(page, btn); else await page.keyboard.press('Enter');
-          await page.waitForLoadState('networkidle', { timeout: 8000 }).catch(() => {});
-        }
-        await this._dump(page, 'search:' + name);
-        if (/\/companies\/\d/.test(page.url())) { opened = true; await this._readDetail(page, result); break; }
-        const link = await this.matchingResultLink(page, CONFIG.resultLinkSel, target);
-        if (link) {
-          await humanClick(page, link);
-          await page.waitForLoadState('networkidle', { timeout: 8000 }).catch(() => {});
-          opened = true;
-          await this._readDetail(page, result);
+      // 1) トップで検索ボックスに入力→Enter（クライアント側遷移）
+      await this.goto(page, CONFIG.topUrl);
+      const box = await this._firstVisible(page, CONFIG.searchBoxSel);
+      if (!box) { result.根拠 = 'ワンキャリア検索ボックス未検出'; return result; }
+      await humanType(page, box, name);
+      await sleep(250);
+      await page.keyboard.press('Enter');
+      await sleep(this.settleMs + 2000);
+      await this._dump(page, 'search:' + name);
+
+      // 2) 結果の /companies/{id} リンクを収集（イベント等のサブパスは id へ正規化）
+      const ids = await page.$$eval('a[href]', (els) =>
+        [...new Set(els.map((e) => {
+          const m = (e.getAttribute('href') || '').match(/\/companies\/(\d+)(?:[/?#]|$)/);
+          return m ? m[1] : null;
+        }).filter(Boolean))]).catch(() => []);
+      if (!ids.length) { result.根拠 = 'ワンキャリア検索ヒット無し'; return result; }
+
+      // 3) 候補を最大3社開き、会社名一致を採用（おすすめ枠の取り違え防止）
+      for (const id of ids.slice(0, 3)) {
+        await this.goto(page, CONFIG.companyUrl(id));
+        await this._dump(page, 'company:' + name);
+        const ctext = await this.bodyText(page);
+        const head = normCompanyName(ctext.slice(0, 300));
+        if (target && (head.includes(target) || target.includes(head.slice(0, Math.max(2, target.length))) || ctext.includes(name))) {
+          result.ワンキャリア掲載 = '○'; result.掲載 = '○'; result.掲載媒体 = 'ワンキャリア';
+          result.採用ページURL = CONFIG.companyUrl(id);
+          await this.readInto(page, result); // 従業員数/資本金/設立/電話/メール
+          result.根拠 = '企業ページ(会社概要)から抽出';
           break;
         }
-        await sleep(this.delay);
       }
-      if (opened) {
-        result.ワンキャリア掲載 = '○'; result.掲載 = '○'; result.掲載媒体 = 'ワンキャリア';
-      } else {
-        result.根拠 = result.根拠 || 'ワンキャリア検索ヒット無し';
-      }
+      if (!result.ワンキャリア掲載) result.根拠 = 'ワンキャリア社名一致せず';
     } catch (e) {
       result.根拠 = 'error:' + String(e && e.message || e).slice(0, 80);
     } finally {
@@ -70,21 +75,13 @@ class OnecareerScraper extends BaseMediaScraper {
     }
     return result;
   }
-
-  async _readDetail(page, result) {
-    result.採用ページURL = result.採用ページURL || page.url();
-    await this._dump(page, 'company:' + result.企業名);
-    // SPAなので企業ファクトの描画を少し待つ
-    await page.waitForLoadState('networkidle', { timeout: 6000 }).catch(() => {});
-    await this.readInto(page, result);
-  }
 }
 
 async function main() {
   const names = process.argv.slice(2);
   if (!names.length) {
     console.error('使い方: node src/scrape-onecareer.js "会社名1" "会社名2" ...');
-    console.error('  環境変数: SCRAPE_HEADFUL=1 SCRAPE_DEBUG=1');
+    console.error('  環境変数: SCRAPE_HEADFUL=1 SCRAPE_DEBUG=1 SCRAPE_SETTLE_MS=4000');
     process.exit(1);
   }
   const sc = new OnecareerScraper();
@@ -94,8 +91,8 @@ async function main() {
       process.stdout.write(`\n[ワンキャリア] ${nm} … `);
       const r = await sc.scrapeCompany(nm);
       console.log(JSON.stringify({
-        掲載: r.ワンキャリア掲載 || '×', 従業員: r.従業員数 || '', 設立: r.設立 || '',
-        根拠: r.根拠, URL: r.採用ページURL || '',
+        掲載: r.ワンキャリア掲載 || '×', 従業員: r.従業員数 || '', 資本金: r.資本金 || '',
+        設立: r.設立 || '', 根拠: r.根拠, URL: r.採用ページURL || '',
       }, null, 0));
       await sleep(sc.delay);
     }

@@ -434,3 +434,21 @@ MYNAVI_DEBUG=1   node src/scrape-mynavi.js "…"     # data/mynavi-cache に htm
 環境変数：`MYNAVI_GRAD_YEAR=28`（既定・28卒）/ `MYNAVI_POLITE_MS`（社間ディレイ）/ `MYNAVI_NAV_TIMEOUT_MS`。
 
 > **設計上の含意**：マイナビの「問合せ先」は中堅大手でも担当者個人名が載ることがあり、これは「中堅大手は個人名非公開」（自社サイト経路）を**媒体側の別経路で突破**する手になる。
+
+### 媒体横断エンリッチャー（リクナビ／キャリタス／ワンキャリア・`npm run pages`）
+**2026-06 ライブ実証の結論：採用担当者名はこの3サイトでは“ログイン裏”**（公開で名前まで出すのはマイナビのみ）。そこで本層は**担当者名ではなく「掲載確認＋会社ファクト」を媒体横断で集め、リストの選定精度を上げる**役割を担う。`src/scrape-base.js`（共通基盤）の上に各サイト1ファイル（`scrape-rikunabi.js` / `scrape-careertasu.js` / `scrape-onecareer.js`）。
+
+| サイト | 公開で取れるもの | 検索→詳細 |
+|---|---|---|
+| **キャリタス**（最良） | **従業員数・設立・採用予定人数・受付状況**＋掲載確認（時に担当者/部署/メール） | `/condition-search/` → `/corp/{id}/` |
+| **リクナビ** | 掲載確認・卒年・募集職種（フィード型で電話/担当者名は無し） | `/job_search/?kw=` → `/company_jobs/{id}/?mode=selection` |
+| **ワンキャリア** | 従業員数・設立・掲載確認（大手寄り・SME歩留まり低） | 検索ボックス → `/companies/{id}` |
+
+```
+npm run pages        # 3媒体を1社ずつ巡回し sources/A-pages.csv に統合（掲載媒体数/従業員数/採用人数/担当者名）
+node src/scrape-pages.js --in leads-daihyou-1000.csv --out sources/A-pages.csv --sites rikunabi,careertasu --limit 50
+node src/scrape-careertasu.js "会社名"     # 単体動作確認（rikunabi/onecareer も同様）
+```
+- `src/scrape-pages.js` は**法人番号で名寄せ**して1行に統合。**per-company timeout＋アトミック書き込み＋再開**（SPAの無限待ち対策・途中再開可）。環境変数 `SCRAPE_HEADFUL=1` / `SCRAPE_DEBUG=1` / `SCRAPE_PAGE_DELAY_MS`。
+- 出力 `sources/A-pages.csv` は `npm run mochica` の既定マージに含まれ、**「掲載媒体数＝母集団形成への投資（痛みの濃さ）」「従業員数の補正（50-150名判定の精度向上）」「大企業の自動降格」**としてアポ取得期待値に反映される（実証: アイ・アイ・エム=従業員100名スイート補正／五洋建設=3403名で大企業降格）。
+- **価値の本質**：担当者名の母数は増えにくい（媒体側もログイン裏）が、**掲載確認の重ね合わせと従業員数の補正でリストの“最適な相手か”の確度が上がる**。担当者名そのものはマイナビ実取得（`npm run mynavi` / `npm run mochica:enrich`）が主経路。

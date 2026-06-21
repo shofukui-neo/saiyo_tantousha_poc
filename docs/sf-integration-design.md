@@ -1,8 +1,12 @@
 # Salesforce 連携 実装設計書
 
-> ステータス: **設計のみ（未実装）** / 作成日: 2026-06-16
+> ステータス: **Track A 実装済み（2026-06-17）／ Track B 未実装**
+> 作成日: 2026-06-16
 > ブロッカー: 依頼者にSF管理者権限なし・認証方式未定・現時点でSF画面にアクセス不可。
-> このため本書は「認証情報が揃った瞬間に着手できる青写真」として残す。
+> → 接続不要の **Track A（CSV突合）を先行実装**済み。Track B（jsforce直結）は認証情報が揃ったら着手。
+>
+> **実装物**: [src/sf-merge.js](../src/sf-merge.js) ／ npm: `sf:merge`・`sf:merge:sample`
+> ／ サンプルSF CSV: [sources/SF-leads.sample.csv](../sources/SF-leads.sample.csv)
 
 ---
 

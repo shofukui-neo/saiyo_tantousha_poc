@@ -37,11 +37,12 @@ function cachePath(url) {
   const h = crypto.createHash('sha1').update(url).digest('hex');
   return path.join(CACHE_DIR, h + '.json');
 }
-function readCache(url) {
+function readCache(url, maxAgeMs) {
   try {
     const p = cachePath(url);
     const st = fs.statSync(p);
-    if (Date.now() - st.mtimeMs > CACHE_TTL_MS) return null; // 期限切れ
+    const ttl = (maxAgeMs != null && maxAgeMs >= 0) ? maxAgeMs : CACHE_TTL_MS; // 呼び出し側がTTLを上書き可（監視は短TTL）
+    if (Date.now() - st.mtimeMs > ttl) return null; // 期限切れ
     return JSON.parse(fs.readFileSync(p, 'utf8'));
   } catch (_) { return null; }
 }
@@ -64,10 +65,10 @@ async function allowedByRobots(url) {
 // ---- メイン：1ページを礼儀正しく取得 ----
 // 戻り値: { html, finalUrl, fromCache, rendered } または null（robots禁止/失敗）
 async function politeGet(url, opts = {}) {
-  const { render = 'auto', text = false, noCache = false } = opts;
+  const { render = 'auto', text = false, noCache = false, maxAgeMs = null } = opts;
 
   if (!noCache) {
-    const c = readCache(url);
+    const c = readCache(url, maxAgeMs);
     if (c && (c.html != null || c.body != null)) {
       return { html: c.html, body: c.body, finalUrl: c.finalUrl || url, fromCache: true, rendered: !!c.rendered };
     }

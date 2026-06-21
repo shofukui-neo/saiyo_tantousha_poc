@@ -1,0 +1,464 @@
+{
+  "cycle": "2026-06-19T00:47:39.176Z",
+  "companies": {
+    "ネオキャリア": {
+      "企業名": "株式会社ネオキャリア",
+      "totalJobs": 1,
+      "gradYears": [],
+      "recencyDays": null,
+      "sources": {
+        "求人ボックス": {
+          "jobCount": 1,
+          "jobs": [
+            "「福岡」クライアント企業の人事・採用戦略を支えるPROマネージャー"
+          ],
+          "queries": [
+            "新卒 経理 福岡"
+          ],
+          "recencyDays": null
+        }
+      }
+    },
+    "リクルートスタッフィング西日本": {
+      "企業名": "株式会社リクルートスタッフィング 西日本",
+      "totalJobs": 1,
+      "gradYears": [],
+      "recencyDays": null,
+      "sources": {
+        "求人ボックス": {
+          "jobCount": 1,
+          "jobs": [
+            "経理・会計・財務／時給1356円 未経験OK土日祝休み 残業少なめ駅チ..."
+          ],
+          "queries": [
+            "新卒 経理 福岡"
+          ],
+          "recencyDays": null
+        }
+      }
+    },
+    "jm": {
+      "企業名": "株式会社JM",
+      "totalJobs": 1,
+      "gradYears": [],
+      "recencyDays": 0,
+      "sources": {
+        "求人ボックス": {
+          "jobCount": 1,
+          "jobs": [
+            "全国／事務総合職／第二新卒歓迎 提携先施設の維持保全メンテナンスにICT技術を活"
+          ],
+          "queries": [
+            "新卒 経理 福岡"
+          ],
+          "recencyDays": 0
+        }
+      }
+    },
+    "デンヒチ": {
+      "企業名": "株式会社デンヒチ",
+      "totalJobs": 1,
+      "gradYears": [],
+      "recencyDays": 14,
+      "sources": {
+        "求人ボックス": {
+          "jobCount": 1,
+          "jobs": [
+            "北九州市／総務人事 ほぼ19時退社 離職率5%以下 昨年度賞与6 7.75ヶ月／"
+          ],
+          "queries": [
+            "新卒 経理 福岡"
+          ],
+          "recencyDays": 14
+        }
+      }
+    },
+    "アデコ": {
+      "企業名": "アデコ株式会社",
+      "totalJobs": 1,
+      "gradYears": [],
+      "recencyDays": null,
+      "sources": {
+        "求人ボックス": {
+          "jobCount": 1,
+          "jobs": [
+            "経理・会計・財務／経理担当簿記資格を活かせるお仕事丁寧な指導あり"
+          ],
+          "queries": [
+            "新卒 経理 福岡"
+          ],
+          "recencyDays": null
+        }
+      }
+    },
+    "三友機器": {
+      "企業名": "三友機器株式会社",
+      "totalJobs": 1,
+      "gradYears": [],
+      "recencyDays": 14,
+      "sources": {
+        "求人ボックス": {
+          "jobCount": 1,
+          "jobs": [
+            "福岡／バックオフィス担当・管理部門のゼネラリストを目指せる／転勤なし"
+          ],
+          "queries": [
+            "新卒 経理 福岡"
+          ],
+          "recencyDays": 14
+        }
+      }
+    },
+    "タマホーム": {
+      "企業名": "タマホーム株式会社",
+      "totalJobs": 1,
+      "gradYears": [],
+      "recencyDays": 7,
+      "sources": {
+        "求人ボックス": {
+          "jobCount": 1,
+          "jobs": [
+            "「未経験・二卒歓迎 」経理財務 残業月20h程／年休120日"
+          ],
+          "queries": [
+            "新卒 経理 福岡"
+          ],
+          "recencyDays": 7
+        }
+      }
+    },
+    "ネクステージ福岡早良店": {
+      "企業名": "ネクステージ福岡早良店",
+      "totalJobs": 1,
+      "gradYears": [],
+      "recencyDays": null,
+      "sources": {
+        "求人ボックス": {
+          "jobCount": 1,
+          "jobs": [
+            "総合職／未経験OK／研修充実／早期キャリアUP"
+          ],
+          "queries": [
+            "新卒 経理 福岡"
+          ],
+          "recencyDays": null
+        }
+      }
+    },
+    "三井ハイテック": {
+      "企業名": "株式会社三井ハイテック",
+      "totalJobs": 1,
+      "gradYears": [],
+      "recencyDays": null,
+      "sources": {
+        "求人ボックス": {
+          "jobCount": 1,
+          "jobs": [
+            "北九州／448／管理会計 グローバル経営強化／経理・財務ご経験の方"
+          ],
+          "queries": [
+            "新卒 経理 福岡"
+          ],
+          "recencyDays": null
+        }
+      }
+    },
+    "イサム塗料": {
+      "企業名": "イサム塗料株式会社",
+      "totalJobs": 1,
+      "gradYears": [],
+      "recencyDays": 23,
+      "sources": {
+        "求人ボックス": {
+          "jobCount": 1,
+          "jobs": [
+            "大阪・福島／経理 月次・年次決算・開示／上場企業でスキルアップ"
+          ],
+          "queries": [
+            "新卒 経理 福岡"
+          ],
+          "recencyDays": 23
+        }
+      }
+    },
+    "ネクステージ北九州店": {
+      "企業名": "ネクステージ北九州店",
+      "totalJobs": 1,
+      "gradYears": [],
+      "recencyDays": null,
+      "sources": {
+        "求人ボックス": {
+          "jobCount": 1,
+          "jobs": [
+            "総合職／未経験OK／研修充実／早期キャリアUP"
+          ],
+          "queries": [
+            "新卒 経理 福岡"
+          ],
+          "recencyDays": null
+        }
+      }
+    },
+    "イケヒココーポレーション": {
+      "企業名": "株式会社イケヒコ・コーポレーション",
+      "totalJobs": 1,
+      "gradYears": [],
+      "recencyDays": 0,
+      "sources": {
+        "求人ボックス": {
+          "jobCount": 1,
+          "jobs": [
+            "福岡／WEB面接可／人事 教育・研修制度の企画立案／超老舗企業"
+          ],
+          "queries": [
+            "新卒 経理 福岡"
+          ],
+          "recencyDays": 0
+        }
+      }
+    },
+    "ジャパンエレベーターサービスホールディングス株式": {
+      "企業名": "ジャパンエレベーターサービスホールディングス株式...",
+      "totalJobs": 1,
+      "gradYears": [],
+      "recencyDays": null,
+      "sources": {
+        "求人ボックス": {
+          "jobCount": 1,
+          "jobs": [
+            "日本橋／経理担当 東証プライム上場／業界トップクラスの実績を誇る安定企..."
+          ],
+          "queries": [
+            "新卒 経理 福岡"
+          ],
+          "recencyDays": null
+        }
+      }
+    },
+    "ネクステージ八幡西店": {
+      "企業名": "ネクステージ八幡西店",
+      "totalJobs": 1,
+      "gradYears": [],
+      "recencyDays": null,
+      "sources": {
+        "求人ボックス": {
+          "jobCount": 1,
+          "jobs": [
+            "総合職／未経験OK／研修充実／早期キャリアUP"
+          ],
+          "queries": [
+            "新卒 経理 福岡"
+          ],
+          "recencyDays": null
+        }
+      }
+    },
+    "dym": {
+      "企業名": "株式会社DYM",
+      "totalJobs": 1,
+      "gradYears": [],
+      "recencyDays": 0,
+      "sources": {
+        "求人ボックス": {
+          "jobCount": 1,
+          "jobs": [
+            "大崎駅／経理 月次決算からお任せ／年収540万／23年間無借金経営"
+          ],
+          "queries": [
+            "新卒 経理 福岡"
+          ],
+          "recencyDays": 0
+        }
+      }
+    },
+    "福徳長酒類": {
+      "企業名": "福徳長酒類株式会社",
+      "totalJobs": 1,
+      "gradYears": [],
+      "recencyDays": 17,
+      "sources": {
+        "求人ボックス": {
+          "jobCount": 1,
+          "jobs": [
+            "「本社」総務・給与計算・採用業務／幅広い業務に携われるゼネラリストポジション 多"
+          ],
+          "queries": [
+            "新卒 経理 福岡"
+          ],
+          "recencyDays": 17
+        }
+      }
+    },
+    "幻": {
+      "企業名": "合同会社幻",
+      "totalJobs": 1,
+      "gradYears": [],
+      "recencyDays": null,
+      "sources": {
+        "求人ボックス": {
+          "jobCount": 1,
+          "jobs": [
+            "経理事務アシスタント／データ入力・書類チェック中心で基礎から学べる"
+          ],
+          "queries": [
+            "新卒 経理 福岡"
+          ],
+          "recencyDays": null
+        }
+      }
+    },
+    "ネクステージ新宮店": {
+      "企業名": "ネクステージ新宮店",
+      "totalJobs": 1,
+      "gradYears": [],
+      "recencyDays": null,
+      "sources": {
+        "求人ボックス": {
+          "jobCount": 1,
+          "jobs": [
+            "総合職／未経験OK／安定収入×休日／キャリアUP"
+          ],
+          "queries": [
+            "新卒 経理 福岡"
+          ],
+          "recencyDays": null
+        }
+      }
+    },
+    "九州テラオカ": {
+      "企業名": "株式会社九州テラオカ",
+      "totalJobs": 1,
+      "gradYears": [],
+      "recencyDays": null,
+      "sources": {
+        "求人ボックス": {
+          "jobCount": 1,
+          "jobs": [
+            "未経験 福岡／人事、総務、経理 基礎から丁寧なフォロー有／レジで高いシ..."
+          ],
+          "queries": [
+            "新卒 経理 福岡"
+          ],
+          "recencyDays": null
+        }
+      }
+    },
+    "tim": {
+      "企業名": "TIM合同会社",
+      "totalJobs": 1,
+      "gradYears": [],
+      "recencyDays": null,
+      "sources": {
+        "求人ボックス": {
+          "jobCount": 1,
+          "jobs": [
+            "経理事務／安定企業でゼロから学べる経理サポート"
+          ],
+          "queries": [
+            "新卒 経理 福岡"
+          ],
+          "recencyDays": null
+        }
+      }
+    },
+    "birth": {
+      "企業名": "株式会社Birth",
+      "totalJobs": 1,
+      "gradYears": [],
+      "recencyDays": 0,
+      "sources": {
+        "求人ボックス": {
+          "jobCount": 1,
+          "jobs": [
+            "27新卒・総合職／人事や企画など多様なキャリアあり・土日祝休み／プライベートと両"
+          ],
+          "queries": [
+            "新卒 経理 福岡"
+          ],
+          "recencyDays": 0
+        }
+      }
+    },
+    "フレックスビジネスサービス": {
+      "企業名": "フレックスビジネスサービス株式会社",
+      "totalJobs": 1,
+      "gradYears": [],
+      "recencyDays": null,
+      "sources": {
+        "求人ボックス": {
+          "jobCount": 1,
+          "jobs": [
+            "経理・簿記／営業事務／事務 幅広い業務を担当できる経理の募集 勤務地"
+          ],
+          "queries": [
+            "新卒 経理 福岡"
+          ],
+          "recencyDays": null
+        }
+      }
+    },
+    "olc": {
+      "企業名": "株式会社OLC",
+      "totalJobs": 1,
+      "gradYears": [],
+      "recencyDays": 0,
+      "sources": {
+        "求人ボックス": {
+          "jobCount": 1,
+          "jobs": [
+            "経理事務／採用事務・応募者管理／月給250,000〜400,000円"
+          ],
+          "queries": [
+            "新卒 経理 福岡"
+          ],
+          "recencyDays": 0
+        }
+      }
+    },
+    "hitoricco": {
+      "企業名": "合同会社hitoricco",
+      "totalJobs": 1,
+      "gradYears": [],
+      "recencyDays": null,
+      "sources": {
+        "求人ボックス": {
+          "jobCount": 1,
+          "jobs": [
+            "経理事務職／未経験から始める経理スキル"
+          ],
+          "queries": [
+            "新卒 経理 福岡"
+          ],
+          "recencyDays": null
+        }
+      }
+    },
+    "かけはし": {
+      "企業名": "NPO法人かけはし",
+      "totalJobs": 1,
+      "gradYears": [],
+      "recencyDays": 13,
+      "sources": {
+        "求人ボックス": {
+          "jobCount": 1,
+          "jobs": [
+            "経理スタッフ"
+          ],
+          "queries": [
+            "新卒 経理 福岡"
+          ],
+          "recencyDays": 13
+        }
+      }
+    }
+  },
+  "stats": {
+    "perSource": {
+      "求人ボックス": {
+        "cards": 25,
+        "companies": 25
+      }
+    },
+    "staleSources": []
+  }
+}

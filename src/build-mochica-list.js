@@ -89,7 +89,8 @@ async function maybeEnrich(records, scoredSorted) {
 async function main() {
   // ベースは“架電できる”telapoリスト（電話番号を全件保持）。--merge で連絡先/インテントを合流。
   const inPath = getArg('in', 'leads-telapo-1000.csv');
-  const mergeArg = getArg('merge', getArg('intent', 'leads-daihyou-1000.csv,leads.master.csv'));
+  // 既定の合流ソース: daihyou(代表者名) + master(新卒インテント) + A-pages(媒体横断 掲載媒体数/従業員数/採用人数)
+  const mergeArg = getArg('merge', getArg('intent', 'leads-daihyou-1000.csv,leads.master.csv,sources/A-pages.csv'));
   const mergePaths = String(mergeArg).split(',').map((s) => s.trim()).filter(Boolean);
   const outPath = getArg('out', 'leads-mochica.scored.csv');
   const top = parseInt(getArg('top', '20'), 10) || 20;

@@ -58,8 +58,12 @@ function scoreIntent(rec) {
   let base = 10;       // 何のシグナルも無い
   let confidence = 20; // この次元の確信度（代理は低い）
 
+  // 採用媒体での掲載を実取得できたか（マイナビ/リクナビ/キャリタス/ワンキャリアいずれか）。
+  // scrape-pages 層が 掲載媒体 列に実掲載を刻む＝“本当に新卒採用している”の最強裏取り。
+  const MEDIA_RE = /マイナビ|リクナビ|キャリタス|ワンキャリア|ONE ?CAREER/i;
   const mynaviHit = truthy(rec['マイナビ掲載']) || truthy(rec['新卒掲載確認']) ||
-    /マイナビ|リクナビ/.test(String(rec['掲載媒体'] || '')) || /マイナビ|リクナビ/.test(String(rec['発見媒体'] || ''));
+    truthy(rec['キャリタス掲載']) || truthy(rec['リクナビ掲載']) || truthy(rec['ワンキャリア掲載']) ||
+    MEDIA_RE.test(String(rec['掲載媒体'] || '')) || MEDIA_RE.test(String(rec['発見媒体'] || ''));
   const flag = truthy(rec['新卒フラグ']) || truthy(rec['新卒出稿']) || truthy(rec['現在求人掲載中']);
   const hiring = truthy(rec['採用中']) || (parseIntLoose(rec['求人件数']) || 0) > 0;
   const recruitPage = truthy(rec['採用ページ有無']) || /recruit|saiyo|career|採用|entry/i.test(String(rec['採用ページURL'] || rec['根拠URL'] || ''));

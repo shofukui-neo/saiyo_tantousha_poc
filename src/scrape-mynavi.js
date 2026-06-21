@@ -26,12 +26,16 @@ const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
 const { normCompanyName } = require('./csv');
-const { isFullName, splitName, isKnownSurname } = require('./jp-names');
+const { isFullName, splitName, isKnownSurname, stripNonName, completeSurname } = require('./jp-names');
 const { extractPhones, normalizeJpPhone } = require('./phone');
+const { looksLikePersonName } = require('./extract'); // 一般語(関連/関係/案内…)を弾く共通ブロックリスト
+const { nameFromEmail } = require('./romaji-name');   // 採用メールのローカル部から姓を推定（中堅大手の個人名レバー）
 
 // ── 較正ポイント（実DOMに合わせてここだけ直す）─────────────────────
 const CONFIG = {
-  gradYear: process.env.MYNAVI_GRAD_YEAR || '28',   // 28=28卒（媒体選定期の本命）
+  // 卒年（マイナビYYYY のYY）。2026-06時点では 28卒サイトは未開設で404→27卒(マイナビ2027)が実データを返す。
+  // ※毎年シーズンで更新が必要。MYNAVI_GRAD_YEAR で上書き可。
+  gradYear: process.env.MYNAVI_GRAD_YEAR || '27',
   // フリーワード検索結果（GET・実地で200を確認）
   searchUrl: (gy, q) => `https://job.mynavi.jp/${gy}/pc/corpinfo/searchCorpListByGenCond/index?actionMode=searchFw&srchWord=${encodeURIComponent(q)}`,
   // 検索結果に出る企業詳細リンク（corp{ID}/outline.html）
@@ -67,7 +71,12 @@ async function humanClick(page, locator) {
 }
 
 const NAME_CHARS = '[一-龥々ぁ-んァ-ヶー]';
-const DEPT_RE = new RegExp('(' + NAME_CHARS + '{0,8}(?:人事|総務|採用|人材|管理)' + NAME_CHARS + '{0,6}?(?:部|課|室|グループ|G|本部|センター|担当))');
+// 部署: 「人事/総務/採用/…」＋組織サフィックス。サフィックスに「担当」を含めない
+// （含めると「人事部 田中花子採用担当」の様に貼り付いた氏名まで部署として飲み込み、氏名が消える）。
+// 前置は非貪欲 {0,8}? にする。貪欲だと下流に出る 課/部（例:「中村課長」の課）まで部署が伸び、氏名を飲み込む。
+const DEPT_RE = new RegExp('(' + NAME_CHARS + '{0,8}?(?:人事|総務|採用|人材|管理)' + NAME_CHARS + '{0,6}?(?:部|課|室|グループ|G|本部|センター))');
+// 氏名領域から剥がす非氏名スパン（役割語・役職・地名）は jp-names の共通辞書 stripNonName を使う。
+// 構造アンカー(部署直後)で辞書外姓も許容する都合上、近接の組織語が誤って氏名化するのを防ぐ前処理。
 // 人名ではない語（業務語＋地名/組織語）。地名の誤検出（関東支店→「関 東支店」等）を潰す。
 const STOPWORDS = /担当|責任|採用|人事|総務|部署|連絡|問合|問い合|会社|株式|有限|募集|電話|メール|応募|エントリー|セミナー|説明|本社|支店|支社|営業所|本部|事業|部門|センター/;
 // 地理・組織サフィックス（これを含む候補は氏名として却下）
@@ -83,6 +92,7 @@ function validName(raw, { loose = false } = {}) {
   if (!s || s.length < 2 || s.length > 6) return '';
   if (STOPWORDS.test(s)) return '';
   if (GEO_SUFFIX.test(s)) return '';                 // 地名・組織名を氏名と誤認しない
+  if (!looksLikePersonName(s)) return '';            // 一般語(関連/関係/案内…)を弾く（共通ブロックリスト）
   if (/[0-9０-９a-zA-Z]/.test(s)) return '';
   if (isFullName(s)) {
     const sp = splitName(s);
@@ -94,11 +104,45 @@ function validName(raw, { loose = false } = {}) {
   return '';
 }
 
-// ブロックから漢字/かな連の候補を走査し、最初の妥当な氏名を返す
+// ブロックから氏名候補を走査して1件返す。精度順の3パス制:
+//   pass1: 辞書フルネーム（姓＋名）。最も確実。「山田太郎部長」(役職剥がし後)からも救出。
+//   pass2: loose時のみ。辞書に「完全な姓」として載る語の単独出現（中村/佐々木 等）。
+//          地名片(関東/中央)は完全姓として載らないので誤採用しない。村/市で終わる姓もここで救う。
+//   pass3: loose時のみ。辞書外姓を3字以上の妥当窓で許容（野崎瑠美 等）。2字の辞書外片は精度優先で不採用。
 function pickName(block, loose) {
-  const re = new RegExp('((?:' + NAME_CHARS + '){2,6})', 'g');
-  let mm;
-  while ((mm = re.exec(block)) !== null) { const v = validName(mm[1], { loose }); if (v) return v; }
+  const s = String(block || '');
+  const isNameChar = (ch) => new RegExp('^' + NAME_CHARS + '$').test(ch);
+  const isRun = (w, len) => new RegExp('^(?:' + NAME_CHARS + '){' + len + '}$').test(w);
+  // pass1: 辞書フルネーム優先（loose可否に関わらず最優先）
+  for (let i = 0; i < s.length; i++) {
+    if (!isNameChar(s[i])) continue;
+    for (let len = Math.min(6, s.length - i); len >= 2; len--) {
+      const win = s.slice(i, i + len);
+      if (!isRun(win, len)) continue;
+      if (isFullName(win)) { const v = validName(win, { loose }); if (v) return v; }
+    }
+  }
+  if (!loose) return '';
+  // pass2: 辞書に完全一致する単独姓（splitNameの姓が語全体＝中村/佐々木 等。地名片は載らない）
+  for (let i = 0; i < s.length; i++) {
+    if (!isNameChar(s[i])) continue;
+    for (let len = Math.min(4, s.length - i); len >= 2; len--) {
+      const win = s.slice(i, i + len);
+      if (!isRun(win, len)) continue;
+      const sur = completeSurname(win);
+      if (sur) return sur;
+    }
+  }
+  // pass3: 構造位置の辞書外姓（3字以上の最長妥当窓を採用）
+  for (let i = 0; i < s.length; i++) {
+    if (!isNameChar(s[i])) continue;
+    for (let len = Math.min(5, s.length - i); len >= 3; len--) {
+      const win = s.slice(i, i + len);
+      if (!isRun(win, len)) continue;
+      const v = validName(win, { loose: true });
+      if (v) return v;
+    }
+  }
   return '';
 }
 
@@ -124,12 +168,14 @@ function parseContactBlock(text) {
   const blockJ = block.replace(/([一-龥々ぁ-んァ-ヶー]) (?=[一-龥々ぁ-んァ-ヶー])/g, '$1');
   const dm = blockJ.match(DEPT_RE);
   if (dm) out.部署 = dm[1].replace(/^(?:問\s?合わ?せ先|お問い?合わ?せ|連絡先|ご?担当者?)/, '');
-  // 氏名：部署直後の並びを最優先（構造位置で辞書外姓も許容）→ 無ければブロック全体で辞書照合
-  if (out.部署) {
-    const after = blockJ.slice(blockJ.indexOf(out.部署) + out.部署.length).replace(out.メール || ' ', ' ');
-    out.採用担当者名 = pickName(after, true);
-  }
-  if (!out.採用担当者名) out.採用担当者名 = pickName(blockJ.slice(0, 40), false);
+  // 氏名：電話/メールの手前までを領域とし、非氏名スパンを「役割語→役職→地名→部署」の順に剥がす。
+  // （順序が肝。例「中村課長」の役職"課長"を先に消さないと、部署照合がその"課"を飲み込み氏名が消える）
+  // 残った漢字連を氏名とする。部署が取れている＝強い構造アンカーなので辞書外姓も許容(loose)、無ければ辞書フルネームのみ。
+  let head = blockJ;
+  const hcut = head.search(/[0-9０-９]|@/);
+  if (hcut >= 0) head = head.slice(0, hcut);
+  const cleaned = stripNonName(head).replace(new RegExp(DEPT_RE.source, 'g'), ' ');
+  out.採用担当者名 = pickName(cleaned, !!dm);
   return out;
 }
 
@@ -208,7 +254,7 @@ class MynaviScraper {
    */
   async scrapeCompany(name) {
     const r = {
-      企業名: name, マイナビ掲載: '', 採用担当者名: '', 役職: '', 部署: '', メール: '', 電話番号: '',
+      企業名: name, マイナビ掲載: '', 採用担当者名: '', 担当者確度: '', 役職: '', 部署: '', メール: '', 電話番号: '',
       採用ページURL: '', 募集職種: '', 募集職種数: '', 採用予定人数: '', 卒年: '', 根拠: '',
     };
     const page = await this.context.newPage();
@@ -230,6 +276,17 @@ class MynaviScraper {
 
       // 3) 問合せ先/採用データのタブをカーソルで巡回して担当者名を取得
       await this._chaseContact(page, corp.id, r);
+
+      // 4) 個人名フォールバック: 問合せ先に氏名が無くても、採用メールのローカル部が人名なら姓を推定する
+      //    （中堅大手は氏名非公開が大半だが、ksato@/Tsagara@ 等のメールが数少ない個人名レバー）。
+      if (!r.採用担当者名 && r.メール) {
+        const em = nameFromEmail(r.メール);
+        if (em) {
+          r.採用担当者名 = em.surname;
+          r.担当者確度 = em.confidence;
+          r.根拠 = (r.根拠 ? r.根拠 + ' / ' : '') + `メール推定(${em.romaji}→${em.surname})`;
+        }
+      }
     } catch (e) {
       r.根拠 = r.根拠 || ('error:' + String(e && e.message || e).slice(0, 80));
     } finally {
@@ -269,7 +326,14 @@ class MynaviScraper {
       await this._dump(page, 'detail:' + r.企業名 + ':' + url.split('/').pop());
 
       const c = parseContactBlock(text);
-      if (c.採用担当者名 && !r.採用担当者名) { r.採用担当者名 = c.採用担当者名; r.根拠 = '問合せ先から氏名抽出(' + url.split('/').pop() + ')'; }
+      // 氏名は is.html（較正済みの『問合せ先』ブロック）からのみ採る。outline/employment は会社概要・採用実績で
+      // 「大塚商会は/岡三にい/神田神保(地名)/南大学」等の社名・地名・断片を氏名と誤抽出するため除外。
+      // さらに同ブロック内に電話 or メールが共在することを必須化（本物の問合せ先の構造）。
+      const isContactPage = /\/is\.html$/.test(url);
+      if (c.採用担当者名 && !r.採用担当者名 && isContactPage && (c.電話番号 || c.メール)) {
+        r.採用担当者名 = c.採用担当者名;
+        r.根拠 = '問合せ先から氏名抽出(' + url.split('/').pop() + ')';
+      }
       if (c.部署 && !r.部署) r.部署 = c.部署;
       if (c.メール && !r.メール) r.メール = c.メール;
       if (c.電話番号 && !r.電話番号) r.電話番号 = c.電話番号;

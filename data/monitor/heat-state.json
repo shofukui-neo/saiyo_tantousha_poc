@@ -1,0 +1,2008 @@
+{
+  "マエダ": {
+    "企業名": "株式会社マエダ",
+    "heat": 10.875965295238881,
+    "firstSeen": "2026-06-18T13:23:20.303Z",
+    "lastEventTs": "2026-06-18T23:36:18.438Z",
+    "history": [
+      {
+        "ts": "2026-06-18T13:23:20.303Z",
+        "events": [
+          {
+            "event": "NEW",
+            "delta": 1
+          }
+        ],
+        "points": 12
+      }
+    ],
+    "lastEvents": [
+      "NEW"
+    ],
+    "totalJobs": 1,
+    "gradYears": []
+  },
+  "井上定": {
+    "企業名": "井上定株式会社",
+    "heat": 10.875965295238881,
+    "firstSeen": "2026-06-18T13:23:20.303Z",
+    "lastEventTs": "2026-06-18T23:36:18.438Z",
+    "history": [
+      {
+        "ts": "2026-06-18T13:23:20.303Z",
+        "events": [
+          {
+            "event": "NEW",
+            "delta": 1
+          }
+        ],
+        "points": 12
+      }
+    ],
+    "lastEvents": [
+      "NEW"
+    ],
+    "totalJobs": 1,
+    "gradYears": []
+  },
+  "iplug": {
+    "企業名": "株式会社i-plug",
+    "heat": 13.50157737278158,
+    "firstSeen": "2026-06-18T13:23:20.303Z",
+    "lastEventTs": "2026-06-18T23:36:18.438Z",
+    "history": [
+      {
+        "ts": "2026-06-18T13:23:20.303Z",
+        "events": [
+          {
+            "event": "NEW",
+            "delta": 1
+          }
+        ],
+        "points": 10
+      },
+      {
+        "ts": "2026-06-18T13:23:40.266Z",
+        "events": [
+          {
+            "event": "JOB_UP",
+            "delta": 1
+          },
+          {
+            "event": "NEW_QUERY",
+            "delta": 1,
+            "detail": "新卒 営業 大阪"
+          }
+        ],
+        "points": 6
+      },
+      {
+        "ts": "2026-06-18T23:36:18.438Z",
+        "events": [
+          {
+            "event": "JOB_DOWN",
+            "delta": -1
+          }
+        ],
+        "points": -1
+      }
+    ],
+    "lastEvents": [
+      "JOB_DOWN"
+    ],
+    "totalJobs": 1,
+    "gradYears": []
+  },
+  "bremen": {
+    "企業名": "Bremen株式会社",
+    "heat": 9.063304412699068,
+    "firstSeen": "2026-06-18T13:23:20.303Z",
+    "lastEventTs": "2026-06-18T23:36:18.438Z",
+    "history": [
+      {
+        "ts": "2026-06-18T13:23:20.303Z",
+        "events": [
+          {
+            "event": "NEW",
+            "delta": 1
+          }
+        ],
+        "points": 10
+      }
+    ],
+    "lastEvents": [
+      "NEW"
+    ],
+    "totalJobs": 1,
+    "gradYears": []
+  },
+  "mitty": {
+    "企業名": "Mitty株式会社",
+    "heat": 9.063304412699068,
+    "firstSeen": "2026-06-18T13:23:20.303Z",
+    "lastEventTs": "2026-06-18T23:36:18.438Z",
+    "history": [
+      {
+        "ts": "2026-06-18T13:23:20.303Z",
+        "events": [
+          {
+            "event": "NEW",
+            "delta": 1
+          }
+        ],
+        "points": 10
+      }
+    ],
+    "lastEvents": [
+      "NEW"
+    ],
+    "totalJobs": 1,
+    "gradYears": []
+  },
+  "パナック": {
+    "企業名": "パナック株式会社",
+    "heat": 10.875965295238881,
+    "firstSeen": "2026-06-18T13:23:20.303Z",
+    "lastEventTs": "2026-06-18T23:36:18.438Z",
+    "history": [
+      {
+        "ts": "2026-06-18T13:23:20.303Z",
+        "events": [
+          {
+            "event": "NEW",
+            "delta": 1
+          }
+        ],
+        "points": 12
+      }
+    ],
+    "lastEvents": [
+      "NEW"
+    ],
+    "totalJobs": 1,
+    "gradYears": []
+  },
+  "テラドローン": {
+    "企業名": "テラドローン株式会社",
+    "heat": 10.875965295238881,
+    "firstSeen": "2026-06-18T13:23:20.303Z",
+    "lastEventTs": "2026-06-18T23:36:18.438Z",
+    "history": [
+      {
+        "ts": "2026-06-18T13:23:20.303Z",
+        "events": [
+          {
+            "event": "NEW",
+            "delta": 1
+          }
+        ],
+        "points": 12
+      }
+    ],
+    "lastEvents": [
+      "NEW"
+    ],
+    "totalJobs": 1,
+    "gradYears": []
+  },
+  "ワールドコーポレーション": {
+    "企業名": "株式会社ワールドコーポレーション",
+    "heat": 9.063304412699068,
+    "firstSeen": "2026-06-18T13:23:20.303Z",
+    "lastEventTs": "2026-06-18T23:36:18.438Z",
+    "history": [
+      {
+        "ts": "2026-06-18T13:23:20.303Z",
+        "events": [
+          {
+            "event": "NEW",
+            "delta": 1
+          }
+        ],
+        "points": 10
+      }
+    ],
+    "lastEvents": [
+      "NEW"
+    ],
+    "totalJobs": 1,
+    "gradYears": []
+  },
+  "長谷工リアルエステート": {
+    "企業名": "株式会社長谷工リアルエステート",
+    "heat": 10.875965295238881,
+    "firstSeen": "2026-06-18T13:23:20.303Z",
+    "lastEventTs": "2026-06-18T23:36:18.438Z",
+    "history": [
+      {
+        "ts": "2026-06-18T13:23:20.303Z",
+        "events": [
+          {
+            "event": "NEW",
+            "delta": 1
+          }
+        ],
+        "points": 12
+      }
+    ],
+    "lastEvents": [
+      "NEW"
+    ],
+    "totalJobs": 1,
+    "gradYears": []
+  },
+  "山三": {
+    "企業名": "山三株式会社",
+    "heat": 10.875965295238881,
+    "firstSeen": "2026-06-18T13:23:20.303Z",
+    "lastEventTs": "2026-06-18T23:36:18.438Z",
+    "history": [
+      {
+        "ts": "2026-06-18T13:23:20.303Z",
+        "events": [
+          {
+            "event": "NEW",
+            "delta": 1
+          }
+        ],
+        "points": 12
+      }
+    ],
+    "lastEvents": [
+      "NEW"
+    ],
+    "totalJobs": 1,
+    "gradYears": []
+  },
+  "フクシマガリレイ": {
+    "企業名": "フクシマガリレイ株式会社",
+    "heat": 10.875965295238881,
+    "firstSeen": "2026-06-18T13:23:20.303Z",
+    "lastEventTs": "2026-06-18T23:36:18.438Z",
+    "history": [
+      {
+        "ts": "2026-06-18T13:23:20.303Z",
+        "events": [
+          {
+            "event": "NEW",
+            "delta": 1
+          }
+        ],
+        "points": 12
+      }
+    ],
+    "lastEvents": [
+      "NEW"
+    ],
+    "totalJobs": 1,
+    "gradYears": []
+  },
+  "富士産業": {
+    "企業名": "富士産業株式会社",
+    "heat": 10.875965295238881,
+    "firstSeen": "2026-06-18T13:23:20.303Z",
+    "lastEventTs": "2026-06-18T23:36:18.438Z",
+    "history": [
+      {
+        "ts": "2026-06-18T13:23:20.303Z",
+        "events": [
+          {
+            "event": "NEW",
+            "delta": 1
+          }
+        ],
+        "points": 12
+      }
+    ],
+    "lastEvents": [
+      "NEW"
+    ],
+    "totalJobs": 1,
+    "gradYears": []
+  },
+  "三田電業": {
+    "企業名": "三田電業株式会社",
+    "heat": 15.114238255321393,
+    "firstSeen": "2026-06-18T13:23:20.303Z",
+    "lastEventTs": "2026-06-18T23:36:18.438Z",
+    "history": [
+      {
+        "ts": "2026-06-18T13:23:20.303Z",
+        "events": [
+          {
+            "event": "NEW",
+            "delta": 1
+          }
+        ],
+        "points": 12
+      },
+      {
+        "ts": "2026-06-18T13:23:40.266Z",
+        "events": [
+          {
+            "event": "JOB_UP",
+            "delta": 1
+          },
+          {
+            "event": "NEW_QUERY",
+            "delta": 1,
+            "detail": "新卒 営業 大阪"
+          }
+        ],
+        "points": 6
+      },
+      {
+        "ts": "2026-06-18T23:36:18.438Z",
+        "events": [
+          {
+            "event": "JOB_DOWN",
+            "delta": -1
+          }
+        ],
+        "points": -1.2
+      }
+    ],
+    "lastEvents": [
+      "JOB_DOWN"
+    ],
+    "totalJobs": 1,
+    "gradYears": []
+  },
+  "リクルートスタッフィング": {
+    "企業名": "株式会社リクルートスタッフィング",
+    "heat": 10.875965295238881,
+    "firstSeen": "2026-06-18T13:23:20.303Z",
+    "lastEventTs": "2026-06-18T23:36:18.438Z",
+    "history": [
+      {
+        "ts": "2026-06-18T13:23:20.303Z",
+        "events": [
+          {
+            "event": "NEW",
+            "delta": 1
+          }
+        ],
+        "points": 12
+      }
+    ],
+    "lastEvents": [
+      "NEW"
+    ],
+    "totalJobs": 1,
+    "gradYears": []
+  },
+  "都自動車": {
+    "企業名": "都自動車株式会社",
+    "heat": 10.875965295238881,
+    "firstSeen": "2026-06-18T13:23:20.303Z",
+    "lastEventTs": "2026-06-18T23:36:18.438Z",
+    "history": [
+      {
+        "ts": "2026-06-18T13:23:20.303Z",
+        "events": [
+          {
+            "event": "NEW",
+            "delta": 1
+          }
+        ],
+        "points": 12
+      }
+    ],
+    "lastEvents": [
+      "NEW"
+    ],
+    "totalJobs": 1,
+    "gradYears": []
+  },
+  "スマートアナリティクス会津若松事務所": {
+    "企業名": "スマート・アナリティクス株式会社 会津若松事務所",
+    "heat": 10.875965295238881,
+    "firstSeen": "2026-06-18T13:23:20.303Z",
+    "lastEventTs": "2026-06-18T23:36:18.438Z",
+    "history": [
+      {
+        "ts": "2026-06-18T13:23:20.303Z",
+        "events": [
+          {
+            "event": "NEW",
+            "delta": 1
+          }
+        ],
+        "points": 12
+      }
+    ],
+    "lastEvents": [
+      "NEW"
+    ],
+    "totalJobs": 1,
+    "gradYears": []
+  },
+  "ネオキャリア": {
+    "企業名": "株式会社ネオキャリア",
+    "heat": 10.875965295238881,
+    "firstSeen": "2026-06-18T13:23:20.303Z",
+    "lastEventTs": "2026-06-18T23:36:18.438Z",
+    "history": [
+      {
+        "ts": "2026-06-18T13:23:20.303Z",
+        "events": [
+          {
+            "event": "NEW",
+            "delta": 1
+          }
+        ],
+        "points": 12
+      }
+    ],
+    "lastEvents": [
+      "NEW"
+    ],
+    "totalJobs": 1,
+    "gradYears": []
+  },
+  "earlybird": {
+    "企業名": "株式会社Early Bird",
+    "heat": 10.875965295238881,
+    "firstSeen": "2026-06-18T13:23:20.303Z",
+    "lastEventTs": "2026-06-18T23:36:18.438Z",
+    "history": [
+      {
+        "ts": "2026-06-18T13:23:20.303Z",
+        "events": [
+          {
+            "event": "NEW",
+            "delta": 1
+          }
+        ],
+        "points": 12
+      }
+    ],
+    "lastEvents": [
+      "NEW"
+    ],
+    "totalJobs": 1,
+    "gradYears": []
+  },
+  "東名": {
+    "企業名": "株式会社東名",
+    "heat": 10.875965295238881,
+    "firstSeen": "2026-06-18T13:23:20.303Z",
+    "lastEventTs": "2026-06-18T23:36:18.438Z",
+    "history": [
+      {
+        "ts": "2026-06-18T13:23:20.303Z",
+        "events": [
+          {
+            "event": "NEW",
+            "delta": 1
+          }
+        ],
+        "points": 12
+      }
+    ],
+    "lastEvents": [
+      "NEW"
+    ],
+    "totalJobs": 1,
+    "gradYears": []
+  },
+  "日本瓦斯": {
+    "企業名": "日本瓦斯株式会社",
+    "heat": 10.875965295238881,
+    "firstSeen": "2026-06-18T13:23:20.303Z",
+    "lastEventTs": "2026-06-18T23:36:18.438Z",
+    "history": [
+      {
+        "ts": "2026-06-18T13:23:20.303Z",
+        "events": [
+          {
+            "event": "NEW",
+            "delta": 1
+          }
+        ],
+        "points": 12
+      }
+    ],
+    "lastEvents": [
+      "NEW"
+    ],
+    "totalJobs": 1,
+    "gradYears": []
+  },
+  "大協建材": {
+    "企業名": "株式会社大協建材",
+    "heat": 10.875965295238881,
+    "firstSeen": "2026-06-18T13:23:20.303Z",
+    "lastEventTs": "2026-06-18T23:36:18.438Z",
+    "history": [
+      {
+        "ts": "2026-06-18T13:23:20.303Z",
+        "events": [
+          {
+            "event": "NEW",
+            "delta": 1
+          }
+        ],
+        "points": 12
+      }
+    ],
+    "lastEvents": [
+      "NEW"
+    ],
+    "totalJobs": 1,
+    "gradYears": []
+  },
+  "alh": {
+    "企業名": "ALH株式会社",
+    "heat": 15.114238255321393,
+    "firstSeen": "2026-06-18T13:23:20.303Z",
+    "lastEventTs": "2026-06-18T23:36:18.438Z",
+    "history": [
+      {
+        "ts": "2026-06-18T13:23:20.303Z",
+        "events": [
+          {
+            "event": "NEW",
+            "delta": 1
+          }
+        ],
+        "points": 12
+      },
+      {
+        "ts": "2026-06-18T13:23:40.266Z",
+        "events": [
+          {
+            "event": "JOB_UP",
+            "delta": 1
+          },
+          {
+            "event": "NEW_QUERY",
+            "delta": 1,
+            "detail": "新卒 営業 大阪"
+          }
+        ],
+        "points": 6
+      },
+      {
+        "ts": "2026-06-18T23:36:18.438Z",
+        "events": [
+          {
+            "event": "JOB_DOWN",
+            "delta": -1
+          }
+        ],
+        "points": -1.2
+      }
+    ],
+    "lastEvents": [
+      "JOB_DOWN"
+    ],
+    "totalJobs": 1,
+    "gradYears": []
+  },
+  "ハートインターナショナルグループ": {
+    "企業名": "ハート・インターナショナルグループ",
+    "heat": 15.114238255321393,
+    "firstSeen": "2026-06-18T13:23:20.303Z",
+    "lastEventTs": "2026-06-18T23:36:18.438Z",
+    "history": [
+      {
+        "ts": "2026-06-18T13:23:20.303Z",
+        "events": [
+          {
+            "event": "NEW",
+            "delta": 1
+          }
+        ],
+        "points": 12
+      },
+      {
+        "ts": "2026-06-18T13:23:40.266Z",
+        "events": [
+          {
+            "event": "JOB_UP",
+            "delta": 1
+          },
+          {
+            "event": "NEW_QUERY",
+            "delta": 1,
+            "detail": "新卒 営業 大阪"
+          }
+        ],
+        "points": 6
+      },
+      {
+        "ts": "2026-06-18T23:36:18.438Z",
+        "events": [
+          {
+            "event": "JOB_DOWN",
+            "delta": -1
+          }
+        ],
+        "points": -1.2
+      }
+    ],
+    "lastEvents": [
+      "JOB_DOWN"
+    ],
+    "totalJobs": 1,
+    "gradYears": []
+  },
+  "トーコン": {
+    "企業名": "株式会社トーコン",
+    "heat": 10.875965295238881,
+    "firstSeen": "2026-06-18T13:23:20.303Z",
+    "lastEventTs": "2026-06-18T23:36:18.438Z",
+    "history": [
+      {
+        "ts": "2026-06-18T13:23:20.303Z",
+        "events": [
+          {
+            "event": "NEW",
+            "delta": 1
+          }
+        ],
+        "points": 12
+      }
+    ],
+    "lastEvents": [
+      "NEW"
+    ],
+    "totalJobs": 1,
+    "gradYears": []
+  },
+  "いわさき": {
+    "企業名": "株式会社いわさき",
+    "heat": 10.876545920165025,
+    "firstSeen": "2026-06-18T13:23:40.266Z",
+    "lastEventTs": "2026-06-18T23:36:18.438Z",
+    "history": [
+      {
+        "ts": "2026-06-18T13:23:40.266Z",
+        "events": [
+          {
+            "event": "NEW",
+            "delta": 1
+          }
+        ],
+        "points": 12
+      },
+      {
+        "ts": "2026-06-18T23:36:18.438Z",
+        "events": [
+          {
+            "event": "GONE",
+            "delta": -1
+          }
+        ],
+        "points": 0
+      }
+    ],
+    "lastEvents": [
+      "GONE"
+    ],
+    "totalJobs": 1,
+    "gradYears": []
+  },
+  "えびす商店": {
+    "企業名": "えびす商店株式会社",
+    "heat": 10.876545920165025,
+    "firstSeen": "2026-06-18T13:23:40.266Z",
+    "lastEventTs": "2026-06-18T23:36:18.438Z",
+    "history": [
+      {
+        "ts": "2026-06-18T13:23:40.266Z",
+        "events": [
+          {
+            "event": "NEW",
+            "delta": 1
+          }
+        ],
+        "points": 12
+      },
+      {
+        "ts": "2026-06-18T23:36:18.438Z",
+        "events": [
+          {
+            "event": "GONE",
+            "delta": -1
+          }
+        ],
+        "points": 0
+      }
+    ],
+    "lastEvents": [
+      "GONE"
+    ],
+    "totalJobs": 1,
+    "gradYears": []
+  },
+  "アビリティーズケアネット": {
+    "企業名": "アビリティーズ・ケアネット株式会社",
+    "heat": 10.876545920165025,
+    "firstSeen": "2026-06-18T13:23:40.266Z",
+    "lastEventTs": "2026-06-18T23:36:18.438Z",
+    "history": [
+      {
+        "ts": "2026-06-18T13:23:40.266Z",
+        "events": [
+          {
+            "event": "NEW",
+            "delta": 1
+          }
+        ],
+        "points": 12
+      },
+      {
+        "ts": "2026-06-18T23:36:18.438Z",
+        "events": [
+          {
+            "event": "GONE",
+            "delta": -1
+          }
+        ],
+        "points": 0
+      }
+    ],
+    "lastEvents": [
+      "GONE"
+    ],
+    "totalJobs": 1,
+    "gradYears": []
+  },
+  "irodas": {
+    "企業名": "株式会社irodas",
+    "heat": 10.876545920165025,
+    "firstSeen": "2026-06-18T13:23:40.266Z",
+    "lastEventTs": "2026-06-18T23:36:18.438Z",
+    "history": [
+      {
+        "ts": "2026-06-18T13:23:40.266Z",
+        "events": [
+          {
+            "event": "NEW",
+            "delta": 2
+          }
+        ],
+        "points": 12
+      },
+      {
+        "ts": "2026-06-18T23:36:18.438Z",
+        "events": [
+          {
+            "event": "GONE",
+            "delta": -2
+          }
+        ],
+        "points": 0
+      }
+    ],
+    "lastEvents": [
+      "GONE"
+    ],
+    "totalJobs": 2,
+    "gradYears": []
+  },
+  "オール": {
+    "企業名": "株式会社オール",
+    "heat": 10.876545920165025,
+    "firstSeen": "2026-06-18T13:23:40.266Z",
+    "lastEventTs": "2026-06-18T23:36:18.438Z",
+    "history": [
+      {
+        "ts": "2026-06-18T13:23:40.266Z",
+        "events": [
+          {
+            "event": "NEW",
+            "delta": 1
+          }
+        ],
+        "points": 12
+      },
+      {
+        "ts": "2026-06-18T23:36:18.438Z",
+        "events": [
+          {
+            "event": "GONE",
+            "delta": -1
+          }
+        ],
+        "points": 0
+      }
+    ],
+    "lastEvents": [
+      "GONE"
+    ],
+    "totalJobs": 1,
+    "gradYears": []
+  },
+  "イオン保険サービス": {
+    "企業名": "イオン保険サービス株式会社",
+    "heat": 10.876545920165025,
+    "firstSeen": "2026-06-18T13:23:40.266Z",
+    "lastEventTs": "2026-06-18T23:36:18.438Z",
+    "history": [
+      {
+        "ts": "2026-06-18T13:23:40.266Z",
+        "events": [
+          {
+            "event": "NEW",
+            "delta": 1
+          }
+        ],
+        "points": 12
+      },
+      {
+        "ts": "2026-06-18T23:36:18.438Z",
+        "events": [
+          {
+            "event": "GONE",
+            "delta": -1
+          }
+        ],
+        "points": 0
+      }
+    ],
+    "lastEvents": [
+      "GONE"
+    ],
+    "totalJobs": 1,
+    "gradYears": []
+  },
+  "バサラダイニング": {
+    "企業名": "株式会社バサラダイニング",
+    "heat": 9.063788266804186,
+    "firstSeen": "2026-06-18T13:23:40.266Z",
+    "lastEventTs": "2026-06-18T23:36:18.438Z",
+    "history": [
+      {
+        "ts": "2026-06-18T13:23:40.266Z",
+        "events": [
+          {
+            "event": "NEW",
+            "delta": 1
+          }
+        ],
+        "points": 10
+      },
+      {
+        "ts": "2026-06-18T23:36:18.438Z",
+        "events": [
+          {
+            "event": "GONE",
+            "delta": -1
+          }
+        ],
+        "points": 0
+      }
+    ],
+    "lastEvents": [
+      "GONE"
+    ],
+    "totalJobs": 1,
+    "gradYears": []
+  },
+  "関西商事": {
+    "企業名": "関西商事株式会社",
+    "heat": 10.876545920165025,
+    "firstSeen": "2026-06-18T13:23:40.266Z",
+    "lastEventTs": "2026-06-18T23:36:18.438Z",
+    "history": [
+      {
+        "ts": "2026-06-18T13:23:40.266Z",
+        "events": [
+          {
+            "event": "NEW",
+            "delta": 1
+          }
+        ],
+        "points": 12
+      },
+      {
+        "ts": "2026-06-18T23:36:18.438Z",
+        "events": [
+          {
+            "event": "GONE",
+            "delta": -1
+          }
+        ],
+        "points": 0
+      }
+    ],
+    "lastEvents": [
+      "GONE"
+    ],
+    "totalJobs": 1,
+    "gradYears": []
+  },
+  "コスモ不動産情報": {
+    "企業名": "株式会社コスモ不動産情報",
+    "heat": 10.876545920165025,
+    "firstSeen": "2026-06-18T13:23:40.266Z",
+    "lastEventTs": "2026-06-18T23:36:18.438Z",
+    "history": [
+      {
+        "ts": "2026-06-18T13:23:40.266Z",
+        "events": [
+          {
+            "event": "NEW",
+            "delta": 1
+          }
+        ],
+        "points": 12
+      },
+      {
+        "ts": "2026-06-18T23:36:18.438Z",
+        "events": [
+          {
+            "event": "GONE",
+            "delta": -1
+          }
+        ],
+        "points": 0
+      }
+    ],
+    "lastEvents": [
+      "GONE"
+    ],
+    "totalJobs": 1,
+    "gradYears": []
+  },
+  "リクルートスタッフィング関西オフィス": {
+    "企業名": "株式会社リクルートスタッフィング 関西オフィス",
+    "heat": 10.876545920165025,
+    "firstSeen": "2026-06-18T13:23:40.266Z",
+    "lastEventTs": "2026-06-18T23:36:18.438Z",
+    "history": [
+      {
+        "ts": "2026-06-18T13:23:40.266Z",
+        "events": [
+          {
+            "event": "NEW",
+            "delta": 1
+          }
+        ],
+        "points": 12
+      },
+      {
+        "ts": "2026-06-18T23:36:18.438Z",
+        "events": [
+          {
+            "event": "GONE",
+            "delta": -1
+          }
+        ],
+        "points": 0
+      }
+    ],
+    "lastEvents": [
+      "GONE"
+    ],
+    "totalJobs": 1,
+    "gradYears": []
+  },
+  "aimy": {
+    "企業名": "株式会社AIMY",
+    "heat": 10.876545920165025,
+    "firstSeen": "2026-06-18T13:23:40.266Z",
+    "lastEventTs": "2026-06-18T23:36:18.438Z",
+    "history": [
+      {
+        "ts": "2026-06-18T13:23:40.266Z",
+        "events": [
+          {
+            "event": "NEW",
+            "delta": 1
+          }
+        ],
+        "points": 12
+      },
+      {
+        "ts": "2026-06-18T23:36:18.438Z",
+        "events": [
+          {
+            "event": "GONE",
+            "delta": -1
+          }
+        ],
+        "points": 0
+      }
+    ],
+    "lastEvents": [
+      "GONE"
+    ],
+    "totalJobs": 1,
+    "gradYears": []
+  },
+  "マンパワーグループ": {
+    "企業名": "マンパワーグループ株式会社",
+    "heat": 10.876545920165025,
+    "firstSeen": "2026-06-18T13:23:40.266Z",
+    "lastEventTs": "2026-06-18T23:36:18.438Z",
+    "history": [
+      {
+        "ts": "2026-06-18T13:23:40.266Z",
+        "events": [
+          {
+            "event": "NEW",
+            "delta": 1
+          }
+        ],
+        "points": 12
+      },
+      {
+        "ts": "2026-06-18T23:36:18.438Z",
+        "events": [
+          {
+            "event": "GONE",
+            "delta": -1
+          }
+        ],
+        "points": 0
+      }
+    ],
+    "lastEvents": [
+      "GONE"
+    ],
+    "totalJobs": 1,
+    "gradYears": []
+  },
+  "ヒューマンリソシア": {
+    "企業名": "ヒューマンリソシア株式会社",
+    "heat": 10.876545920165025,
+    "firstSeen": "2026-06-18T13:23:40.266Z",
+    "lastEventTs": "2026-06-18T23:36:18.438Z",
+    "history": [
+      {
+        "ts": "2026-06-18T13:23:40.266Z",
+        "events": [
+          {
+            "event": "NEW",
+            "delta": 1
+          }
+        ],
+        "points": 12
+      },
+      {
+        "ts": "2026-06-18T23:36:18.438Z",
+        "events": [
+          {
+            "event": "GONE",
+            "delta": -1
+          }
+        ],
+        "points": 0
+      }
+    ],
+    "lastEvents": [
+      "GONE"
+    ],
+    "totalJobs": 1,
+    "gradYears": []
+  },
+  "サンワ": {
+    "企業名": "サンワ株式会社",
+    "heat": 10.876545920165025,
+    "firstSeen": "2026-06-18T13:23:40.266Z",
+    "lastEventTs": "2026-06-18T23:36:18.438Z",
+    "history": [
+      {
+        "ts": "2026-06-18T13:23:40.266Z",
+        "events": [
+          {
+            "event": "NEW",
+            "delta": 1
+          }
+        ],
+        "points": 12
+      },
+      {
+        "ts": "2026-06-18T23:36:18.438Z",
+        "events": [
+          {
+            "event": "GONE",
+            "delta": -1
+          }
+        ],
+        "points": 0
+      }
+    ],
+    "lastEvents": [
+      "GONE"
+    ],
+    "totalJobs": 1,
+    "gradYears": []
+  },
+  "光洋新卒採用": {
+    "企業名": "株式会社光洋 新卒採用",
+    "heat": 14.139509696214533,
+    "firstSeen": "2026-06-18T13:23:40.266Z",
+    "lastEventTs": "2026-06-18T23:36:18.438Z",
+    "history": [
+      {
+        "ts": "2026-06-18T13:23:40.266Z",
+        "events": [
+          {
+            "event": "NEW",
+            "delta": 1
+          }
+        ],
+        "points": 15.6
+      },
+      {
+        "ts": "2026-06-18T23:36:18.438Z",
+        "events": [
+          {
+            "event": "GONE",
+            "delta": -1
+          }
+        ],
+        "points": 0
+      }
+    ],
+    "lastEvents": [
+      "GONE"
+    ],
+    "totalJobs": 1,
+    "gradYears": [
+      "2027"
+    ]
+  },
+  "スタッフサービス": {
+    "企業名": "株式会社スタッフサービス",
+    "heat": 10.876545920165025,
+    "firstSeen": "2026-06-18T13:23:40.266Z",
+    "lastEventTs": "2026-06-18T23:36:18.438Z",
+    "history": [
+      {
+        "ts": "2026-06-18T13:23:40.266Z",
+        "events": [
+          {
+            "event": "NEW",
+            "delta": 1
+          }
+        ],
+        "points": 12
+      },
+      {
+        "ts": "2026-06-18T23:36:18.438Z",
+        "events": [
+          {
+            "event": "GONE",
+            "delta": -1
+          }
+        ],
+        "points": 0
+      }
+    ],
+    "lastEvents": [
+      "GONE"
+    ],
+    "totalJobs": 1,
+    "gradYears": []
+  },
+  "パーソルテンプスタッフ": {
+    "企業名": "パーソルテンプスタッフ株式会社",
+    "heat": 10.876545920165025,
+    "firstSeen": "2026-06-18T13:23:40.266Z",
+    "lastEventTs": "2026-06-18T23:36:18.438Z",
+    "history": [
+      {
+        "ts": "2026-06-18T13:23:40.266Z",
+        "events": [
+          {
+            "event": "NEW",
+            "delta": 1
+          }
+        ],
+        "points": 12
+      },
+      {
+        "ts": "2026-06-18T23:36:18.438Z",
+        "events": [
+          {
+            "event": "GONE",
+            "delta": -1
+          }
+        ],
+        "points": 0
+      }
+    ],
+    "lastEvents": [
+      "GONE"
+    ],
+    "totalJobs": 1,
+    "gradYears": []
+  },
+  "ベンタス": {
+    "企業名": "ベンタス株式会社",
+    "heat": 14.139509696214533,
+    "firstSeen": "2026-06-18T13:23:40.266Z",
+    "lastEventTs": "2026-06-18T23:36:18.438Z",
+    "history": [
+      {
+        "ts": "2026-06-18T13:23:40.266Z",
+        "events": [
+          {
+            "event": "NEW",
+            "delta": 1
+          }
+        ],
+        "points": 15.6
+      },
+      {
+        "ts": "2026-06-18T23:36:18.438Z",
+        "events": [
+          {
+            "event": "GONE",
+            "delta": -1
+          }
+        ],
+        "points": 0
+      }
+    ],
+    "lastEvents": [
+      "GONE"
+    ],
+    "totalJobs": 1,
+    "gradYears": [
+      "2027"
+    ]
+  },
+  "メディノス": {
+    "企業名": "株式会社メディノス",
+    "heat": 10.876545920165025,
+    "firstSeen": "2026-06-18T13:23:40.266Z",
+    "lastEventTs": "2026-06-18T23:36:18.438Z",
+    "history": [
+      {
+        "ts": "2026-06-18T13:23:40.266Z",
+        "events": [
+          {
+            "event": "NEW",
+            "delta": 1
+          }
+        ],
+        "points": 12
+      },
+      {
+        "ts": "2026-06-18T23:36:18.438Z",
+        "events": [
+          {
+            "event": "GONE",
+            "delta": -1
+          }
+        ],
+        "points": 0
+      }
+    ],
+    "lastEvents": [
+      "GONE"
+    ],
+    "totalJobs": 1,
+    "gradYears": []
+  },
+  "ファナティック": {
+    "企業名": "株式会社ファナティック",
+    "heat": 10.876545920165025,
+    "firstSeen": "2026-06-18T13:23:40.266Z",
+    "lastEventTs": "2026-06-18T23:36:18.438Z",
+    "history": [
+      {
+        "ts": "2026-06-18T13:23:40.266Z",
+        "events": [
+          {
+            "event": "NEW",
+            "delta": 1
+          }
+        ],
+        "points": 12
+      },
+      {
+        "ts": "2026-06-18T23:36:18.438Z",
+        "events": [
+          {
+            "event": "GONE",
+            "delta": -1
+          }
+        ],
+        "points": 0
+      }
+    ],
+    "lastEvents": [
+      "GONE"
+    ],
+    "totalJobs": 1,
+    "gradYears": []
+  },
+  "バンダイ": {
+    "企業名": "株式会社バンダイ",
+    "heat": 10,
+    "firstSeen": "2026-06-18T23:36:18.438Z",
+    "lastEventTs": "2026-06-18T23:36:18.438Z",
+    "history": [
+      {
+        "ts": "2026-06-18T23:36:18.438Z",
+        "events": [
+          {
+            "event": "NEW",
+            "delta": 1
+          }
+        ],
+        "points": 10
+      }
+    ],
+    "lastEvents": [
+      "NEW"
+    ],
+    "totalJobs": 1,
+    "gradYears": []
+  },
+  "森永製菓": {
+    "企業名": "森永製菓株式会社",
+    "heat": 10,
+    "firstSeen": "2026-06-18T23:36:18.438Z",
+    "lastEventTs": "2026-06-18T23:36:18.438Z",
+    "history": [
+      {
+        "ts": "2026-06-18T23:36:18.438Z",
+        "events": [
+          {
+            "event": "NEW",
+            "delta": 1
+          }
+        ],
+        "points": 10
+      }
+    ],
+    "lastEvents": [
+      "NEW"
+    ],
+    "totalJobs": 1,
+    "gradYears": []
+  },
+  "日本航空": {
+    "企業名": "日本航空株式会社",
+    "heat": 10,
+    "firstSeen": "2026-06-18T23:36:18.438Z",
+    "lastEventTs": "2026-06-18T23:36:18.438Z",
+    "history": [
+      {
+        "ts": "2026-06-18T23:36:18.438Z",
+        "events": [
+          {
+            "event": "NEW",
+            "delta": 1
+          }
+        ],
+        "points": 10
+      }
+    ],
+    "lastEvents": [
+      "NEW"
+    ],
+    "totalJobs": 1,
+    "gradYears": []
+  },
+  "ロッテ": {
+    "企業名": "株式会社ロッテ",
+    "heat": 10,
+    "firstSeen": "2026-06-18T23:36:18.438Z",
+    "lastEventTs": "2026-06-18T23:36:18.438Z",
+    "history": [
+      {
+        "ts": "2026-06-18T23:36:18.438Z",
+        "events": [
+          {
+            "event": "NEW",
+            "delta": 1
+          }
+        ],
+        "points": 10
+      }
+    ],
+    "lastEvents": [
+      "NEW"
+    ],
+    "totalJobs": 1,
+    "gradYears": []
+  },
+  "アサヒグループジャパン": {
+    "企業名": "アサヒグループジャパン株式会社",
+    "heat": 10,
+    "firstSeen": "2026-06-18T23:36:18.438Z",
+    "lastEventTs": "2026-06-18T23:36:18.438Z",
+    "history": [
+      {
+        "ts": "2026-06-18T23:36:18.438Z",
+        "events": [
+          {
+            "event": "NEW",
+            "delta": 1
+          }
+        ],
+        "points": 10
+      }
+    ],
+    "lastEvents": [
+      "NEW"
+    ],
+    "totalJobs": 1,
+    "gradYears": []
+  },
+  "kadokawa": {
+    "企業名": "株式会社KADOKAWA",
+    "heat": 10,
+    "firstSeen": "2026-06-18T23:36:18.438Z",
+    "lastEventTs": "2026-06-18T23:36:18.438Z",
+    "history": [
+      {
+        "ts": "2026-06-18T23:36:18.438Z",
+        "events": [
+          {
+            "event": "NEW",
+            "delta": 1
+          }
+        ],
+        "points": 10
+      }
+    ],
+    "lastEvents": [
+      "NEW"
+    ],
+    "totalJobs": 1,
+    "gradYears": []
+  },
+  "味の素agf": {
+    "企業名": "味の素AGF株式会社",
+    "heat": 10,
+    "firstSeen": "2026-06-18T23:36:18.438Z",
+    "lastEventTs": "2026-06-18T23:36:18.438Z",
+    "history": [
+      {
+        "ts": "2026-06-18T23:36:18.438Z",
+        "events": [
+          {
+            "event": "NEW",
+            "delta": 1
+          }
+        ],
+        "points": 10
+      }
+    ],
+    "lastEvents": [
+      "NEW"
+    ],
+    "totalJobs": 1,
+    "gradYears": []
+  },
+  "キリンホールディングス": {
+    "企業名": "キリンホールディングス株式会社",
+    "heat": 10,
+    "firstSeen": "2026-06-18T23:36:18.438Z",
+    "lastEventTs": "2026-06-18T23:36:18.438Z",
+    "history": [
+      {
+        "ts": "2026-06-18T23:36:18.438Z",
+        "events": [
+          {
+            "event": "NEW",
+            "delta": 1
+          }
+        ],
+        "points": 10
+      }
+    ],
+    "lastEvents": [
+      "NEW"
+    ],
+    "totalJobs": 1,
+    "gradYears": []
+  },
+  "sky": {
+    "企業名": "Ｓｋｙ株式会社",
+    "heat": 10,
+    "firstSeen": "2026-06-18T23:36:18.438Z",
+    "lastEventTs": "2026-06-18T23:36:18.438Z",
+    "history": [
+      {
+        "ts": "2026-06-18T23:36:18.438Z",
+        "events": [
+          {
+            "event": "NEW",
+            "delta": 1
+          }
+        ],
+        "points": 10
+      }
+    ],
+    "lastEvents": [
+      "NEW"
+    ],
+    "totalJobs": 1,
+    "gradYears": []
+  },
+  "サントリーホールディングス": {
+    "企業名": "サントリーホールディングス株式会社",
+    "heat": 10,
+    "firstSeen": "2026-06-18T23:36:18.438Z",
+    "lastEventTs": "2026-06-18T23:36:18.438Z",
+    "history": [
+      {
+        "ts": "2026-06-18T23:36:18.438Z",
+        "events": [
+          {
+            "event": "NEW",
+            "delta": 1
+          }
+        ],
+        "points": 10
+      }
+    ],
+    "lastEvents": [
+      "NEW"
+    ],
+    "totalJobs": 1,
+    "gradYears": []
+  },
+  "伊藤忠商事": {
+    "企業名": "伊藤忠商事株式会社",
+    "heat": 10,
+    "firstSeen": "2026-06-18T23:36:18.438Z",
+    "lastEventTs": "2026-06-18T23:36:18.438Z",
+    "history": [
+      {
+        "ts": "2026-06-18T23:36:18.438Z",
+        "events": [
+          {
+            "event": "NEW",
+            "delta": 1
+          }
+        ],
+        "points": 10
+      }
+    ],
+    "lastEvents": [
+      "NEW"
+    ],
+    "totalJobs": 1,
+    "gradYears": []
+  },
+  "日清食品": {
+    "企業名": "日清食品株式会社",
+    "heat": 10,
+    "firstSeen": "2026-06-18T23:36:18.438Z",
+    "lastEventTs": "2026-06-18T23:36:18.438Z",
+    "history": [
+      {
+        "ts": "2026-06-18T23:36:18.438Z",
+        "events": [
+          {
+            "event": "NEW",
+            "delta": 1
+          }
+        ],
+        "points": 10
+      }
+    ],
+    "lastEvents": [
+      "NEW"
+    ],
+    "totalJobs": 1,
+    "gradYears": []
+  },
+  "全日本空輸": {
+    "企業名": "全日本空輸株式会社",
+    "heat": 10,
+    "firstSeen": "2026-06-18T23:36:18.438Z",
+    "lastEventTs": "2026-06-18T23:36:18.438Z",
+    "history": [
+      {
+        "ts": "2026-06-18T23:36:18.438Z",
+        "events": [
+          {
+            "event": "NEW",
+            "delta": 1
+          }
+        ],
+        "points": 10
+      }
+    ],
+    "lastEvents": [
+      "NEW"
+    ],
+    "totalJobs": 1,
+    "gradYears": []
+  },
+  "東映": {
+    "企業名": "東映株式会社",
+    "heat": 10,
+    "firstSeen": "2026-06-18T23:36:18.438Z",
+    "lastEventTs": "2026-06-18T23:36:18.438Z",
+    "history": [
+      {
+        "ts": "2026-06-18T23:36:18.438Z",
+        "events": [
+          {
+            "event": "NEW",
+            "delta": 1
+          }
+        ],
+        "points": 10
+      }
+    ],
+    "lastEvents": [
+      "NEW"
+    ],
+    "totalJobs": 1,
+    "gradYears": []
+  },
+  "ヤクルト本社": {
+    "企業名": "株式会社ヤクルト本社",
+    "heat": 10,
+    "firstSeen": "2026-06-18T23:36:18.438Z",
+    "lastEventTs": "2026-06-18T23:36:18.438Z",
+    "history": [
+      {
+        "ts": "2026-06-18T23:36:18.438Z",
+        "events": [
+          {
+            "event": "NEW",
+            "delta": 1
+          }
+        ],
+        "points": 10
+      }
+    ],
+    "lastEvents": [
+      "NEW"
+    ],
+    "totalJobs": 1,
+    "gradYears": []
+  },
+  "アシックス": {
+    "企業名": "株式会社アシックス",
+    "heat": 10,
+    "firstSeen": "2026-06-18T23:36:18.438Z",
+    "lastEventTs": "2026-06-18T23:36:18.438Z",
+    "history": [
+      {
+        "ts": "2026-06-18T23:36:18.438Z",
+        "events": [
+          {
+            "event": "NEW",
+            "delta": 1
+          }
+        ],
+        "points": 10
+      }
+    ],
+    "lastEvents": [
+      "NEW"
+    ],
+    "totalJobs": 1,
+    "gradYears": []
+  },
+  "nttデータグループ": {
+    "企業名": "株式会社NTTデータグループ",
+    "heat": 10,
+    "firstSeen": "2026-06-18T23:36:18.438Z",
+    "lastEventTs": "2026-06-18T23:36:18.438Z",
+    "history": [
+      {
+        "ts": "2026-06-18T23:36:18.438Z",
+        "events": [
+          {
+            "event": "NEW",
+            "delta": 1
+          }
+        ],
+        "points": 10
+      }
+    ],
+    "lastEvents": [
+      "NEW"
+    ],
+    "totalJobs": 1,
+    "gradYears": []
+  },
+  "jtb": {
+    "企業名": "株式会社JTB",
+    "heat": 10,
+    "firstSeen": "2026-06-18T23:36:18.438Z",
+    "lastEventTs": "2026-06-18T23:36:18.438Z",
+    "history": [
+      {
+        "ts": "2026-06-18T23:36:18.438Z",
+        "events": [
+          {
+            "event": "NEW",
+            "delta": 1
+          }
+        ],
+        "points": 10
+      }
+    ],
+    "lastEvents": [
+      "NEW"
+    ],
+    "totalJobs": 1,
+    "gradYears": []
+  },
+  "オリエンタルランド": {
+    "企業名": "株式会社オリエンタルランド",
+    "heat": 10,
+    "firstSeen": "2026-06-18T23:36:18.438Z",
+    "lastEventTs": "2026-06-18T23:36:18.438Z",
+    "history": [
+      {
+        "ts": "2026-06-18T23:36:18.438Z",
+        "events": [
+          {
+            "event": "NEW",
+            "delta": 1
+          }
+        ],
+        "points": 10
+      }
+    ],
+    "lastEvents": [
+      "NEW"
+    ],
+    "totalJobs": 1,
+    "gradYears": []
+  },
+  "ニトリ": {
+    "企業名": "株式会社ニトリ",
+    "heat": 10,
+    "firstSeen": "2026-06-18T23:36:18.438Z",
+    "lastEventTs": "2026-06-18T23:36:18.438Z",
+    "history": [
+      {
+        "ts": "2026-06-18T23:36:18.438Z",
+        "events": [
+          {
+            "event": "NEW",
+            "delta": 1
+          }
+        ],
+        "points": 10
+      }
+    ],
+    "lastEvents": [
+      "NEW"
+    ],
+    "totalJobs": 1,
+    "gradYears": []
+  },
+  "東宝": {
+    "企業名": "東宝株式会社",
+    "heat": 10,
+    "firstSeen": "2026-06-18T23:36:18.438Z",
+    "lastEventTs": "2026-06-18T23:36:18.438Z",
+    "history": [
+      {
+        "ts": "2026-06-18T23:36:18.438Z",
+        "events": [
+          {
+            "event": "NEW",
+            "delta": 1
+          }
+        ],
+        "points": 10
+      }
+    ],
+    "lastEvents": [
+      "NEW"
+    ],
+    "totalJobs": 1,
+    "gradYears": []
+  },
+  "三菱ufj銀行": {
+    "企業名": "株式会社三菱UFJ銀行",
+    "heat": 10,
+    "firstSeen": "2026-06-18T23:36:18.438Z",
+    "lastEventTs": "2026-06-18T23:36:18.438Z",
+    "history": [
+      {
+        "ts": "2026-06-18T23:36:18.438Z",
+        "events": [
+          {
+            "event": "NEW",
+            "delta": 1
+          }
+        ],
+        "points": 10
+      }
+    ],
+    "lastEvents": [
+      "NEW"
+    ],
+    "totalJobs": 1,
+    "gradYears": []
+  },
+  "tbsテレビ": {
+    "企業名": "株式会社TBSテレビ",
+    "heat": 10,
+    "firstSeen": "2026-06-18T23:36:18.438Z",
+    "lastEventTs": "2026-06-18T23:36:18.438Z",
+    "history": [
+      {
+        "ts": "2026-06-18T23:36:18.438Z",
+        "events": [
+          {
+            "event": "NEW",
+            "delta": 1
+          }
+        ],
+        "points": 10
+      }
+    ],
+    "lastEvents": [
+      "NEW"
+    ],
+    "totalJobs": 1,
+    "gradYears": []
+  },
+  "講談社": {
+    "企業名": "株式会社講談社",
+    "heat": 10,
+    "firstSeen": "2026-06-18T23:36:18.438Z",
+    "lastEventTs": "2026-06-18T23:36:18.438Z",
+    "history": [
+      {
+        "ts": "2026-06-18T23:36:18.438Z",
+        "events": [
+          {
+            "event": "NEW",
+            "delta": 1
+          }
+        ],
+        "points": 10
+      }
+    ],
+    "lastEvents": [
+      "NEW"
+    ],
+    "totalJobs": 1,
+    "gradYears": []
+  },
+  "江崎グリコ": {
+    "企業名": "江崎グリコ株式会社",
+    "heat": 10,
+    "firstSeen": "2026-06-18T23:36:18.438Z",
+    "lastEventTs": "2026-06-18T23:36:18.438Z",
+    "history": [
+      {
+        "ts": "2026-06-18T23:36:18.438Z",
+        "events": [
+          {
+            "event": "NEW",
+            "delta": 1
+          }
+        ],
+        "points": 10
+      }
+    ],
+    "lastEvents": [
+      "NEW"
+    ],
+    "totalJobs": 1,
+    "gradYears": []
+  },
+  "タカラトミー": {
+    "企業名": "株式会社タカラトミー",
+    "heat": 10,
+    "firstSeen": "2026-06-18T23:36:18.438Z",
+    "lastEventTs": "2026-06-18T23:36:18.438Z",
+    "history": [
+      {
+        "ts": "2026-06-18T23:36:18.438Z",
+        "events": [
+          {
+            "event": "NEW",
+            "delta": 1
+          }
+        ],
+        "points": 10
+      }
+    ],
+    "lastEvents": [
+      "NEW"
+    ],
+    "totalJobs": 1,
+    "gradYears": []
+  },
+  "エイベックス": {
+    "企業名": "エイベックス株式会社",
+    "heat": 10,
+    "firstSeen": "2026-06-18T23:36:18.438Z",
+    "lastEventTs": "2026-06-18T23:36:18.438Z",
+    "history": [
+      {
+        "ts": "2026-06-18T23:36:18.438Z",
+        "events": [
+          {
+            "event": "NEW",
+            "delta": 1
+          }
+        ],
+        "points": 10
+      }
+    ],
+    "lastEvents": [
+      "NEW"
+    ],
+    "totalJobs": 1,
+    "gradYears": []
+  },
+  "本田技研工業": {
+    "企業名": "本田技研工業株式会社",
+    "heat": 10,
+    "firstSeen": "2026-06-18T23:36:18.438Z",
+    "lastEventTs": "2026-06-18T23:36:18.438Z",
+    "history": [
+      {
+        "ts": "2026-06-18T23:36:18.438Z",
+        "events": [
+          {
+            "event": "NEW",
+            "delta": 1
+          }
+        ],
+        "points": 10
+      }
+    ],
+    "lastEvents": [
+      "NEW"
+    ],
+    "totalJobs": 1,
+    "gradYears": []
+  },
+  "バンダイナムコエンターテインメント": {
+    "企業名": "株式会社バンダイナムコエンターテインメント",
+    "heat": 10,
+    "firstSeen": "2026-06-18T23:36:18.438Z",
+    "lastEventTs": "2026-06-18T23:36:18.438Z",
+    "history": [
+      {
+        "ts": "2026-06-18T23:36:18.438Z",
+        "events": [
+          {
+            "event": "NEW",
+            "delta": 1
+          }
+        ],
+        "points": 10
+      }
+    ],
+    "lastEvents": [
+      "NEW"
+    ],
+    "totalJobs": 1,
+    "gradYears": []
+  },
+  "エイチアイエス": {
+    "企業名": "株式会社エイチ・アイ・エス",
+    "heat": 10,
+    "firstSeen": "2026-06-18T23:36:18.438Z",
+    "lastEventTs": "2026-06-18T23:36:18.438Z",
+    "history": [
+      {
+        "ts": "2026-06-18T23:36:18.438Z",
+        "events": [
+          {
+            "event": "NEW",
+            "delta": 1
+          }
+        ],
+        "points": 10
+      }
+    ],
+    "lastEvents": [
+      "NEW"
+    ],
+    "totalJobs": 1,
+    "gradYears": []
+  }
+}

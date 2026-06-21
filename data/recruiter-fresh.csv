@@ -1,0 +1,3 @@
+企業名,公式URL,採用担当者名,役職,部署,確度,取得元,エンジン,根拠URL,根拠
+株式会社端野メディカル,http://www.hashino-medical.co.jp/,竹内,採用,,0.82,自社採用ページ,regex,https://www.hashino-medical.co.jp/news/news_recruit/entry-174.html,採用チームの竹内です
+株式会社ＫＩＳ,https://www.kis.co.jp/company_next/,大塚,採用担当,,0.82,自社採用ページ,regex,https://www.kis.co.jp/recruit/,採用担当の大塚です

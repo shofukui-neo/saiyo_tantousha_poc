@@ -1,0 +1,616 @@
+{
+  "リクナビ": {
+    "name": "リクナビ",
+    "tier": "major",
+    "url": "https://job.rikunabi.com/2027/search/?kw=%E6%96%B0%E5%8D%92",
+    "query": "新卒",
+    "ts": "2026-06-18T22:07:54.471Z",
+    "http": true,
+    "analysis": {
+      "len": 314015,
+      "textLen": 187885,
+      "needsJs": false,
+      "jsHints": true,
+      "freshCount": 129,
+      "freshSamples": [
+        "新着",
+        "2025年4月10",
+        "2025年4月1",
+        "2025年3月6",
+        "2026年2月26",
+        "2025年2月26"
+      ],
+      "compHits": 667,
+      "companyLinks": 4,
+      "searchEcho": true
+    },
+    "verdict": "STATIC_OK+FRESH"
+  },
+  "キャリタス就活": {
+    "name": "キャリタス就活",
+    "tier": "major",
+    "url": "https://job.career-tasu.jp/",
+    "query": "新卒",
+    "ts": "2026-06-18T22:08:06.422Z",
+    "http": true,
+    "analysis": {
+      "len": 314872,
+      "textLen": 40655,
+      "needsJs": false,
+      "jsHints": false,
+      "freshCount": 8,
+      "freshSamples": [
+        "更新日",
+        "2026/06/15",
+        "2026.06.17"
+      ],
+      "compHits": 31,
+      "companyLinks": 33,
+      "searchEcho": true
+    },
+    "verdict": "STATIC_OK+FRESH"
+  },
+  "あさがくナビ(学情)": {
+    "name": "あさがくナビ(学情)",
+    "tier": "major",
+    "url": "https://www.gakujo.ne.jp/",
+    "query": "新卒",
+    "ts": "2026-06-18T22:08:18.435Z",
+    "http": true,
+    "analysis": {
+      "len": 20337,
+      "textLen": 6148,
+      "needsJs": false,
+      "jsHints": false,
+      "freshCount": 0,
+      "freshSamples": [],
+      "compHits": 1,
+      "companyLinks": 3,
+      "searchEcho": true
+    },
+    "verdict": "NEEDS_JS",
+    "note": "トップJSメニュー・静的リンク無→Playwright経路要"
+  },
+  "ブンナビ(文化放送)": {
+    "name": "ブンナビ(文化放送)",
+    "tier": "major",
+    "url": "https://bunnabi.jp/",
+    "query": "新卒",
+    "ts": "2026-06-18T22:08:22.557Z",
+    "http": true,
+    "analysis": {
+      "len": 13668,
+      "textLen": 2080,
+      "needsJs": false,
+      "jsHints": false,
+      "freshCount": 3,
+      "freshSamples": [
+        "2026年3月27",
+        "締切",
+        "エントリー受付"
+      ],
+      "compHits": 1,
+      "companyLinks": 3,
+      "searchEcho": false
+    },
+    "verdict": "NEEDS_JS",
+    "note": "career_search/2027ともJS描画で企業0"
+  },
+  "Wantedly新卒": {
+    "name": "Wantedly新卒",
+    "tier": "major",
+    "url": "https://www.wantedly.com/projects",
+    "query": "新卒",
+    "ts": "2026-06-18T22:08:26.706Z",
+    "http": true,
+    "analysis": {
+      "len": 268648,
+      "textLen": 67662,
+      "needsJs": false,
+      "jsHints": true,
+      "freshCount": 6,
+      "freshSamples": [
+        "新着",
+        "2016年2月1",
+        "2026年2月28"
+      ],
+      "compHits": 29,
+      "companyLinks": 15,
+      "searchEcho": true
+    },
+    "verdict": "STATIC_OK+FRESH"
+  },
+  "type就活": {
+    "name": "type就活",
+    "tier": "major",
+    "url": "https://typeshukatsu.jp/",
+    "query": "新卒",
+    "ts": "2026-06-18T22:08:31.258Z",
+    "http": true,
+    "analysis": {
+      "len": 131492,
+      "textLen": 27601,
+      "needsJs": false,
+      "jsHints": false,
+      "freshCount": 32,
+      "freshSamples": [
+        "2026年6月11",
+        "2026年6月22",
+        "2026年5月29",
+        "2026年6月15",
+        "2026年6月23",
+        "2026年6月24"
+      ],
+      "compHits": 14,
+      "companyLinks": 70,
+      "searchEcho": true
+    },
+    "verdict": "STATIC_OK+FRESH"
+  },
+  "OfferBox(逆求人)": {
+    "name": "OfferBox(逆求人)",
+    "tier": "specialized",
+    "url": "https://offerbox.jp/",
+    "query": "新卒",
+    "ts": "2026-06-18T22:09:33.754Z",
+    "http": true,
+    "analysis": {
+      "len": 72611,
+      "textLen": 4934,
+      "needsJs": false,
+      "jsHints": false,
+      "freshCount": 7,
+      "freshSamples": [
+        "2023/10/17",
+        "2023/10/13",
+        "2023/02/16",
+        "2022/03/14",
+        "2026.06.16",
+        "2026.06.02"
+      ],
+      "compHits": 0,
+      "companyLinks": 5,
+      "searchEcho": true
+    },
+    "verdict": "STATIC_OK+FRESH"
+  },
+  "アカリク(院生/研究)": {
+    "name": "アカリク(院生/研究)",
+    "tier": "specialized",
+    "url": "https://acaric.jp/",
+    "query": "新卒",
+    "ts": "2026-06-18T22:09:38.401Z",
+    "http": true,
+    "analysis": {
+      "len": 55137,
+      "textLen": 3479,
+      "needsJs": false,
+      "jsHints": false,
+      "freshCount": 0,
+      "freshSamples": [],
+      "compHits": 7,
+      "companyLinks": 7,
+      "searchEcho": true
+    },
+    "verdict": "STATIC_OK"
+  },
+  "レバテックルーキー(IT)": {
+    "name": "レバテックルーキー(IT)",
+    "tier": "specialized",
+    "url": "https://rookie.levtech.jp/",
+    "query": "エンジニア",
+    "ts": "2026-06-18T22:09:42.674Z",
+    "http": true,
+    "analysis": {
+      "len": 298407,
+      "textLen": 26068,
+      "needsJs": false,
+      "jsHints": true,
+      "freshCount": 2,
+      "freshSamples": [
+        "締切"
+      ],
+      "compHits": 36,
+      "companyLinks": 6,
+      "searchEcho": true
+    },
+    "verdict": "STATIC_OK+FRESH"
+  },
+  "TECH OFFER(理系逆求人)": {
+    "name": "TECH OFFER(理系逆求人)",
+    "tier": "specialized",
+    "url": "https://techoffer.jp/",
+    "query": "理系",
+    "ts": "2026-06-18T22:09:47.017Z",
+    "http": true,
+    "analysis": {
+      "len": 243434,
+      "textLen": 86797,
+      "needsJs": false,
+      "jsHints": false,
+      "freshCount": 0,
+      "freshSamples": [],
+      "compHits": 8,
+      "companyLinks": 7,
+      "searchEcho": true
+    },
+    "verdict": "STATIC_OK"
+  },
+  "LabBase(理系院生)": {
+    "name": "LabBase(理系院生)",
+    "tier": "specialized",
+    "url": "https://compass.labbase.jp/",
+    "query": "研究",
+    "ts": "2026-06-18T22:09:52.869Z",
+    "http": true,
+    "analysis": {
+      "len": 133134,
+      "textLen": 51066,
+      "needsJs": false,
+      "jsHints": false,
+      "freshCount": 29,
+      "freshSamples": [
+        "締切",
+        "新着",
+        "2026.06.18",
+        "今日",
+        "2025/12/31"
+      ],
+      "compHits": 83,
+      "companyLinks": 40,
+      "searchEcho": true
+    },
+    "verdict": "STATIC_OK+FRESH"
+  },
+  "キミスカ(逆求人)": {
+    "name": "キミスカ(逆求人)",
+    "tier": "specialized",
+    "url": "https://kimisuka.com/",
+    "query": "新卒",
+    "ts": "2026-06-18T22:09:57.177Z",
+    "http": true,
+    "analysis": {
+      "len": 50719,
+      "textLen": 2799,
+      "needsJs": false,
+      "jsHints": false,
+      "freshCount": 0,
+      "freshSamples": [],
+      "compHits": 0,
+      "companyLinks": 3,
+      "searchEcho": true
+    },
+    "verdict": "WEAK"
+  },
+  "dodaキャンパス": {
+    "name": "dodaキャンパス",
+    "tier": "specialized",
+    "url": "https://campus.doda.jp/",
+    "query": "新卒",
+    "ts": "2026-06-18T22:10:01.370Z",
+    "http": true,
+    "analysis": {
+      "len": 17952,
+      "textLen": 1,
+      "needsJs": false,
+      "jsHints": false,
+      "freshCount": 0,
+      "freshSamples": [],
+      "compHits": 0,
+      "companyLinks": 0,
+      "searchEcho": false
+    },
+    "verdict": "WEAK"
+  },
+  "キャリアチケット": {
+    "name": "キャリアチケット",
+    "tier": "specialized",
+    "url": "https://careerticket.jp/",
+    "query": "新卒",
+    "ts": "2026-06-18T22:10:05.573Z",
+    "http": true,
+    "analysis": {
+      "len": 40223,
+      "textLen": 2012,
+      "needsJs": false,
+      "jsHints": false,
+      "freshCount": 0,
+      "freshSamples": [],
+      "compHits": 1,
+      "companyLinks": 2,
+      "searchEcho": true
+    },
+    "verdict": "OUT",
+    "note": "エージェント型・応募導線robots不可"
+  },
+  "マイナビ看護学生": {
+    "name": "マイナビ看護学生",
+    "tier": "specialized",
+    "url": "https://www.nurse-mynavi.com/",
+    "query": "看護",
+    "ts": "2026-06-18T22:10:09.885Z",
+    "error": "fetch failed",
+    "verdict": "ERROR"
+  },
+  "ナース専科就職(看護)": {
+    "name": "ナース専科就職(看護)",
+    "tier": "specialized",
+    "url": "https://kango-job.jp/",
+    "query": "看護",
+    "ts": "2026-06-18T22:10:16.969Z",
+    "error": "fetch failed",
+    "verdict": "ERROR"
+  },
+  "薬キャリ(薬剤師)": {
+    "name": "薬キャリ(薬剤師)",
+    "tier": "specialized",
+    "url": "https://pcareer.m3.com/",
+    "query": "薬剤師",
+    "ts": "2026-06-18T22:10:24.071Z",
+    "http": true,
+    "analysis": {
+      "len": 55752,
+      "textLen": 3783,
+      "needsJs": false,
+      "jsHints": false,
+      "freshCount": 5,
+      "freshSamples": [
+        "新着"
+      ],
+      "compHits": 0,
+      "companyLinks": 29,
+      "searchEcho": true
+    },
+    "verdict": "STATIC_OK+FRESH"
+  },
+  "みん就(みんなの就活)": {
+    "name": "みん就(みんなの就活)",
+    "tier": "aggregator",
+    "url": "https://www.nikki.ne.jp/",
+    "query": "新卒",
+    "ts": "2026-06-18T22:11:06.021Z",
+    "http": true,
+    "analysis": {
+      "len": 120095,
+      "textLen": 54054,
+      "needsJs": false,
+      "jsHints": false,
+      "freshCount": 0,
+      "freshSamples": [],
+      "compHits": 0,
+      "companyLinks": 0,
+      "searchEcho": false
+    },
+    "verdict": "OUT",
+    "note": "口コミ掲示板・公開企業一覧なし"
+  },
+  "就活会議": {
+    "name": "就活会議",
+    "tier": "aggregator",
+    "url": "https://syukatsu-kaigi.jp/",
+    "query": "新卒",
+    "ts": "2026-06-18T22:11:10.586Z",
+    "http": true,
+    "analysis": {
+      "len": 145923,
+      "textLen": 12470,
+      "needsJs": false,
+      "jsHints": false,
+      "freshCount": 37,
+      "freshSamples": [
+        "公開日",
+        "2026年6月18",
+        "2026年6月17",
+        "昨日",
+        "2026.06.11",
+        "2026.05.13"
+      ],
+      "compHits": 15,
+      "companyLinks": 237,
+      "searchEcho": true
+    },
+    "verdict": "STATIC_OK+FRESH"
+  },
+  "OpenWork": {
+    "name": "OpenWork",
+    "tier": "aggregator",
+    "url": "https://www.openwork.jp/",
+    "query": "新卒",
+    "ts": "2026-06-18T22:11:15.223Z",
+    "http": true,
+    "analysis": {
+      "len": 199989,
+      "textLen": 16400,
+      "needsJs": false,
+      "jsHints": false,
+      "freshCount": 9,
+      "freshSamples": [
+        "2026/06/22",
+        "2026年06月17",
+        "2026年06月16",
+        "新着",
+        "2024年04月09"
+      ],
+      "compHits": 31,
+      "companyLinks": 100,
+      "searchEcho": true
+    },
+    "verdict": "STATIC_OK+FRESH"
+  },
+  "キャリコネ": {
+    "name": "キャリコネ",
+    "tier": "aggregator",
+    "url": "https://careerconnection.jp/",
+    "query": "新卒",
+    "ts": "2026-06-18T22:11:19.540Z",
+    "http": true,
+    "analysis": {
+      "len": 259972,
+      "textLen": 18510,
+      "needsJs": false,
+      "jsHints": false,
+      "freshCount": 4,
+      "freshSamples": [
+        "新着",
+        "2026年6月18"
+      ],
+      "compHits": 61,
+      "companyLinks": 11,
+      "searchEcho": false
+    },
+    "verdict": "STATIC_OK+FRESH"
+  },
+  "Indeed新卒": {
+    "name": "Indeed新卒",
+    "tier": "aggregator",
+    "url": "https://jp.indeed.com/jobs?q=%E6%96%B0%E5%8D%92",
+    "query": "新卒",
+    "ts": "2026-06-18T22:11:24.585Z",
+    "error": "HTTP 403",
+    "verdict": "ERROR"
+  },
+  "スタンバイ": {
+    "name": "スタンバイ",
+    "tier": "aggregator",
+    "url": "https://jp.stanby.com/search?q=%E6%96%B0%E5%8D%92",
+    "query": "新卒",
+    "ts": "2026-06-18T22:11:32.026Z",
+    "robotsBlocked": true,
+    "reason": "robots-disallow",
+    "verdict": "BLOCKED(robots)"
+  },
+  "しょくばらぼ(厚労省)": {
+    "name": "しょくばらぼ(厚労省)",
+    "tier": "regional",
+    "url": "https://shokuba.mhlw.go.jp/",
+    "query": "新卒",
+    "ts": "2026-06-18T22:11:32.145Z",
+    "http": true,
+    "analysis": {
+      "len": 16051,
+      "textLen": 1485,
+      "needsJs": false,
+      "jsHints": false,
+      "freshCount": 4,
+      "freshSamples": [
+        "2026/6/1",
+        "2026年6月1",
+        "2026年3月6",
+        "2026年3月4"
+      ],
+      "compHits": 0,
+      "companyLinks": 0,
+      "searchEcho": true
+    },
+    "verdict": "WEAK"
+  },
+  "ハローワーク求人検索": {
+    "name": "ハローワーク求人検索",
+    "tier": "regional",
+    "url": "https://www.hellowork.mhlw.go.jp/",
+    "query": "新卒",
+    "ts": "2026-06-18T22:11:36.268Z",
+    "http": true,
+    "analysis": {
+      "len": 29973,
+      "textLen": 5534,
+      "needsJs": false,
+      "jsHints": false,
+      "freshCount": 18,
+      "freshSamples": [
+        "2026年5月14",
+        "2026年4月16",
+        "2026年3月23",
+        "2026年1月22",
+        "2025年11月25",
+        "2025年8月14"
+      ],
+      "compHits": 0,
+      "companyLinks": 0,
+      "searchEcho": false
+    },
+    "verdict": "WEAK"
+  },
+  "ジョブカフェ": {
+    "name": "ジョブカフェ",
+    "tier": "regional",
+    "url": "https://www.jobcafe-network.jp/",
+    "query": "新卒",
+    "ts": "2026-06-18T22:11:40.421Z",
+    "error": "fetch failed",
+    "verdict": "ERROR"
+  },
+  "Fネット(ふるさと就職)": {
+    "name": "Fネット(ふるさと就職)",
+    "tier": "regional",
+    "url": "https://www.f-net.gr.jp/",
+    "query": "新卒",
+    "ts": "2026-06-18T22:11:47.495Z",
+    "error": "fetch failed",
+    "verdict": "ERROR"
+  },
+  "ジモコロ就活(地方)": {
+    "name": "ジモコロ就活(地方)",
+    "tier": "regional",
+    "url": "https://www.glloow.com/",
+    "query": "新卒",
+    "ts": "2026-06-18T22:11:54.539Z",
+    "http": true,
+    "analysis": {
+      "len": 114,
+      "textLen": 0,
+      "needsJs": false,
+      "jsHints": false,
+      "freshCount": 0,
+      "freshSamples": [],
+      "compHits": 0,
+      "companyLinks": 0,
+      "searchEcho": false
+    },
+    "verdict": "WEAK"
+  },
+  "マイナビ": {
+    "name": "マイナビ",
+    "tier": "major",
+    "url": "https://job.mynavi.jp/2027/",
+    "query": "新卒",
+    "ts": "2026-06-18T22:45:22.263Z",
+    "http": true,
+    "analysis": {
+      "len": 134004,
+      "textLen": 21864,
+      "needsJs": false,
+      "jsHints": false,
+      "freshCount": 9,
+      "freshSamples": [
+        "エントリー受付",
+        "新着",
+        "2024/2/1"
+      ],
+      "compHits": 5,
+      "companyLinks": 19,
+      "searchEcho": true
+    },
+    "verdict": "STATIC_OK+FRESH"
+  },
+  "ワンキャリア": {
+    "name": "ワンキャリア",
+    "tier": "major",
+    "url": "https://www.onecareer.jp/companies",
+    "query": "新卒",
+    "ts": "2026-06-18T22:45:22.506Z",
+    "http": true,
+    "analysis": {
+      "len": 214935,
+      "textLen": 25494,
+      "needsJs": false,
+      "jsHints": true,
+      "freshCount": 0,
+      "freshSamples": [],
+      "compHits": 0,
+      "companyLinks": 71,
+      "searchEcho": false
+    },
+    "verdict": "STATIC_OK"
+  }
+}

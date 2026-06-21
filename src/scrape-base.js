@@ -21,7 +21,8 @@ const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
 const { normCompanyName } = require('./csv');
-const { isFullName, splitName, isKnownSurname } = require('./jp-names');
+const { isFullName, splitName, isKnownSurname, stripNonName, completeSurname } = require('./jp-names');
+const { looksLikePersonName } = require('./extract'); // 一般語(関連/関係/案内…)を弾く共通ブロックリスト
 const { extractPhones } = require('./phone');
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
@@ -55,20 +56,34 @@ function extractRecruiterName(text) {
   const kw = '(?:採用ご?担当者?|人事ご?担当者?|ご担当者?|採用責任者|人事責任者|担当者?)';
   const re1 = new RegExp(kw + '\\s*[:：]?\\s*((?:' + NAME_CHARS + '\\s?){2,8})', 'g');
   let m;
-  const cands = [];
-  while ((m = re1.exec(t)) !== null) cands.push(m[1].replace(/\s/g, ''));
-  // 2) 「○○部 ＜氏名＞」: 部署名の直後に来る氏名
+  const cands = [];   // 空白境界を保持（「姓 名」の切れ目に使う）
+  while ((m = re1.exec(t)) !== null) cands.push(m[1].trim());
+  // 2) 「○○部 ＜氏名＞」: 部署名の直後に来る氏名。ただし部署は採用窓口になる人事/総務/採用/人材/管理系に限定する。
+  //   営業部/技術部/マーケティング部 等の事業部は「社員インタビュー/先輩の声」に登場する“担当でない社員”を拾ってしまうため除外。
   const re2 = new RegExp('(' + NAME_CHARS + '{2,10}?[部課室]|人事|総務)\\s*[ /／・]?\\s*((?:' + NAME_CHARS + '\\s?){2,8})', 'g');
   while ((m = re2.exec(t)) !== null) {
-    const raw = m[2].replace(/\s/g, '');
-    if (/担当|責任|採用|人事/.test(m[1]) || /部|課|室/.test(m[1])) cands.push(raw);
+    if (/採用|人事|総務|人材|管理/.test(m[1])) cands.push(m[2].trim());
   }
-  // 候補を人名辞書で検証。フルネーム > 既知姓 の順に最初の妥当を採用。
+  // 候補から「姓 名」を取り出して人名辞書で検証。
+  // 氏名直後にひらがな文が続くと貪欲に取り込むため、空白区切りの先頭2トークン（姓・名）を優先評価。
   let best = '';
-  for (const c of cands) {
-    if (/担当|責任|採用|人事|部署|連絡|問合|問い合|会社|株式|有限/.test(c)) continue; // 非人名を除外
-    if (isFullName(c)) { best = c; break; }
-    if (!best && isKnownSurname(c) && c.length >= 2) best = c;
+  for (const c0 of cands) {
+    // 先に役割語/役職/地名を剥がす（「田中花子採用担当」→「田中花子」/「山田太郎部長」→「山田太郎」）。
+    // 剥がした後で残留する組織語・役割語があれば非人名として除外する。
+    const c = stripNonName(c0).trim();
+    if (!c || /担当|責任|採用|人事|部署|連絡|問合|問い合|会社|株式|有限/.test(c)) continue;
+    const toks = c.split(/\s+/).filter(Boolean);
+    // 候補: 先頭2トークン結合 / 先頭1トークン / 空白除去全体（保険）
+    const tries = [];
+    if (toks.length >= 2) tries.push(toks[0] + ' ' + toks[1]);
+    if (toks.length >= 1) tries.push(toks[0]);
+    tries.push(c.replace(/\s/g, ''));
+    let hit = '';
+    // 辞書フルネームかつ一般語でない（「人事関連」→関連 等の姓＋一般語の誤検出を looksLikePersonName で弾く）。
+    for (const s of tries) { if (isFullName(s) && looksLikePersonName(s.replace(/[ 　]/g, ''))) { hit = s; break; } }
+    if (hit) { best = hit; break; }
+    // 名を伴わない単独姓は、辞書に完全一致する姓のみ採用（地名片 関東/中央 を弾く）。
+    if (!best && toks[0]) { const sur = completeSurname(toks[0]); if (sur && looksLikePersonName(sur)) best = sur; }
   }
   if (best) {
     out.name = best;
@@ -86,11 +101,15 @@ function extractRecruiterName(text) {
 function extractIntentSignals(text) {
   const t = String(text || '').replace(/[ \t　]+/g, ' ');
   const sig = { 募集職種: '', 募集職種数: '', 採用予定人数: '', 卒年: '' };
-  const jobsM = t.match(/(?:募集|職種|募集職種)[^0-9A-Za-z]{0,6}([^\n。]{2,40})/);
-  if (jobsM) sig.募集職種 = jobsM[1].trim().slice(0, 40);
+  // 募集職種：職種語を含む実体だけを採る（"ント"等の断片ノイズを弾く）
+  const JOB_WORDS = /(営業|企画|エンジニア|技術|研究|開発|事務|販売|サービス|総合職|専門職|一般職|マーケティング|デザイン|コンサル|人事|経理|財務|広報|生産|製造|物流|購買|SE|IT|システム)/;
+  // 区切りは記号/空白に限定（漢字を食って職種名を削らないため）
+  const jobsM = t.match(/(?:募集職種|職種)[：:\s　／/]{0,4}([^\n。｜|]{3,40})/);
+  if (jobsM && JOB_WORDS.test(jobsM[1])) sig.募集職種 = jobsM[1].trim().slice(0, 40);
   const numM = t.match(/採用(?:予定)?人数[^0-9]{0,4}(\d{1,4})\s*[名人]/);
   if (numM) sig.採用予定人数 = numM[1];
-  const gradM = t.match(/(20\d{2}|2[7-9]卒|3[0-2]卒)/);
+  // 「27卒」「27年卒」「2027年卒」「2027」いずれの表記も拾う
+  const gradM = t.match(/(20[2-9]\d年?卒|2[7-9]年?卒|3[0-2]年?卒|20[2-9]\d)/);
   if (gradM) sig.卒年 = gradM[1];
   if (sig.募集職種) sig.募集職種数 = String(sig.募集職種.split(/[\/、,・]/).filter(Boolean).length || 1);
   return sig;
@@ -104,11 +123,20 @@ function extractCompanyFacts({ html = '', text = '' } = {}) {
   // 電話（既存の堅い抽出を流用。会社概要面なので pageBoost を少し乗せる）
   const ph = extractPhones({ html, text, pageBoost: 2 });
   if (ph && ph.phone && !ph.isFax) facts.電話番号 = ph.phone;
-  // 従業員数（"従業員数 278名" "社員数：1,234人" 等）
-  const emp = t.match(/(?:従業|社)員数?[^0-9]{0,6}([\d,，]{1,7})\s*[名人]/);
-  if (emp) facts.従業員数 = emp[1].replace(/[,，]/g, '');
-  // 資本金（"資本金 1,000万円" "資本金：1億円"）
-  const cap = t.match(/資本金[^0-9]{0,6}([\d,，.]{1,12}\s*(?:億|万)?円)/);
+  // 従業員数（"従業員数 278名" "社員数：1,234人" 等）。
+  // 単体/連結/子会社別など複数記載されることがあるため、全マッチのうち最大値を採る
+  // （"従業員数 単体1名 連結5000名" のような誤採用＝過小値を防ぐ）。
+  // 「従業員数/従業員/社員数」に限定し（"社員1人"等の体験談ノイズを除外）、
+  // 「従業員数（単体）21,404人」のような括弧付きラベルを跨げるよう数字以外を最大10字許す。
+  const empRe = /(?:従業員数|従業員|社員数)[^0-9名人]{0,10}([\d,，]{1,9})\s*[名人]/g;
+  let em, maxEmp = 0;
+  while ((em = empRe.exec(t)) !== null) {
+    const n = parseInt(em[1].replace(/[,，]/g, ''), 10);
+    if (Number.isFinite(n) && n > maxEmp) maxEmp = n;
+  }
+  if (maxEmp > 0) facts.従業員数 = String(maxEmp);
+  // 資本金（"資本金 1,000万円" "資本金：1億円" "資本金：59百万円"）
+  const cap = t.match(/資本金[^0-9]{0,6}([\d,，.]{1,12}\s*(?:億|百万|千万|万|千)?円)/);
   if (cap) facts.資本金 = cap[1].replace(/\s+/g, '');
   // 設立（"設立 2010年" "創業：1985年4月"）
   const est = t.match(/(?:設立|創業)[^0-9]{0,6}((?:19|20)\d{2})\s*年?/);
@@ -135,6 +163,9 @@ class BaseMediaScraper {
     this.debug = opts.debug != null ? opts.debug : process.env.SCRAPE_DEBUG === '1';
     this.delay = opts.delay || parseInt(process.env.SCRAPE_PAGE_DELAY_MS || '3000', 10);
     this.navTimeout = opts.navTimeout || parseInt(process.env.SCRAPE_NAV_TIMEOUT_MS || '30000', 10);
+    // SPA描画の「落ち着き待ち」。これらの媒体は常時接続でnetworkidleに到達しないため、
+    // networkidleではなく固定待機でクライアント描画を待つ（probeで実証）。
+    this.settleMs = opts.settleMs || parseInt(process.env.SCRAPE_SETTLE_MS || '4000', 10);
     this.userAgent = opts.userAgent ||
       'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36';
     this.cacheDir = opts.cacheDir || path.resolve(__dirname, '..', 'data', `${this.label}-cache`);
@@ -177,10 +208,11 @@ class BaseMediaScraper {
     return null;
   }
 
-  // domcontentloaded まで素直に開き、networkidle を短く待つ（SPA描画待ち）
+  // domcontentloaded まで開き、固定時間だけ描画を待つ。
+  // ※ これらの媒体は広告/計測の常時接続で networkidle に到達しないため待たない（ハング防止）。
   async goto(page, url) {
     await page.goto(url, { waitUntil: 'domcontentloaded', timeout: this.navTimeout }).catch(() => {});
-    await page.waitForLoadState('networkidle', { timeout: 8000 }).catch(() => {});
+    await sleep(this.settleMs);
   }
 
   async bodyText(page) {
