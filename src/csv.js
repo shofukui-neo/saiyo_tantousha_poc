@@ -97,5 +97,5 @@ function truthy(v) {
 
 module.exports = {
   parseCsv, rowsToRecords, readCsv, csvEscape, toCsv,
-  toHalfWidth, normCorpNumber, normCompanyName, mergeKey, truthy,
+  toHalfWidth, normCorpNumber, normCompanyName, mergeKey, truthy, CORP_FORMS,
 };

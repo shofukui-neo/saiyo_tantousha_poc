@@ -76,7 +76,18 @@ powershell -ExecutionPolicy Bypass -File .\scripts\register-task.ps1 -IntervalHo
 ## 7. スプレッドシート自動保存（任意）
 毎サイクルの「今アツい」top-N を Google スプレッドシートに**時系列で追記**する（`src/monitor/sheets-sink.js`）。
 未設定なら自動スキップ（監視は通常稼働）。設定すると `run.js` が出力後に自動追記する。
+**2方式あり、設定された方を使う（Webhookが優先）。**
 
+新規作成済みシート: `新卒鮮度モニタリング（今アツい企業 自動記録）`
+ID `140hKiSrrZsZQ8mfBP2776ee9YHlVNTqhRlhqYDHqGzY` / owner sho.fukui@neo-career.co.jp
+
+### 方式A: GASウェブアプリ Webhook（推奨・サービスアカウント不要）
+1. 上記シートを開く →「拡張機能」→「Apps Script」→ `apps-script/sheets-webhook.gs` の内容を貼り付け、`SECRET` を変更して保存。
+2. 「デプロイ」→「新しいデプロイ」→ ウェブアプリ（実行=自分 / アクセス=全員 または 組織内）→ URL（…/exec）をコピー。
+3. システム環境変数に設定: `MONITOR_SHEET_WEBHOOK`=そのURL / `MONITOR_SHEET_TOKEN`=手順1のSECRET。
+4. 確認: `npm run monitor:sheets-check` → `接続OK` でテスト行が入る。
+
+### 方式B: Sheets API（サービスアカウント）
 **セットアップ（一度だけ）:**
 1. GCP でサービスアカウントを作成し、JSONキーをダウンロード（例 `C:\keys\sa.json`）。Google Sheets API を有効化。
 2. 保存先スプレッドシートを作成し、その**サービスアカウントのメール**（`xxx@xxx.iam.gserviceaccount.com`）に「**編集者**」で共有。

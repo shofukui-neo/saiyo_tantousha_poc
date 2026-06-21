@@ -18,9 +18,26 @@ function cfg() {
     creds: process.env.GOOGLE_APPLICATION_CREDENTIALS || '',
     sheetId: process.env.MONITOR_SHEET_ID || process.env.SHEET_ID || '',
     tab: process.env.MONITOR_SHEET_TAB || '鮮度モニタリング',
+    // 簡単経路: GASウェブアプリのURL（/exec）。サービスアカウント不要。設定時はこちらを優先。
+    webhook: process.env.MONITOR_SHEET_WEBHOOK || '',
+    token: process.env.MONITOR_SHEET_TOKEN || '',
   };
 }
-function configured() { const c = cfg(); return !!(c.sheetId && c.creds); }
+function configured() { const c = cfg(); return !!(c.webhook || (c.sheetId && c.creds)); }
+
+// 簡単経路: GASウェブアプリへ POST（fetchはnode18+の組込）。サービスアカウント不要。
+async function appendViaWebhook(c, rows, cycle) {
+  const ctrl = new AbortController();
+  const t = setTimeout(() => ctrl.abort(), 20000);
+  try {
+    const res = await fetch(c.webhook, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' }, signal: ctrl.signal,
+      body: JSON.stringify({ token: c.token, tab: c.tab, headers: HEADERS, cycle, rows }),
+    });
+    if (!res.ok) throw new Error('webhook HTTP ' + res.status);
+    return { appended: rows.length, tab: c.tab, via: 'webhook' };
+  } finally { clearTimeout(t); }
+}
 
 let _sheets = null;
 async function client(c) {
@@ -75,17 +92,19 @@ function toRows(ranked, cycle, snap) {
 // 毎サイクル呼ぶ本体。設定が無ければ {skipped:true}。成功で {appended:n, tab}。
 async function appendHottest(ranked, { cycle, snap } = {}) {
   const c = cfg();
-  if (!c.sheetId || !c.creds) return { skipped: true };
+  if (!configured()) return { skipped: true };
   if (!ranked || !ranked.length) return { appended: 0, tab: c.tab };
+  const rows = toRows(ranked, cycle, snap);
+  // 優先: Webhook（サービスアカウント不要の簡単経路）→ 無ければ Sheets API（サービスアカウント）
+  if (c.webhook) return appendViaWebhook(c, rows, cycle);
   const sheets = await client(c);
   await ensureSheet(sheets, c);
-  const rows = toRows(ranked, cycle, snap);
   await sheets.spreadsheets.values.append({
     spreadsheetId: c.sheetId, range: `${c.tab}!A1`,
     valueInputOption: 'RAW', insertDataOption: 'INSERT_ROWS',
     requestBody: { values: rows },
   });
-  return { appended: rows.length, tab: c.tab };
+  return { appended: rows.length, tab: c.tab, via: 'api' };
 }
 
 module.exports = { appendHottest, configured, cfg, HEADERS };
@@ -95,9 +114,12 @@ if (require.main === module) {
   (async () => {
     require('dotenv').config();
     const c = cfg();
+    console.log('MONITOR_SHEET_WEBHOOK:', c.webhook || '(未設定)');
+    console.log('MONITOR_SHEET_TOKEN  :', c.token ? '(設定あり)' : '(未設定)');
     console.log('GOOGLE_APPLICATION_CREDENTIALS:', c.creds || '(未設定)');
     console.log('MONITOR_SHEET_ID:', c.sheetId || '(未設定)');
     console.log('タブ:', c.tab);
+    console.log('使用経路:', c.webhook ? 'Webhook(GAS)' : (c.sheetId && c.creds ? 'Sheets API(SA)' : 'なし'));
     if (!configured()) { console.log('→ 未設定のためスキップされます（監視は通常どおり動作）。'); process.exit(0); }
     try {
       const ts = new Date().toISOString();
