@@ -64,6 +64,14 @@ async function runCycle() {
     log(`  🔥 TOP5: ${top5}`);
   }
 
+  // ⑤' スプシ自動保存（設定があれば時系列で追記。失敗しても監視は止めない）
+  try {
+    const sink = require('./sheets-sink');
+    const res = await sink.appendHottest(ranked.slice(0, TOP), { cycle, snap });
+    if (res.appended) log(`  📊 スプシ追記: ${res.appended}行 → タブ「${res.tab}」`);
+    else if (res.skipped) log('  📊 スプシ未設定（MONITOR_SHEET_ID/認証）→スキップ');
+  } catch (e) { log('  ⚠ スプシ書込失敗: ' + String(e && e.message || e).slice(0, 100)); }
+
   // 自律ブレイン: クエリ別の新規数を集計して増殖/撤退を判断
   const perQueryNew = {};
   for (const d of Object.values(deltas)) {
