@@ -1,74 +1,74 @@
 {
   "queries": {
     "新卒 営業 東京": {
-      "dry": 2,
+      "dry": 0,
       "active": true,
       "born": "seed",
-      "hits": 60
+      "hits": 65
     },
     "新卒 営業 大阪": {
-      "dry": 2,
-      "active": true,
+      "dry": 3,
+      "active": false,
       "born": "from:新卒 営業 東京",
       "hits": 40
     },
     "新卒 営業 名古屋": {
-      "dry": 2,
-      "active": true,
+      "dry": 3,
+      "active": false,
       "born": "from:新卒 営業 東京",
       "hits": 22
     },
     "新卒 営業 福岡": {
-      "dry": 2,
-      "active": true,
+      "dry": 3,
+      "active": false,
       "born": "from:新卒 営業 東京",
       "hits": 21
     },
     "新卒 営業 横浜": {
-      "dry": 2,
-      "active": true,
+      "dry": 3,
+      "active": false,
       "born": "from:新卒 営業 東京",
       "hits": 23
     },
     "新卒 営業 札幌": {
-      "dry": 2,
-      "active": true,
+      "dry": 3,
+      "active": false,
       "born": "from:新卒 営業 東京",
       "hits": 22
     },
     "新卒 営業 仙台": {
-      "dry": 2,
-      "active": true,
+      "dry": 3,
+      "active": false,
       "born": "from:新卒 営業 東京",
       "hits": 16
     },
     "新卒 エンジニア 東京": {
-      "dry": 2,
-      "active": true,
+      "dry": 3,
+      "active": false,
       "born": "from:新卒 営業 東京",
       "hits": 11
     },
     "新卒 企画 東京": {
-      "dry": 2,
-      "active": true,
+      "dry": 3,
+      "active": false,
       "born": "from:新卒 営業 東京",
       "hits": 21
     },
     "新卒 総合職 東京": {
-      "dry": 2,
-      "active": true,
+      "dry": 3,
+      "active": false,
       "born": "from:新卒 営業 東京",
       "hits": 22
     },
     "新卒 マーケティング 東京": {
-      "dry": 2,
-      "active": true,
+      "dry": 3,
+      "active": false,
       "born": "from:新卒 営業 東京",
       "hits": 21
     },
     "新卒 コンサル 東京": {
-      "dry": 2,
-      "active": true,
+      "dry": 3,
+      "active": false,
       "born": "from:新卒 営業 東京",
       "hits": 23
     },
@@ -337,6 +337,6 @@
       "hits": 0
     }
   },
-  "cycle": 6,
+  "cycle": 7,
   "staleSources": []
 }
