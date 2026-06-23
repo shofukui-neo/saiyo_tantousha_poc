@@ -224,7 +224,37 @@ async function findRecruiterName(companyName, { adapters = NAME_ADAPTERS, includ
   return { 採用担当者名: '', 役職: '', 部署: '', 取得元媒体: '', 根拠URL: '', 確度: 0, 詳細: detail };
 }
 
+// 媒体DOM・採用SNS・LinkedIn を横断して採用担当者の個人名を探す統合ルーチン。
+// チャネル優先順 media → sns → linkedin（mediaはキャッシュ効きやすく低コスト、SNS/LinkedInは検索負荷が高い）。
+// 先に確証の取れたチャネルで打ち切り、根拠URL・取得元媒体・チャネルを刻んで返す。
+//   channels: ['media','sns','linkedin'] のサブセット（既定=全部）
+//   戻り値: findRecruiterName と同形 ＋ チャネル
+async function findRecruiterAllChannels(companyName, opts = {}) {
+  const channels = (opts.channels && opts.channels.length) ? opts.channels : ['media', 'sns', 'linkedin'];
+  const detail = {};
+  const empty = { 採用担当者名: '', 役職: '', 部署: '', 取得元媒体: '', 根拠URL: '', 確度: 0 };
+
+  if (channels.includes('media')) {
+    const r = await findRecruiterName(companyName, { includeExperimental: opts.includeExperimental });
+    Object.assign(detail, r.詳細);
+    if (r.採用担当者名) return { ...r, 詳細: detail, チャネル: 'media' };
+  }
+  // SNS/LinkedIn は遅延 require（scrape-social が firstFullName 等で本モジュールを参照する循環を回避）。
+  const social = require('./scrape-social');
+  if (channels.includes('sns')) {
+    const r = await social.findRecruiterSocial(companyName, opts);
+    Object.assign(detail, r.詳細);
+    if (r.採用担当者名) return { ...r, 詳細: detail, チャネル: 'sns' };
+  }
+  if (channels.includes('linkedin')) {
+    const r = await social.findRecruiterLinkedIn(companyName, opts);
+    Object.assign(detail, r.詳細);
+    if (r.採用担当者名) return { ...r, 詳細: detail, チャネル: 'linkedin' };
+  }
+  return { ...empty, 詳細: detail, チャネル: '' };
+}
+
 module.exports = {
-  findRecruiterName, extractPersonName, firstFullName, pickDetailUrls,
+  findRecruiterName, findRecruiterAllChannels, extractPersonName, firstFullName, pickDetailUrls,
   namesMatch, companyOnPage, NAME_ADAPTERS,
 };

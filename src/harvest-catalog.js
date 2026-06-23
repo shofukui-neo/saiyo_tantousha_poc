@@ -26,6 +26,7 @@ const { politeGet, allowedByRobots } = require('./polite');
 const { fetchText } = require('./fetch');
 const { pageCorpus, extractFromRecruitText, probeRecruitPage } = require('./probe-recruit-page');
 const { probeRecruitDeep } = require('./probe-recruit-deep');
+const { registrableDomain } = require('./fetch');
 const { readCsv, toCsv, normCompanyName } = require('./csv');
 const cfg = require('./config');
 
@@ -229,10 +230,88 @@ async function runMynavi() {
   console.log(`  出力: ${outP}（累計 ${out.length}社）\n`);
 }
 
+// ── モード4: 各媒体から「企業母集団」を抽出 → 適応クローラのプールに供給 ───────────
+// probe実測で媒体ページに個人名は出ない(1/106)。名前は媒体がリンクする"企業サイト側"にある。
+// よって媒体ごとに違う"企業一覧の構造"を辿り、外部の企業公式URLを収集して母集団を拡張する。
+const LISTING_HINT = /(company|companies|corp|kigyo|kaisha|会社|企業|一覧|list|search|result|area|pref|地域|業種|category|page=|recruit|job|member|参加|掲載)/i;
+const CTA_WORDS = /^(詳細|もっと|一覧|エントリー|応募|もっと見る|続きを読む|see ?more|view|detail|map|地図|アクセス|もっとみる|お気に入り|ブックマーク|シェア|次へ|前へ|top|ホーム|ログイン|登録|会員)/i;
+// 企業名らしさ（法人格を含む）。媒体のグループ送客リンクと掲載企業を分ける精度ゲート。
+const COMPANY_NAME_RE = /(株式会社|有限会社|合同会社|合資会社|合名会社|（株）|\(株\)|㈱|㈲|医療法人|社会福祉法人|学校法人|協同組合|一般社団法人|一般財団法人|Inc\.?|Co\.,?\s?Ltd|Corp(?:oration)?\b|Ltd\.?)/;
+
+async function crawlMediaForCompanies(media, maxPages) {
+  const found = new Map(); // regDomain -> {name,url,media}
+  let host = ''; try { host = new URL(media.url).host.replace(/^www\./, ''); } catch { return found; }
+  const visited = new Set(); const queue = [media.url];
+  let fetched = 0;
+  while (queue.length && fetched < maxPages) {
+    const u = queue.shift(); if (visited.has(u)) continue; visited.add(u);
+    const r = await politeGet(u, { render: 'static' }); fetched++;
+    if (!r || r.blocked || r.error || !r.html) continue;
+    const $ = cheerio.load(r.html);
+    $('a[href]').each((_, a) => {
+      const href = $(a).attr('href'); if (!href) return;
+      let abs; try { abs = new URL(href, r.finalUrl || u).href; } catch { return; }
+      const clean = abs.replace(/[#?].*$/, '');
+      if (isCompanyLink(abs, host)) {
+        const reg = registrableDomain(new URL(abs).host);
+        const txt = ($(a).text() || '').replace(/\s+/g, ' ').trim().slice(0, 40);
+        // 媒体トップのフッタ/グループ送客リンク（"結婚式ならゼクシィ"等）を排除し、
+        // アンカーが企業名＝法人格を含むものだけ採用（＝掲載企業の一覧リンク）。精度優先。
+        if (reg && !found.has(reg) && COMPANY_NAME_RE.test(txt) && !CTA_WORDS.test(txt)) {
+          found.set(reg, { name: txt, url: clean.replace(/\/$/, '') + '/', media: media.name });
+        }
+      } else {
+        // 媒体内の一覧/検索/カテゴリ/ページネーションを浅く辿って企業リンクを増やす
+        let lu; try { lu = new URL(abs); } catch { return; }
+        if (lu.host === new URL(media.url).host && LISTING_HINT.test(lu.pathname + lu.search) && !visited.has(clean) && queue.length < maxPages * 3) queue.push(clean);
+      }
+    });
+  }
+  return found;
+}
+
+async function runMediaCompanies() {
+  const cat = loadCatalog();
+  const maxPages = parseInt(getArg('media-max-pages', '15'), 10);
+  const concurrency = parseInt(getArg('concurrency', '5'), 10);
+  // 到達可能・ログイン壁でない媒体を対象（probe較正値を利用）
+  const limitN = parseInt(getArg('limit', '999'), 10);
+  const targets = cat.media.filter((m) => m.url && (!m.probe || (m.probe.reachable === 'yes' && m.probe.loginWall !== 'likely')) && m.strategy !== 'blocked-or-login').slice(0, limitN);
+  log(`媒体→企業母集団 抽出: 対象 ${targets.length}媒体（各最大${maxPages}ページ巡回）`);
+  const outP = path.join(ROOT, 'data', 'media-company-pool.csv');
+  const HEAD = ['企業名', '公式URL', '取得元媒体'];
+  // 既存プール（再開・累積）
+  const pool = new Map();
+  if (fs.existsSync(outP)) for (const r of readCsv(fs.readFileSync(outP, 'utf8')).records) { const reg = (() => { try { return registrableDomain(new URL(r['公式URL']).host); } catch { return r['公式URL']; } })(); if (reg) pool.set(reg, { name: r['企業名'] || '', url: r['公式URL'], media: r['取得元媒体'] || '' }); }
+
+  let done = 0;
+  const results = await pool2(targets, concurrency, async (m) => {
+    const f = await crawlMediaForCompanies(m, maxPages).catch(() => new Map());
+    done++; log(`  [${done}/${targets.length}] ${m.name}: 企業${f.size}件`);
+    return f;
+  });
+  for (const f of results) if (f && f.forEach) f.forEach((v, k) => { if (!pool.has(k)) pool.set(k, v); });
+
+  const rows = [...pool.values()].map((v) => ({ '企業名': v.name, '公式URL': v.url, '取得元媒体': v.media }));
+  atomicWrite(outP, toCsv(HEAD, rows));
+  const named = rows.filter((r) => r['企業名']).length;
+  const L = '──────────────────────────────────────────────';
+  console.log('\n' + L);
+  console.log('  媒体→企業母集団 抽出サマリ');
+  console.log(L);
+  console.log(`  対象媒体          : ${targets.length}`);
+  console.log(`  収集した企業(uniq): ${rows.length}社（社名つき ${named}）`);
+  console.log(`  出力: ${outP}`);
+  console.log('  → harvest-adaptive がこのプールも母集団に取り込み、自己学習クローラで氏名探索します。\n');
+}
+// 別名（runProbeのpoolと衝突しないよう同実装を再利用）
+const pool2 = pool;
+
 async function main() {
   if (getArg('probe', false)) return runProbe();
   if (getArg('recruit-pages', false)) return runRecruitPages();
   if (getArg('mynavi', false)) return runMynavi();
+  if (getArg('media-companies', false)) return runMediaCompanies();
   console.log('使い方:');
   console.log('  node src/harvest-catalog.js --probe                              # 全媒体を分類プローブ');
   console.log('  node src/harvest-catalog.js --recruit-pages [--deep] [--list x.csv] [--limit 120] [--empty-only]');

@@ -670,6 +670,42 @@ function testMynaviContact() {
   return fail;
 }
 
+// ---- 採用SNS／LinkedIn 検索結果タイトルからの氏名抽出（純ロジック・ネットワーク不要）----
+// 「氏名 - 所属 - 役職 | 媒体」形式の公開タイトルを分解し、会社一致＋役割語＋姓辞書で氏名を確定する。
+function testSocialScraping() {
+  let fail = 0;
+  const ok = (label, cond) => { if (cond) console.log('✓ ' + label); else { console.log('✗ ' + label); fail++; } };
+  const { splitTitleSegments, extractNameFromResult, roleHit } = require('../src/scrape-social');
+  const nameOf = (r, t, o) => { const g = extractNameFromResult(r, t, o); return g ? g.name : ''; };
+
+  // セグメント分割（各種区切り・媒体ブランド語の分離）
+  const segs = splitTitleSegments('山田 太郎 - 株式会社サンプル 採用担当 | LinkedIn');
+  ok('SNS: タイトルを氏名/所属/媒体に分割', segs[0] === '山田 太郎' && segs.includes('LinkedIn'));
+
+  // 役割語の検出（config.ROLE_KEYWORDS 再利用）
+  ok('SNS: 役割語「採用担当」を検出', roleHit('新卒採用担当をしています') !== '');
+  ok('SNS: 役割語が無ければ空', roleHit('プロダクトデザイナー') === '');
+
+  // LinkedIn 形式: 氏名＋会社一致＋役割 → 抽出
+  const li = { title: '山田 太郎 - 株式会社サンプル 採用担当 | LinkedIn', snippet: '株式会社サンプルの採用担当です', url: 'https://jp.linkedin.com/in/taro-yamada', domain: 'linkedin.com' };
+  ok('LinkedIn: 会社一致＋役割で「山田太郎」を抽出', nameOf(li, '株式会社サンプル') === '山田太郎');
+
+  // 会社が一致しない結果は氏名を出さない（誤帰属の排除）
+  ok('LinkedIn: 別会社のプロフィールは抽出しない', nameOf(li, '株式会社まったく別') === '');
+
+  // 役割語が無く requireRole の既定（true）では出さない／false なら出す
+  const noRole = { title: '佐藤 花子 - 株式会社サンプル | Wantedly', snippet: '株式会社サンプルのメンバー', url: 'https://www.wantedly.com/id/x', domain: 'wantedly.com' };
+  ok('SNS: 役割語なし＋requireRole(既定)で抽出しない', nameOf(noRole, '株式会社サンプル') === '');
+  ok('SNS: 役割語なしでも requireRole:false なら抽出（広報投稿想定）', nameOf(noRole, '株式会社サンプル', { requireRole: false }) === '佐藤花子');
+
+  // 媒体ブランド語そのものは氏名にしない／姓辞書で検証できないトークンも出さない
+  const brandOnly = { title: 'LinkedIn', snippet: '', url: 'https://linkedin.com', domain: 'linkedin.com' };
+  ok('SNS: ブランド語のみのタイトルは抽出しない', nameOf(brandOnly, '株式会社サンプル', { requireRole: false }) === '');
+  const noName = { title: '採用情報 - 株式会社サンプル 採用担当 | LinkedIn', snippet: '採用担当', url: 'https://linkedin.com/x', domain: 'linkedin.com' };
+  ok('SNS: 氏名トークンが無い（役割語のみ）タイトルは抽出しない', nameOf(noName, '株式会社サンプル') === '');
+  return fail;
+}
+
 async function run() {
   const cases = [
     { name: 'サンプル株式会社', file: 'fixture.html', expect: 'HIT' },
@@ -737,6 +773,8 @@ async function run() {
   failures += testMediaScrapers();
   console.log('\n--- マイナビ『問合せ先』構造分解（担当者名の精度／再現率）検証 ---');
   failures += testMynaviContact();
+  console.log('\n--- 採用SNS／LinkedIn 検索結果からの氏名抽出（会社一致／役割語／姓辞書）検証 ---');
+  failures += testSocialScraping();
 
   if (failures > 0) { console.error(`\nSELFTEST FAILED: ${failures} case(s)`); process.exit(1); }
   console.log('\nSELFTEST PASSED ✓  (抽出→検証→集計 ＋ スプレッドシートI/O ロジックが正常動作)');

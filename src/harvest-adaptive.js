@@ -33,6 +33,18 @@ const JOURNAL = path.join(DATA, 'harvest-adaptive.journal.json');
 const STATE = path.join(DATA, 'harvest-adaptive.state.json');
 const TARGET = parseInt(getArg('target', '1000'), 10);
 const MAX_PAGES = parseInt(getArg('max-pages', '30'), 10);
+
+// クラッシュ耐性: undici(Node20)のHTTP/1パーサが TLSソケットend時に投げる
+// `assert(!this.paused)` は await の try/catch では捕まらない非同期throw（プロセスごと落ちる既知バグ）。
+// 進捗はjournal/CSV/stateに永続化済みなので、ここで最後にflushしてからexit(1)し、外側ランナーで再開する。
+let _flush = null;
+function bail(tag, e) {
+  console.error(`[${tag}] ${e && (e.stack || e.message) || e}`.slice(0, 300));
+  try { if (_flush) _flush(); } catch (_) {}
+  process.exit(1);
+}
+process.on('uncaughtException', (e) => bail('uncaughtException', e));
+process.on('unhandledRejection', (e) => bail('unhandledRejection', e));
 const LIMIT = parseInt(getArg('limit', '99999'), 10);
 const HEAD = ['企業名', '公式URL', '採用担当者名', '役職', '部署', '確度', '取得元', '根拠URL', '根拠', '手法'];
 const log = (m) => console.log(`[${new Date().toISOString().slice(11, 19)}] ${m}`);
@@ -53,6 +65,9 @@ function buildPool() {
     const j = loadJson(path.join(DATA, f)); const recs = Array.isArray(j) ? j : (j && j.records) || [];
     for (const r of recs) add(r['企業名'], r['公式URL'], r['法人番号']);
   }
+  // 媒体→企業母集団（harvest-catalog --media-companies の出力）も取り込む
+  const mp = path.join(DATA, 'media-company-pool.csv');
+  if (fs.existsSync(mp)) for (const r of readCsv(fs.readFileSync(mp, 'utf8')).records) add(r['企業名'] || r['公式URL'], r['公式URL'], '');
   return pool;
 }
 
@@ -130,13 +145,15 @@ async function main() {
   log(`母集団 ${pool.length}社（未処理 ${todo.length}）｜既取得(本file) ${named()}｜企業サイト系既取得 ${otherNamed.size}｜目標 ${TARGET}（企業サイト系合算・Wantedly除く）`);
 
   const flush = () => { atomic(OUT, toCsv(HEAD, out)); atomic(JOURNAL, JSON.stringify([...processed])); atomic(STATE, JSON.stringify(state)); };
+  _flush = flush; // クラッシュ時ハンドラからも保存できるよう公開
   let n = 0, got = 0;
   for (const c of todo) {
     if (named() + otherNamed.size >= TARGET) { log(`目標 ${TARGET}（合算）到達。終了。`); break; }
     n++;
+    // 先にjournal登録（クラッシュ時もbail()のflushで永続化＝同じ問題サイトの無限再試行を防ぐ）。
+    processed.add(c.key);
     let hit = null;
     try { hit = await crawlCompany(state, c); } catch (e) { hit = null; }
-    processed.add(c.key);
     if (hit && hit.name) {
       out.push({ 企業名: c.name, 公式URL: c.url, 採用担当者名: hit.name, 役職: hit.role || '', 部署: hit.department || '', 確度: hit.confidence || 0.7, 取得元: hit.source || '自社採用ページ', 根拠URL: hit.sourceUrl || '', 根拠: (hit.evidence || '').slice(0, 80), 手法: `${hit.where}@${hit.sig}` });
       got++;
@@ -161,4 +178,5 @@ async function main() {
   console.log(`  出力: ${OUT}\n`);
 }
 
-main().catch((e) => { console.error('FATAL', e); process.exit(1); });
+// 正常完了=exit0（ランナーが停止）/ クラッシュ=exit1（ランナーが再開）。
+main().then(() => { try { if (_flush) _flush(); } catch (_) {} process.exit(0); }).catch((e) => bail('FATAL', e));
