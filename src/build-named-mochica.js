@@ -43,6 +43,7 @@ const getArg = (n, d) => { const i = process.argv.indexOf('--' + n); return i >=
 
 // 名前ソース。kind: 'recruit-page'＝自社採用ページ由来（採用ページ有無シグナル）、'wantedly'＝中途寄り。
 const NAME_SOURCES = [
+  { p: path.join(DATA, 'recruiter-adaptive.csv'), tag: '企業サイト探索(適応)', kind: 'recruit-page', conf: 0.82 },
   { p: path.join(DATA, 'recruiter-deep-harvest.csv'), tag: '自社採用ページ(深掘り)', kind: 'recruit-page', conf: 0.82 },
   { p: path.join(DATA, 'recruiter-probe-harvest.csv'), tag: '自社採用ページ(実取得)', kind: 'recruit-page', conf: 0.8 },
   { p: path.join(DATA, 'recruiter-fresh.csv'), tag: '自社採用ページ', kind: 'recruit-page' },
