@@ -12,3 +12,5 @@ npm-debug.log
 dist/
 /.idea/
 coverage/
+# scraping disk cache (transient, regenerable)
+data/scrape-cache/
