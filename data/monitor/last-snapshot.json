@@ -1,5 +1,5 @@
 {
-  "cycle": "2026-06-22T15:59:35.081Z",
+  "cycle": "2026-06-21T09:04:33.402Z",
   "companies": {
     "ネオキャリア": {
       "企業名": "株式会社ネオキャリア",
@@ -19,29 +19,11 @@
         }
       }
     },
-    "kirim": {
-      "企業名": "kirim",
-      "totalJobs": 1,
-      "gradYears": [],
-      "recencyDays": 10,
-      "sources": {
-        "求人ボックス": {
-          "jobCount": 1,
-          "jobs": [
-            "月給23万～／東京有名店20年の技術が学べる／アシスタント募集"
-          ],
-          "queries": [
-            "新卒 営業 東京"
-          ],
-          "recencyDays": 10
-        }
-      }
-    },
     "マエダ": {
       "企業名": "株式会社マエダ",
       "totalJobs": 1,
       "gradYears": [],
-      "recencyDays": 24,
+      "recencyDays": 23,
       "sources": {
         "求人ボックス": {
           "jobCount": 1,
@@ -51,43 +33,7 @@
           "queries": [
             "新卒 営業 東京"
           ],
-          "recencyDays": 24
-        }
-      }
-    },
-    "iplug": {
-      "企業名": "株式会社i-plug",
-      "totalJobs": 1,
-      "gradYears": [],
-      "recencyDays": null,
-      "sources": {
-        "求人ボックス": {
-          "jobCount": 1,
-          "jobs": [
-            "東京／在宅可／法人営業／新卒DRサービスOfferBox 成功報酬型で..."
-          ],
-          "queries": [
-            "新卒 営業 東京"
-          ],
-          "recencyDays": null
-        }
-      }
-    },
-    "mitty": {
-      "企業名": "Mitty株式会社",
-      "totalJobs": 1,
-      "gradYears": [],
-      "recencyDays": 27,
-      "sources": {
-        "求人ボックス": {
-          "jobCount": 1,
-          "jobs": [
-            "渋谷ヒカリエ／フィールドセールス 東京オフィス立上げ・裁量権"
-          ],
-          "queries": [
-            "新卒 営業 東京"
-          ],
-          "recencyDays": 27
+          "recencyDays": 23
         }
       }
     },
@@ -100,120 +46,12 @@
         "求人ボックス": {
           "jobCount": 1,
           "jobs": [
-            "反響対応メインの事務スタッフ／日程調整・データ入力／営業ノルマなし"
+            "DX事業の営業サポート事務／データ入力・お客様対応／20代"
           ],
           "queries": [
             "新卒 営業 東京"
           ],
           "recencyDays": 0
-        }
-      }
-    },
-    "パナック": {
-      "企業名": "パナック株式会社",
-      "totalJobs": 1,
-      "gradYears": [],
-      "recencyDays": 7,
-      "sources": {
-        "求人ボックス": {
-          "jobCount": 1,
-          "jobs": [
-            "東京／田町／法人営業 高機能フィルム／スマートフォン、半導体等にも使用"
-          ],
-          "queries": [
-            "新卒 営業 東京"
-          ],
-          "recencyDays": 7
-        }
-      }
-    },
-    "ワールドコーポレーション": {
-      "企業名": "株式会社ワールドコーポレーション",
-      "totalJobs": 1,
-      "gradYears": [],
-      "recencyDays": 14,
-      "sources": {
-        "求人ボックス": {
-          "jobCount": 1,
-          "jobs": [
-            "東京／第2新卒・未経験歓迎／人材コーディネーター 年休125日"
-          ],
-          "queries": [
-            "新卒 営業 東京"
-          ],
-          "recencyDays": 14
-        }
-      }
-    },
-    "テラドローン": {
-      "企業名": "テラドローン株式会社",
-      "totalJobs": 1,
-      "gradYears": [],
-      "recencyDays": null,
-      "sources": {
-        "求人ボックス": {
-          "jobCount": 1,
-          "jobs": [
-            "ICTサービスの提案営業「東京」 第2新卒歓迎／空のインフラを支えるグ..."
-          ],
-          "queries": [
-            "新卒 営業 東京"
-          ],
-          "recencyDays": null
-        }
-      }
-    },
-    "長谷工リアルエステート": {
-      "企業名": "株式会社長谷工リアルエステート",
-      "totalJobs": 1,
-      "gradYears": [],
-      "recencyDays": 27,
-      "sources": {
-        "求人ボックス": {
-          "jobCount": 1,
-          "jobs": [
-            "東京／第2新卒歓迎／売買仲介営業 中途入社者多数活躍 PC19"
-          ],
-          "queries": [
-            "新卒 営業 東京"
-          ],
-          "recencyDays": 27
-        }
-      }
-    },
-    "フクシマガリレイ": {
-      "企業名": "フクシマガリレイ株式会社",
-      "totalJobs": 1,
-      "gradYears": [],
-      "recencyDays": 0,
-      "sources": {
-        "求人ボックス": {
-          "jobCount": 1,
-          "jobs": [
-            "東京／未経験・第2新卒歓迎／法人営業 店舗プロデュース／業務用冷蔵冷凍..."
-          ],
-          "queries": [
-            "新卒 営業 東京"
-          ],
-          "recencyDays": 0
-        }
-      }
-    },
-    "日本瓦斯": {
-      "企業名": "日本瓦斯株式会社",
-      "totalJobs": 1,
-      "gradYears": [],
-      "recencyDays": null,
-      "sources": {
-        "求人ボックス": {
-          "jobCount": 1,
-          "jobs": [
-            "ニチガスの提案営業 要車免許／~35歳／上場／賞与4.6ヵ月／社宅完備"
-          ],
-          "queries": [
-            "新卒 営業 東京"
-          ],
-          "recencyDays": null
         }
       }
     },
@@ -235,6 +73,168 @@
         }
       }
     },
+    "iplug": {
+      "企業名": "株式会社i-plug",
+      "totalJobs": 1,
+      "gradYears": [],
+      "recencyDays": null,
+      "sources": {
+        "求人ボックス": {
+          "jobCount": 1,
+          "jobs": [
+            "東京／在宅可／法人営業／新卒DRサービスOfferBox 成功報酬型で..."
+          ],
+          "queries": [
+            "新卒 営業 東京"
+          ],
+          "recencyDays": null
+        }
+      }
+    },
+    "富士産業": {
+      "企業名": "富士産業株式会社",
+      "totalJobs": 1,
+      "gradYears": [],
+      "recencyDays": null,
+      "sources": {
+        "求人ボックス": {
+          "jobCount": 1,
+          "jobs": [
+            "営業職"
+          ],
+          "queries": [
+            "新卒 営業 東京"
+          ],
+          "recencyDays": null
+        }
+      }
+    },
+    "mitty": {
+      "企業名": "Mitty株式会社",
+      "totalJobs": 1,
+      "gradYears": [],
+      "recencyDays": 25,
+      "sources": {
+        "求人ボックス": {
+          "jobCount": 1,
+          "jobs": [
+            "渋谷ヒカリエ／フィールドセールス 東京オフィス立上げ・裁量権"
+          ],
+          "queries": [
+            "新卒 営業 東京"
+          ],
+          "recencyDays": 25
+        }
+      }
+    },
+    "ワールドコーポレーション": {
+      "企業名": "株式会社ワールドコーポレーション",
+      "totalJobs": 1,
+      "gradYears": [],
+      "recencyDays": 12,
+      "sources": {
+        "求人ボックス": {
+          "jobCount": 1,
+          "jobs": [
+            "東京／第2新卒・未経験歓迎／人材コーディネーター 年休125日"
+          ],
+          "queries": [
+            "新卒 営業 東京"
+          ],
+          "recencyDays": 12
+        }
+      }
+    },
+    "テラドローン": {
+      "企業名": "テラドローン株式会社",
+      "totalJobs": 1,
+      "gradYears": [],
+      "recencyDays": null,
+      "sources": {
+        "求人ボックス": {
+          "jobCount": 1,
+          "jobs": [
+            "ICTサービスの提案営業「東京」 第2新卒歓迎／空のインフラを支えるグ..."
+          ],
+          "queries": [
+            "新卒 営業 東京"
+          ],
+          "recencyDays": null
+        }
+      }
+    },
+    "パナック": {
+      "企業名": "パナック株式会社",
+      "totalJobs": 1,
+      "gradYears": [],
+      "recencyDays": 0,
+      "sources": {
+        "求人ボックス": {
+          "jobCount": 1,
+          "jobs": [
+            "東京／田町／法人営業 高機能フィルム／スマートフォン、半導体等にも使用"
+          ],
+          "queries": [
+            "新卒 営業 東京"
+          ],
+          "recencyDays": 0
+        }
+      }
+    },
+    "長谷工リアルエステート": {
+      "企業名": "株式会社長谷工リアルエステート",
+      "totalJobs": 1,
+      "gradYears": [],
+      "recencyDays": 25,
+      "sources": {
+        "求人ボックス": {
+          "jobCount": 1,
+          "jobs": [
+            "東京／第2新卒歓迎／売買仲介営業 中途入社者多数活躍 PC19"
+          ],
+          "queries": [
+            "新卒 営業 東京"
+          ],
+          "recencyDays": 25
+        }
+      }
+    },
+    "日本瓦斯": {
+      "企業名": "日本瓦斯株式会社",
+      "totalJobs": 1,
+      "gradYears": [],
+      "recencyDays": null,
+      "sources": {
+        "求人ボックス": {
+          "jobCount": 1,
+          "jobs": [
+            "ニチガスの提案営業 要車免許／~35歳／上場／賞与4.6ヵ月／社宅完備"
+          ],
+          "queries": [
+            "新卒 営業 東京"
+          ],
+          "recencyDays": null
+        }
+      }
+    },
+    "フクシマガリレイ": {
+      "企業名": "フクシマガリレイ株式会社",
+      "totalJobs": 1,
+      "gradYears": [],
+      "recencyDays": 0,
+      "sources": {
+        "求人ボックス": {
+          "jobCount": 1,
+          "jobs": [
+            "東京／未経験・第2新卒歓迎／法人営業 店舗プロデュース／業務用冷蔵冷凍..."
+          ],
+          "queries": [
+            "新卒 営業 東京"
+          ],
+          "recencyDays": 0
+        }
+      }
+    },
     "山三": {
       "企業名": "山三株式会社",
       "totalJobs": 1,
@@ -245,6 +245,24 @@
           "jobCount": 1,
           "jobs": [
             "既存客フォロー中心の法人営業"
+          ],
+          "queries": [
+            "新卒 営業 東京"
+          ],
+          "recencyDays": null
+        }
+      }
+    },
+    "都自動車": {
+      "企業名": "都自動車株式会社",
+      "totalJobs": 1,
+      "gradYears": [],
+      "recencyDays": null,
+      "sources": {
+        "求人ボックス": {
+          "jobCount": 1,
+          "jobs": [
+            "営業事務／年間休日120日以上／未経験OK"
           ],
           "queries": [
             "新卒 営業 東京"
@@ -271,11 +289,49 @@
         }
       }
     },
+    "ミクロ精工": {
+      "企業名": "ミクロ精工株式会社",
+      "totalJobs": 1,
+      "gradYears": [],
+      "recencyDays": null,
+      "sources": {
+        "求人ボックス": {
+          "jobCount": 1,
+          "jobs": [
+            "総合職／営業、商品管理、配送、内勤"
+          ],
+          "queries": [
+            "新卒 営業 東京"
+          ],
+          "recencyDays": null
+        }
+      }
+    },
+    "カーレントサービス": {
+      "企業名": "株式会社カーレントサービス",
+      "totalJobs": 1,
+      "gradYears": [
+        "2026"
+      ],
+      "recencyDays": null,
+      "sources": {
+        "求人ボックス": {
+          "jobCount": 1,
+          "jobs": [
+            "2026年卒 新卒採用 什器・オフィス家具の組立・設置スタッフ"
+          ],
+          "queries": [
+            "新卒 営業 東京"
+          ],
+          "recencyDays": null
+        }
+      }
+    },
     "lvup": {
       "企業名": "株式会社LVUP",
       "totalJobs": 1,
       "gradYears": [],
-      "recencyDays": 7,
+      "recencyDays": 0,
       "sources": {
         "求人ボックス": {
           "jobCount": 1,
@@ -285,79 +341,7 @@
           "queries": [
             "新卒 営業 東京"
           ],
-          "recencyDays": 7
-        }
-      }
-    },
-    "スマートアナリティクス会津若松事務所": {
-      "企業名": "スマート・アナリティクス株式会社 会津若松事務所",
-      "totalJobs": 1,
-      "gradYears": [],
-      "recencyDays": null,
-      "sources": {
-        "求人ボックス": {
-          "jobCount": 1,
-          "jobs": [
-            "研究支援やソフトウェア販売の営業・営業事務"
-          ],
-          "queries": [
-            "新卒 営業 東京"
-          ],
-          "recencyDays": null
-        }
-      }
-    },
-    "earlybird": {
-      "企業名": "株式会社Early Bird",
-      "totalJobs": 1,
-      "gradYears": [],
-      "recencyDays": 19,
-      "sources": {
-        "求人ボックス": {
-          "jobCount": 1,
-          "jobs": [
-            "社長直下で営業×マーケを実践するベンチャーの長期インターン"
-          ],
-          "queries": [
-            "新卒 営業 東京"
-          ],
-          "recencyDays": 19
-        }
-      }
-    },
-    "hc": {
-      "企業名": "株式会社H&C",
-      "totalJobs": 1,
-      "gradYears": [],
-      "recencyDays": 0,
-      "sources": {
-        "求人ボックス": {
-          "jobCount": 1,
-          "jobs": [
-            "買取営業／完全未経験OK／ゼロからの研修／最短1か月目で月給100万円..."
-          ],
-          "queries": [
-            "新卒 営業 東京"
-          ],
           "recencyDays": 0
-        }
-      }
-    },
-    "ネクステージ八王子店": {
-      "企業名": "ネクステージ八王子店",
-      "totalJobs": 1,
-      "gradYears": [],
-      "recencyDays": null,
-      "sources": {
-        "求人ボックス": {
-          "jobCount": 1,
-          "jobs": [
-            "積極採用中!営業／⏩️営業、販売経験活かしてご活躍可能!1000万円越..."
-          ],
-          "queries": [
-            "新卒 営業 東京"
-          ],
-          "recencyDays": null
         }
       }
     },
@@ -383,7 +367,7 @@
       "企業名": "ALH株式会社",
       "totalJobs": 1,
       "gradYears": [],
-      "recencyDays": 12,
+      "recencyDays": 11,
       "sources": {
         "求人ボックス": {
           "jobCount": 1,
@@ -393,7 +377,7 @@
           "queries": [
             "新卒 営業 東京"
           ],
-          "recencyDays": 12
+          "recencyDays": 11
         }
       }
     },
@@ -425,6 +409,24 @@
           "jobCount": 1,
           "jobs": [
             "新卒採用 東京勤務したい方集合!内定まで最短1週間!#企画営業"
+          ],
+          "queries": [
+            "新卒 営業 東京"
+          ],
+          "recencyDays": null
+        }
+      }
+    },
+    "ファナティック": {
+      "企業名": "株式会社ファナティック",
+      "totalJobs": 1,
+      "gradYears": [],
+      "recencyDays": null,
+      "sources": {
+        "求人ボックス": {
+          "jobCount": 1,
+          "jobs": [
+            "オーダーメイド・ハードウェア 営業職 入社時期応相談 新卒／既卒"
           ],
           "queries": [
             "新卒 営業 東京"
@@ -913,8 +915,8 @@
         }
       }
     },
-    "パーソルキャリア": {
-      "企業名": "パーソルキャリア株式会社",
+    "熊谷組": {
+      "企業名": "株式会社熊谷組",
       "totalJobs": 1,
       "gradYears": [
         "2027"
@@ -931,8 +933,8 @@
         }
       }
     },
-    "京都中央信用金庫": {
-      "企業名": "京都中央信用金庫",
+    "jfeシステムズ": {
+      "企業名": "ＪＦＥシステムズ株式会社",
       "totalJobs": 1,
       "gradYears": [
         "2027"
@@ -949,8 +951,8 @@
         }
       }
     },
-    "鹿島建設": {
-      "企業名": "鹿島建設株式会社",
+    "jfeスチール": {
+      "企業名": "ＪＦＥスチール株式会社",
       "totalJobs": 1,
       "gradYears": [
         "2027"
@@ -967,8 +969,8 @@
         }
       }
     },
-    "キヤノンマーケティングジャパン": {
-      "企業名": "キヤノンマーケティングジャパン株式会社",
+    "screenグループ": {
+      "企業名": "ＳＣＲＥＥＮグループ",
       "totalJobs": 1,
       "gradYears": [
         "2027"
@@ -985,8 +987,8 @@
         }
       }
     },
-    "長谷工グループ": {
-      "企業名": "長谷工グループ",
+    "コストコホールセールジャパン": {
+      "企業名": "コストコホールセールジャパン株式会社",
       "totalJobs": 1,
       "gradYears": [
         "2027"
@@ -1003,8 +1005,26 @@
         }
       }
     },
-    "アイリスオーヤマ": {
-      "企業名": "アイリスオーヤマ株式会社",
+    "三菱電機エンジニアリング": {
+      "企業名": "三菱電機エンジニアリング株式会社",
+      "totalJobs": 1,
+      "gradYears": [
+        "2027"
+      ],
+      "recencyDays": null,
+      "sources": {
+        "キャリタス就活": {
+          "jobCount": 1,
+          "jobs": [],
+          "queries": [
+            "新卒"
+          ],
+          "recencyDays": null
+        }
+      }
+    },
+    "青南商事": {
+      "企業名": "株式会社青南商事",
       "totalJobs": 1,
       "gradYears": [
         "2027"
@@ -1057,6 +1077,24 @@
         }
       }
     },
+    "アサイ": {
+      "企業名": "株式会社アサイ",
+      "totalJobs": 1,
+      "gradYears": [
+        "2027"
+      ],
+      "recencyDays": null,
+      "sources": {
+        "キャリタス就活": {
+          "jobCount": 1,
+          "jobs": [],
+          "queries": [
+            "新卒"
+          ],
+          "recencyDays": null
+        }
+      }
+    },
     "ライオンケミカル": {
       "企業名": "ライオンケミカル株式会社",
       "totalJobs": 1,
@@ -1075,26 +1113,8 @@
         }
       }
     },
-    "青南商事": {
-      "企業名": "株式会社青南商事",
-      "totalJobs": 1,
-      "gradYears": [
-        "2027"
-      ],
-      "recencyDays": null,
-      "sources": {
-        "キャリタス就活": {
-          "jobCount": 1,
-          "jobs": [],
-          "queries": [
-            "新卒"
-          ],
-          "recencyDays": null
-        }
-      }
-    },
-    "アサイ": {
-      "企業名": "株式会社アサイ",
+    "ロングライフホールディング": {
+      "企業名": "ロングライフホールディング株式会社",
       "totalJobs": 1,
       "gradYears": [
         "2027"
@@ -1123,8 +1143,8 @@
         "companies": 30
       },
       "キャリタス就活": {
-        "cards": 11,
-        "companies": 11
+        "cards": 12,
+        "companies": 12
       }
     },
     "staleSources": []
