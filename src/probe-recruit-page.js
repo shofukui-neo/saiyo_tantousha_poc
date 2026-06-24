@@ -10,7 +10,8 @@ const cheerio = require('cheerio');
 const { politeGet } = require('./polite');
 const { findRecruitLinks } = require('./recruit-page');
 const { looksLikePersonName } = require('./extract');
-const { isFullName, isKnownSurname } = require('./jp-names');
+const { isFullName, isKnownSurname, isPlausiblePersonName, completeSurname } = require('./jp-names');
+const { pageMatchesCompany } = require('./search');
 const { validateHit } = require('./validate');
 const cfg = require('./config');
 const { geminiAvailable } = require('./gemini');
@@ -39,14 +40,14 @@ function recruitPatterns() {
     { re: new RegExp('(?:採用スタッフ|採用担当スタッフ|採用メンバー|人材戦略部|人材開発部?|人財開発部?)[\\s　]+' + NAME + '(?![\\u4e00-\\u9fa5])', 'g'), conf: 0.78 },
     // 名乗り:「採用担当の山田です」「人事部の佐藤と申します」← 自己言及で最強。姓のみ可。
     { re: new RegExp(ROLE + 'の\\s*' + NAME + '\\s*(?:です|と申します|と申し上げ|が担当|でございます)', 'g'), conf: 0.82, allowSurnameOnly: true },
-    // ラベル+氏名:「人事部 採用担当：山田 太郎」「採用担当 山田太郎」
-    { re: new RegExp(ROLE + '\\s*' + TITLE + '\\s*[:：\\-―—|｜／/]?\\s*' + NAME + '(?![\\u4e00-\\u9fa5])', 'g'), conf: 0.74 },
+    // ラベル+氏名:「人事部 採用担当：山田 太郎」「採用担当 山田太郎」「採用担当 佐々木・粟津」(姓のみ・中黒連結可)
+    { re: new RegExp(ROLE + '\\s*' + TITLE + '\\s*[:：\\-―—|｜／/]?\\s*' + NAME + '(?![\\u4e00-\\u9fa5])', 'g'), conf: 0.7, allowSurnameOnly: true },
     // 氏名+（ロール）:「山田 太郎（採用担当）」「佐藤花子(人事部)」
     { re: new RegExp(NAME + '\\s*[（(]\\s*' + ROLE + '[^）)]{0,10}[）)]', 'g'), conf: 0.74 },
-    // 署名ブロック:「人事部　山田 太郎」改行/全角空白区切り（役職語が直前に無くても可）
-    { re: new RegExp('(?:人事部|採用担当|人事|採用)[\\s　]+' + NAME + '(?:[\\s　]|$)', 'g'), conf: 0.64 },
-    // 「担当者：山田太郎」（前後に採用/人事文脈がある場合のみ採点で生かす）
-    { re: new RegExp('(?:採用|応募|お問[い合]*せ?)[^。\\n]{0,12}担当者?\\s*[:：]\\s*' + NAME, 'g'), conf: 0.62 },
+    // 署名ブロック:「人事部　山田 太郎」「新卒採用担当 佐々木」改行/全角空白区切り（姓のみ可・強アンカー）
+    { re: new RegExp('(?:人事部|採用担当|新卒採用担当|人事|採用)[\\s　]+' + NAME + '(?:[\\s　・･、,／/]|$)', 'g'), conf: 0.62, allowSurnameOnly: true },
+    // 「担当者：山田太郎」「採用担当者：田中」（前後に採用/人事文脈がある場合のみ採点で生かす・姓のみ可）
+    { re: new RegExp('(?:採用|応募|お問[い合]*せ?)[^。\\n]{0,12}担当者?\\s*[:：]\\s*' + NAME, 'g'), conf: 0.6, allowSurnameOnly: true },
   ];
 }
 
@@ -83,12 +84,21 @@ function extractFromRecruitText(text) {
     re.lastIndex = 0;
     let m;
     while ((m = re.exec(text)) !== null) {
-      const name = (m[1] || '').trim();
-      // 二段ゲート: 一般名詞語ブロック（extract.js）＋姓辞書照合。
-      // 不合格でも次の候補を取りこぼさないよう、マッチ先頭の1文字だけ進めて再走査する
-      //（貪欲照合がロール語自体を偽の氏名として食い、真の氏名アンカーを飛び越すのを防ぐ）。
-      const ok = name && looksLikePersonName(name) && (allowSurnameOnly ? isKnownSurname(name) : isFullName(name));
-      if (!ok) { re.lastIndex = m.index + 1; continue; }
+      // 中黒/読点/スラッシュで複数担当者が連結される例「佐々木・粟津」「佐藤、鈴木」→ 先頭の1名に正規化。
+      const raw = (m[1] || '').trim().split(/[・･、,／/]/)[0].trim();
+      // 候補を確度順に作る: ①姓+名のフルネーム ②先頭漢字連を完全一致姓として(姓のみ・末尾助詞かなを除去)。
+      // SME頻出の「採用担当：田中」「新卒採用担当 佐々木」を救いつつ、「田中 まで」の助詞glueを姓へ正規化。
+      const cands = [];
+      if (isFullName(raw)) cands.push(raw.replace(/[ 　]+/g, ' '));
+      if (allowSurnameOnly) {
+        const head = (raw.match(/^[一-龥々]{2,4}/) || [])[0] || '';
+        const sur = head && completeSurname(head);
+        if (sur) cands.push(sur);
+      }
+      // 一般名詞語ブロック（extract.js）で最終フィルタ。不合格なら1文字進めて再走査。
+      let name = '';
+      for (const c of cands) { if (looksLikePersonName(c.replace(/[ 　]/g, ''))) { name = c; break; } }
+      if (!name) { re.lastIndex = m.index + 1; continue; }
       const idx = m.index;
       const around = text.slice(Math.max(0, idx - 30), idx + m[0].length + 30);
       const role = (around.match(/(採用責任者|採用担当者|採用担当|人事担当|新卒採用|中途採用|人事部|採用部|人事|採用)/) || [])[0] || '';
@@ -102,7 +112,8 @@ function extractFromRecruitText(text) {
 // 公式URLから採用ページを特定し、本文から採用担当者名を抽出する。
 // opts.maxPages: 取得上限（既定3＝トップ＋採用ページ＋会社概要）。戻り値は共通プローブ形 or null。
 async function probeRecruitPage(officialUrl, opts = {}) {
-  const maxPages = opts.maxPages || 3;
+  // 既定で深め(6面)。氏名は「採用スタッフ紹介/メンバー/インタビュー/メッセージ」面に濃いので深追いする。
+  const maxPages = opts.maxPages || 6;
   if (!officialUrl) return null;
   let url = String(officialUrl).trim();
   if (!/^https?:\/\//i.test(url)) url = 'https://' + url;
@@ -111,11 +122,21 @@ async function probeRecruitPage(officialUrl, opts = {}) {
   if (!top || top.blocked || top.error || !top.html) return null;
   const baseUrl = top.finalUrl || url;
 
-  // 取得対象ページ: トップ自身 + 内部採用リンク上位 +（保険で）/company /about
+  // 取得対象ページ: トップ自身 + 内部採用リンク上位 + 採用直下の氏名濃い定番面（staff/member/interview/message/people）。
   const links = findRecruitLinks(baseUrl, top.html).filter((l) => !l.external).map((l) => l.url);
   let origin = ''; try { origin = new URL(baseUrl).origin; } catch (_) {}
-  const fallback = origin ? [origin + '/company/', origin + '/about/'] : [];
-  const candidates = [...new Set([baseUrl, ...links, ...fallback])].slice(0, maxPages);
+  // 採用リンクが取れていれば、その配下に氏名濃い定番サブパスを増設（リンククリック相当の深掘り）。
+  const recruitBases = [];
+  for (const l of links.slice(0, 2)) { try { recruitBases.push(new URL(l).toString().replace(/\/+$/, '')); } catch (_) {} }
+  const NAME_SUBPATHS = ['/staff', '/staff/', '/member', '/member/', '/members/', '/people/',
+    '/interview', '/interview/', '/interviews/', '/message', '/message/', '/voice/', '/cross-talk/'];
+  const deepPaths = [];
+  for (const b of recruitBases) for (const sp of NAME_SUBPATHS) deepPaths.push(b + sp);
+  const fallback = origin
+    ? [origin + '/recruit/staff/', origin + '/recruit/member/', origin + '/recruit/interview/',
+       origin + '/recruit/message/', origin + '/company/', origin + '/about/']
+    : [];
+  const candidates = [...new Set([baseUrl, ...links, ...deepPaths, ...fallback])].slice(0, maxPages);
 
   // 先に採用リンク先（=候補配列の2件目以降）を見て、最後にトップ。採用ページの方が氏名が濃い。
   const order = candidates.length > 1 ? [...candidates.slice(1), candidates[0]] : candidates;
@@ -132,14 +153,17 @@ async function probeRecruitPage(officialUrl, opts = {}) {
       html = r.html;
     }
     const corpus = pageCorpus(html);
+    // 社名ゲート: 入力の公式URLが誤っている場合（例: 「東洋電機」に toyo.ac.jp）に
+    // 無関係な会社の氏名を拾わないよう、社名がページに出る面でのみ氏名を採る。
+    if (opts.companyName && !pageMatchesCompany(opts.companyName, '', visibleText(html))) continue;
     // Gemini価値ありの兆候があるページを優先保持（個人名が載りやすい採用スタッフ紹介系）。
     if (!bestCorpus && geminiWorthCalling(corpus)) { bestCorpus = corpus; bestUrl = pageUrl; }
 
     const hit = extractFromRecruitText(corpus);
     if (!hit) continue;
-    // 検証ゲート（人名らしさ＋ロール語＋しきい値）を通ったものだけ確定
+    // 検証ゲート（人名らしさ＋ロール語＋しきい値）＋最終人名ゲート（英字略称/地名/文断片を排除）。
     const v = validateHit({ ...hit }, {});
-    if (!v.hit) continue;
+    if (!v.hit || !isPlausiblePersonName(hit.name)) continue;
     return {
       name: hit.name, role: hit.role || '', department: hit.department || '',
       confidence: hit.confidence, evidence: hit.evidence,
@@ -151,7 +175,7 @@ async function probeRecruitPage(officialUrl, opts = {}) {
   if (useGemini && bestCorpus) {
     try {
       const g = await extractRecruiterFromText(bestCorpus, { name: opts.companyName || '' }, cfg);
-      if (g && g.engine === 'gemini' && g.name) {
+      if (g && g.engine === 'gemini' && g.name && isPlausiblePersonName(g.name)) {
         return {
           name: g.name, role: g.role || '', department: g.department || '',
           confidence: g.confidence || 0.7, evidence: g.evidence || '',

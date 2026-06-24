@@ -179,7 +179,33 @@ function completeSurname(win) {
   return (sp && sp.mei === '' && sp.sei === norm) ? sp.sei : '';
 }
 
+// 人名として明らかに不適格な文字（英字・数字・記号・初期化記号）。例:「M.A」「3丁目」。
+const PERSON_BAD_RE = /[A-Za-zＡ-Ｚａ-ｚ0-9０-９@.\/:：、。,，（）()\[\]・･／%&#]/;
+// 地名/拠点のみ（氏名でなく所在地を拾った誤抽出）。先頭一致で弾く。
+const GEO_ONLY_RE = /^(東京|大阪|京都|名古屋|横浜|神戸|福岡|札幌|仙台|広島|関東|関西|東海|東北|九州|北海道|沖縄|信越|北陸|中国|四国|本社|本店|本部|中央|首都|地方|全国)/;
+// 助詞＋動詞の文断片（「石原が聞く」「社長は語る」等）。given名にはまず現れない助詞を検知。
+const PARTICLE_FRAG_RE = /(が|を|に|へ|は|も|と|や|の|か)(?:聞|語|話|思|見|来|行|答|問|話|なる|する|いう|言|読|書|笑)|(?:です|ます|でした|ました|だっ|という|ました|ません)$/;
+
+/**
+ * 抽出した氏名候補が「実在の個人名らしい」か最終ゲート判定（精度優先）。
+ *  正規表現/Gemini いずれの経路で得た名前にもこのゲートを通し、
+ *  英字略称(M.A)・地名(東京/東北は)・文断片(石原が聞く)などの誤抽出を弾く。
+ *  既知姓で始まればOK。辞書外でも全漢字2-4字なら許容（rareな姓のGemini抽出を活かす）。
+ */
+function isPlausiblePersonName(raw) {
+  const s = String(raw || '').replace(/[\s　]/g, '');
+  if (s.length < 2 || s.length > 6) return false;
+  if (PERSON_BAD_RE.test(s)) return false;     // 英字・数字・記号
+  if (GEO_ONLY_RE.test(s)) return false;       // 地名先頭
+  if (PARTICLE_FRAG_RE.test(s)) return false;  // 助詞＋動詞の文断片
+  // 役割語・組織語（given名には現れない）。「採用担当」「人事部」等の語を氏名と誤認しない。
+  if (/採用|人事|総務|担当|責任|営業|製造|技術|管理|企画|広報|経理|財務|事業|部門|本部|支店|会社|株式|有限|スタッフ|チーム|社員|募集/.test(s)) return false;
+  if (/(部|課|室|係|科)$/.test(s)) return false;
+  if (splitName(s)) return true;               // 既知姓で始まる（姓のみ可）
+  return /^[一-龥々]{2,4}$/.test(s);           // 辞書外でも全漢字2-4字なら許容
+}
+
 module.exports = {
   SURNAMES, splitName, isFullName, isKnownSurname, normalizeNameKanji,
-  ROLE_GLUE_RE, TITLE_RE, GEO_RE, stripNonName, completeSurname,
+  ROLE_GLUE_RE, TITLE_RE, GEO_RE, stripNonName, completeSurname, isPlausiblePersonName,
 };

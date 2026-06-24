@@ -7,6 +7,8 @@
     { "file": "B-gbiz.csv",    "system": "B", "source": "gBizINFO",  "intent": 1, "cost_per_company": 0 },
     { "file": "A-names.csv",   "system": "B", "source": "採用担当者名(媒体実取得)", "intent": 1, "cost_per_company": 0 },
     { "file": "C-prtimes.csv", "system": "C", "source": "PR TIMES",  "intent": 5, "cost_per_company": 0 },
-    { "file": "D-shitchu.csv", "system": "D", "source": "失注先",     "intent": 4, "cost_per_company": 0 }
+    { "file": "D-shitchu.csv", "system": "D", "source": "失注先",     "intent": 4, "cost_per_company": 0 },
+    { "file": "D-google-names.csv", "system": "D", "source": "社内資産(Gmail/Drive)", "intent": 4, "cost_per_company": 0, "_note": "正規OAuth2で自社メール/ドライブから採用担当者を名寄せ（npm run names:google）。系統D=既存資産・温かいリード" },
+    { "file": "H-research-names.csv", "system": "D", "source": "手動リサーチ(SNS/LinkedIn)", "intent": 3, "cost_per_company": 0, "_note": "人がログイン済ブラウザで集めた結果を姓辞書＋会社一致で検証して取込（research:queue→ingest）。自動スクレイピングはしない" }
   ]
 }

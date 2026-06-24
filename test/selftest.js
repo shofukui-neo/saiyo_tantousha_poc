@@ -706,6 +706,78 @@ function testSocialScraping() {
   return fail;
 }
 
+// ---- 半自動リサーチ補助（ワークシート生成／結果取込）の純ロジック検証 ----
+// 自動アクセスはせず、人が集めた結果を姓辞書＋会社一致で検証して名寄せする経路を固定する。
+function testResearchAssist() {
+  let fail = 0;
+  const ok = (label, cond) => { if (cond) console.log('✓ ' + label); else { console.log('✗ ' + label); fail++; } };
+  const { buildRow, CHANNELS } = require('../src/research-queue');
+  const { fromWorksheet, fromLines, dedup } = require('../src/ingest-research');
+
+  // ワークシート: 各媒体の人手検索URLを社名入りで生成
+  const row = buildRow('株式会社サンプル', '1234567890123');
+  ok('queue: LinkedIn/X/Facebook の検索URLを生成', /linkedin\.com\/search/.test(row['LinkedIn']) &&
+    /x\.com\/search/.test(row['X(Twitter)']) && /facebook\.com\/search/.test(row['Facebook']));
+  ok('queue: 社名がURLエンコードで埋まる', decodeURIComponent(row['LinkedIn']).includes('株式会社サンプル'));
+
+  // ワークシート取込: 姓辞書で検証（役割語だけの記入は弾く）
+  const ws = fromWorksheet([
+    { '企業名': '株式会社サンプル', '採用担当者名': '山田太郎', '役職': '人事部長', '根拠URL': 'u1', '見つかった媒体': 'LinkedIn' },
+    { '企業名': '株式会社別', '採用担当者名': '採用担当' }, // 役割語のみ→却下
+    { '企業名': '株式会社空', '採用担当者名': '' },         // 空→却下
+  ]);
+  ok('ingest(worksheet): 有効1件のみ採用（役割語/空を却下）', ws.length === 1 && ws[0]['採用担当者名'] === '山田太郎');
+  ok('ingest(worksheet): 役職・根拠URL・媒体を保持', ws[0]['役職'] === '人事部長' && ws[0]['根拠URL'] === 'u1' && ws[0]['取得元媒体'] === 'LinkedIn');
+
+  // 行テキスト取込: タイトル文を会社一致＋姓辞書ゲートに通す
+  const fl = fromLines([
+    '株式会社サンプル\t山田 太郎 - 株式会社サンプル 採用担当 | LinkedIn https://linkedin.com/in/x',
+    '株式会社サンプル\t採用情報 - 株式会社サンプル 採用担当',   // 氏名なし→却下
+    '株式会社別\t佐藤 花子 - 全然ちがう会社',                  // 会社不一致→却下
+  ].join('\n'));
+  ok('ingest(lines): 会社一致＋氏名ありの1件のみ採用', fl.length === 1 && fl[0]['採用担当者名'] === '山田太郎');
+  ok('ingest(lines): URLを根拠として保持', fl[0]['根拠URL'] === 'https://linkedin.com/in/x');
+
+  // 重複排除（同一社×氏名は確度の高い方を残す）
+  const dd = dedup([
+    { '企業名': '株式会社サンプル', '採用担当者名': '山田太郎', '担当者確度': 0.5 },
+    { '企業名': '株式会社サンプル', '採用担当者名': '山田太郎', '担当者確度': 0.65 },
+  ]);
+  ok('ingest: 同一社×氏名は確度の高い方に集約', dd.length === 1 && Number(dd[0]['担当者確度']) === 0.65);
+  return fail;
+}
+
+// ---- Google Workspace（社内資産）抽出の純ロジック検証（ネットワーク・認証不要部分）----
+function testGoogleContacts() {
+  let fail = 0;
+  const ok = (label, cond) => { if (cond) console.log('✓ ' + label); else { console.log('✗ ' + label); fail++; } };
+  const { parseFrom, contactFromMessage, collectPlainText } = require('../src/google-contacts');
+  const { configured } = require('../src/google-auth');
+
+  ok('parseFrom: 「氏名 <addr>」を分解', (() => { const p = parseFrom('山田太郎 <Taro@x.co.jp>'); return p.display === '山田太郎' && p.email === 'taro@x.co.jp'; })());
+  ok('parseFrom: アドレスのみ', parseFrom('info@x.co.jp').email === 'info@x.co.jp');
+
+  // Gmailのmultipart payloadから text/plain を集約
+  const payload = { mimeType: 'multipart/alternative', parts: [
+    { mimeType: 'text/plain', body: { data: Buffer.from('本文テキスト', 'utf8').toString('base64') } },
+    { mimeType: 'text/html', body: { data: Buffer.from('<p>無視</p>', 'utf8').toString('base64') } },
+  ] };
+  ok('collectPlainText: text/plainのみ集約', collectPlainText(payload).join('') === '本文テキスト');
+
+  // From表示名が日本語フルネーム → 抽出（会社はドメイン手がかりで担保）
+  const c1 = contactFromMessage([{ name: 'From', value: '田中花子 <hanako@sample.co.jp>' }], '株式会社サンプルの採用担当です', '株式会社サンプル');
+  ok('contact: From表示名「田中花子」を抽出', c1 && c1.name === '田中花子' && c1.where === 'from-display');
+  // 表示名なし → メールのローカル部から姓推定（romaji-name）
+  const c2 = contactFromMessage([{ name: 'From', value: 'ksato@sample.co.jp' }], '株式会社サンプル', '株式会社サンプル');
+  ok('contact: 表示名なしはローカル部から姓推定（ksato→佐藤）', c2 && c2.name === '佐藤' && c2.where === 'email-localpart');
+  // ロール系アドレスは姓にしない
+  const c3 = contactFromMessage([{ name: 'From', value: 'recruit@sample.co.jp' }], 'テキスト', '株式会社サンプル');
+  ok('contact: recruit@ 等ロール系は氏名にしない', !c3 || !c3.name);
+
+  ok('google-auth: 未設定なら configured()=false（安全スキップ）', typeof configured() === 'boolean');
+  return fail;
+}
+
 async function run() {
   const cases = [
     { name: 'サンプル株式会社', file: 'fixture.html', expect: 'HIT' },
@@ -775,6 +847,10 @@ async function run() {
   failures += testMynaviContact();
   console.log('\n--- 採用SNS／LinkedIn 検索結果からの氏名抽出（会社一致／役割語／姓辞書）検証 ---');
   failures += testSocialScraping();
+  console.log('\n--- 半自動リサーチ補助（ワークシート生成／結果取込）検証 ---');
+  failures += testResearchAssist();
+  console.log('\n--- Google Workspace 社内資産抽出（From/署名/メール姓推定）検証 ---');
+  failures += testGoogleContacts();
 
   if (failures > 0) { console.error(`\nSELFTEST FAILED: ${failures} case(s)`); process.exit(1); }
   console.log('\nSELFTEST PASSED ✓  (抽出→検証→集計 ＋ スプレッドシートI/O ロジックが正常動作)');
