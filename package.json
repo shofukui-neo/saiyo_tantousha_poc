@@ -41,7 +41,12 @@
     "audit:names:recall": "node src/audit-names.js --mode recall",
     "names:from-cache": "node src/audit-names.js --mode wantedly --out sources/A-names-from-cache.csv",
     "names:enrich": "node src/enrich-targets.js",
-    "mynavi:names": "node src/build-mynavi-names.js --in leads-daihyou-1000.csv --out sources/A-mynavi-names.csv"
+    "mynavi:names": "node src/build-mynavi-names.js --in leads-daihyou-1000.csv --out sources/A-mynavi-names.csv",
+    "test:accuracy": "node test/accuracy.test.js",
+    "eval": "node src/eval/cli.js run",
+    "eval:baseline": "node src/eval/cli.js baseline",
+    "eval:gate": "node src/eval/cli.js gate",
+    "eval:dashboard": "node src/eval/cli.js dashboard"
   },
   "dependencies": {
     "cheerio": "^1.0.0",
