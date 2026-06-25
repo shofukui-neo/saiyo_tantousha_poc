@@ -66,6 +66,7 @@ async function harvestOne(rec, mynavi) {
   let discoveredUrl = '';
   const ensureUrl = async () => {
     if (url) return url;
+    if (process.argv.includes('--no-discover')) return url;  // 検索律速時はURL発見をスキップ（高速・礼儀）
     try {
       const d = await discoverUrl(name, DISCOVER_DEPS, { addressHint: pref });
       if (d && d.url) { url = d.url; discoveredUrl = d.url; }
