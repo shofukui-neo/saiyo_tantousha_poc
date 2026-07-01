@@ -58,7 +58,13 @@ async function run() {
   const todo = records.filter((r) => { const k = mergeKey(r); return !k || !doneKeys.has(k); });
   log(`マイナビ担当者名取得: 未処理 ${todo.length}社（全 ${records.length}）`);
 
-  const flush = () => { const tmp = OUTABS + '.tmp'; fs.writeFileSync(tmp, toCsv(headers, out)); fs.renameSync(tmp, OUTABS); };
+  // アトミック書込。Windowsでは対象ファイルが他プロセスに開かれているとrenameがEPERM/EBUSYになるため、
+  // rename失敗時は直接writeFileSyncにフォールバック（グラインドを止めない）。
+  const flush = () => {
+    const tmp = OUTABS + '.tmp';
+    try { fs.writeFileSync(tmp, toCsv(headers, out)); fs.renameSync(tmp, OUTABS); }
+    catch (_) { try { fs.writeFileSync(OUTABS, toCsv(headers, out)); } catch (__) {} }
+  };
   const sc = new MynaviScraper();
   await sc.launch();
   let done = 0;

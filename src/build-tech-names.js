@@ -61,7 +61,8 @@ async function run() {
     await withTimeout((async () => {
       const detail = {};
       if (useGh) {
-        try { const g = await findGithubContacts(name, { maxOrgs: 2, maxMembers: 8 }); Object.assign(detail, g.詳細);
+        const url = rec['公式URL'] || rec['ホームページ'] || rec['URL'] || rec['homepage_url'] || '';
+        try { const g = await findGithubContacts(name, { maxOrgs: 2, maxMembers: 8, url }); Object.assign(detail, g.詳細);
           for (const c of g.contacts) rows.push(mk(name, rec, c, 'GitHub')); } catch (e) { detail['GitHub'] = 'err:' + (e.message || '').slice(0, 30); }
       }
       if (useCp) {

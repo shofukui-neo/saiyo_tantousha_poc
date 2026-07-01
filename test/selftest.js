@@ -805,7 +805,7 @@ function testPressContact() {
 function testTechSources() {
   let fail = 0;
   const ok = (label, cond) => { if (cond) console.log('✓ ' + label); else { console.log('✗ ' + label); fail++; } };
-  const { looksLikeRealName } = require('../src/scrape-github');
+  const { looksLikeRealName, orgCandidatesFromUrl } = require('../src/scrape-github');
   const { presentersFromDescription, configured } = require('../src/scrape-connpass');
 
   // 実名らしさ: 英字フルネーム/漢字フルネームは採用、ハンドルは却下
@@ -819,6 +819,12 @@ function testTechSources() {
   ok('connpass: 「登壇者：山田太郎」「スピーカー 佐藤花子」を抽出', pres.includes('山田太郎') && pres.includes('佐藤花子'));
   ok('connpass: 単独姓「田中」(役割直後でない)は拾わない', !pres.includes('田中'));
   ok('connpass: キー未設定なら configured()=false（安全スキップ）', configured() === false);
+
+  // ドメイン→orgログイン候補（eTLD+1でSLDを畳む・汎用ベンダードメインは空）
+  ok('github: cybozu.co.jp→候補cybozu', orgCandidatesFromUrl('https://cybozu.co.jp/').includes('cybozu'));
+  ok('github: corp.freee.co.jp→候補freee（サブドメイン畳み）', orgCandidatesFromUrl('https://corp.freee.co.jp/').includes('freee'));
+  ok('github: 汎用ベンダー dell.com は候補ゼロ（誤帰属遮断）', orgCandidatesFromUrl('https://www.dell.com/ja-jp').length === 0);
+  ok('github: ikea.com も候補ゼロ', orgCandidatesFromUrl('https://www.ikea.com/jp/ja/').length === 0);
   return fail;
 }
 

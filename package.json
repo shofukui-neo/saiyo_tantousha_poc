@@ -51,7 +51,9 @@
     "audit:names:recall": "node src/audit-names.js --mode recall",
     "names:from-cache": "node src/audit-names.js --mode wantedly --out sources/A-names-from-cache.csv",
     "names:enrich": "node src/enrich-targets.js",
-    "mynavi:names": "node src/build-mynavi-names.js --in leads-daihyou-1000.csv --out sources/A-mynavi-names.csv"
+    "mynavi:names": "node src/build-mynavi-names.js --in leads-daihyou-1000.csv --out sources/A-mynavi-names.csv",
+    "mynavi:1000": "node src/build-mynavi-1000.js --out data/recruiter-mynavi-1000.csv --target 1000",
+    "mynavi:mochica": "node src/build-mochica-mynavi.js --in data/recruiter-mynavi-1000.csv --out leads-mochica-mynavi-named.csv"
   },
   "dependencies": {
     "cheerio": "^1.0.0",

@@ -28,6 +28,7 @@ const crypto = require('crypto');
 const { normCompanyName } = require('./csv');
 const { isFullName, splitName, isKnownSurname, stripNonName, completeSurname, isPlausiblePersonName } = require('./jp-names');
 const { extractFromRecruitText } = require('./probe-recruit-page');
+const { extractMynaviName, normPersonToken } = require('./mynavi-name-extract'); // 3パターン専用抽出（伝言板/インタビュー/問合せ先）
 const { extractPhones, normalizeJpPhone } = require('./phone');
 const { looksLikePersonName } = require('./extract'); // 一般語(関連/関係/案内…)を弾く共通ブロックリスト
 const { nameFromEmail } = require('./romaji-name');   // 採用メールのローカル部から姓を推定（中堅大手の個人名レバー）
@@ -41,15 +42,29 @@ const CONFIG = {
   searchUrl: (gy, q) => `https://job.mynavi.jp/${gy}/pc/corpinfo/searchCorpListByGenCond/index?actionMode=searchFw&srchWord=${encodeURIComponent(q)}`,
   // 検索結果に出る企業詳細リンク（corp{ID}/outline.html）
   corpLinkRe: /corp(\d+)\/outline\.html/i,
-  // 採用担当者・問合せ先が載るタブ。
-  //  is.html＝問合せ先(部署/電話/稀に個人名)、outline/message＝「採用担当の○○です」の担当者メッセージ(個人名が濃い)。
+  // 採用担当者名が載る面。ユーザー指定の3パターンをこの順（濃い順）で巡回する:
+  //  ① outline.html … 伝言板の名乗り「人事部の青木と申します」＋ ② インタビュー帰属「＜…山野 誠一郎さん＞」
+  //  ③ employment.html … 「採用データ」。ここから displayEmployment へリンクが張られ、その先の
+  //     『問合せ先』ブロックに「管理部　川瀬・伊藤」型の担当者名が載る（employment.html自体には無い）。
+  //  補助 is.html/message.html … 旧レイアウトの問合せ先・担当者メッセージ。
   contactPages: (gy, id) => [
-    `https://job.mynavi.jp/${gy}/pc/search/corp${id}/is.html`,
     `https://job.mynavi.jp/${gy}/pc/search/corp${id}/outline.html`,
-    `https://job.mynavi.jp/${gy}/pc/search/corp${id}/message.html`,
     `https://job.mynavi.jp/${gy}/pc/search/corp${id}/employment.html`,
+    `https://job.mynavi.jp/${gy}/pc/search/corp${id}/is.html`,
+    `https://job.mynavi.jp/${gy}/pc/search/corp${id}/message.html`,
   ],
+  // 「採用データ」から問合せ先の実ページへ渡るリンク（複数の募集コース分）。
+  displayEmploymentRe: /\/corpinfo\/displayEmployment\/index\/\?corpId=\d+&recruitingCourseId=\d+/g,
 };
+
+// URLからページ種別を判定（抽出器の当て分けに使う）。
+function pageKind(url) {
+  if (/\/outline\.html/.test(url)) return 'outline';
+  if (/displayEmployment/.test(url) || /\/employment\.html/.test(url)) return 'employment';
+  if (/\/is\.html/.test(url)) return 'is';
+  if (/\/message\.html/.test(url)) return 'message';
+  return 'any';
+}
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 const DELAY = parseInt(process.env.MYNAVI_POLITE_MS || '3500', 10);
@@ -197,7 +212,11 @@ function extractRecruiterName(text) {
 // 募集職種・採用予定人数・卒年・電話の軽量抽出（インテント補強）
 function extractIntentSignals(text) {
   const t = String(text || '').replace(/[ \t　]+/g, ' ');
-  const sig = { 募集職種: '', 募集職種数: '', 採用予定人数: '', 卒年: '', 電話番号: '' };
+  const sig = { 募集職種: '', 募集職種数: '', 採用予定人数: '', 卒年: '', 電話番号: '', 従業員数: '' };
+  // 従業員数（MOCHICAのSIZE次元＝50-150名スイート判定に直結）。「従業員数 123名」「社員数 89人」等。
+  const empM = t.match(/(?:従業?業員数|従業員|社員数|従業員\s*\(.*?\))\s*[:：]?\s*([0-9０-９,，]{1,7})\s*[名人]/)
+    || t.match(/(?:従業員数|社員数)[^0-9０-９]{0,6}([0-9０-９,，]{2,7})/);
+  if (empM) { const n = parseInt(String(empM[1]).replace(/[^0-9０-９]/g, '').replace(/[０-９]/g, (d) => '０１２３４５６７８９'.indexOf(d)), 10); if (n > 0 && n < 1000000) sig.従業員数 = String(n); }
   // 職種は誤抽出が多いので「職種らしい語」を含む場合のみ採用（断片を弾く）
   const jobsM = t.match(/(?:募集(?:職種|コース)|職種)\s*[:：]?\s*([^\n。]{2,40})/);
   if (jobsM && /(職|エンジニア|営業|技術|総合|事務|販売|開発|研究|企画|設計|コンサル|デザイ|施工|生産|品質)/.test(jobsM[1])) {
@@ -298,6 +317,67 @@ class MynaviScraper {
     return r;
   }
 
+  /**
+   * ディスカバリ経路：フリーワード検索の結果ページから、掲載企業の {id, 企業名} を最大~100件収穫する。
+   * 固定リストを引くより「マイナビ掲載SME」を直接列挙でき、担当者名の歩留まりが高い（母集団を掲載側に寄せる）。
+   * @param {string} keyword 業種/職種/地域などのフリーワード
+   */
+  async discoverCorpIds(keyword) {
+    const page = await this.context.newPage();
+    const out = [];
+    try {
+      await page.goto(CONFIG.searchUrl(this.gradYear, keyword), { waitUntil: 'domcontentloaded' }).catch(() => {});
+      await page.waitForLoadState('networkidle', { timeout: 8000 }).catch(() => {});
+      const items = await page.evaluate(() => {
+        const seen = {}; const res = [];
+        for (const a of Array.from(document.querySelectorAll('a[href]'))) {
+          const href = a.getAttribute('href') || '';
+          const m = href.match(/corp(\d+)\/outline/);
+          if (!m) continue;
+          const id = m[1]; if (seen[id]) continue; seen[id] = 1;
+          res.push({ id, name: (a.innerText || '').replace(/\s+/g, ' ').trim() });
+        }
+        return res;
+      }).catch(() => []);
+      for (const it of items) if (it.id) out.push(it);
+    } catch (_) { /* keyword単位の失敗は無視 */ } finally {
+      await page.close().catch(() => {});
+    }
+    return out;
+  }
+
+  /**
+   * ディスカバリ経路：検索を挟まず corpID から直接 詳細面を巡回して担当者名（3パターン）と到達性を取る。
+   * @param {string} id corpID
+   * @param {string} name 企業名（検索結果リンクの表示名）
+   */
+  async scrapeByCorp(id, name) {
+    const r = {
+      企業名: name || '', corpID: id, マイナビ掲載: '○', 採用担当者名: '', 担当者確度: '', パターン: '',
+      役職: '', 部署: '', メール: '', 電話番号: '', 採用ページURL: `https://job.mynavi.jp/${this.gradYear}/pc/search/corp${id}/outline.html`,
+      募集職種: '', 募集職種数: '', 採用予定人数: '', 卒年: '', 従業員数: '', 根拠: '',
+    };
+    const page = await this.context.newPage();
+    try {
+      await this._chaseContact(page, id, r);
+      // パターン名を根拠から拾って別列にも保持（[伝言板の名乗り]等）。フォールバック抽出も明示ラベル化。
+      const pm = (r.根拠 || '').match(/\[([^\]]+)\]/);
+      if (pm) r.パターン = pm[1];
+      else if (/問合せ先から氏名抽出/.test(r.根拠 || '')) r.パターン = '問合せ先(旧)';
+      else if (/採用担当者メッセージ/.test(r.根拠 || '')) r.パターン = '担当者メッセージ';
+      if (!r.採用担当者名 && r.メール) {
+        const em = nameFromEmail(r.メール);
+        if (em) { r.採用担当者名 = em.surname; r.担当者確度 = em.confidence; r.パターン = 'メール推定';
+          r.根拠 = (r.根拠 ? r.根拠 + ' / ' : '') + `メール推定(${em.romaji}→${em.surname})`; }
+      }
+    } catch (e) {
+      r.根拠 = r.根拠 || ('error:' + String(e && e.message || e).slice(0, 80));
+    } finally {
+      await page.close().catch(() => {});
+    }
+    return r;
+  }
+
   // 検索結果から社名一致する企業の corpID とクリック用ロケータを返す
   async _matchCorp(page, target) {
     if (!target) return null;
@@ -318,49 +398,89 @@ class MynaviScraper {
     return firstHit; // 部分一致のみなら先頭を返す（無ければ null）
   }
 
+  // 1ページを取得して本文テキストを返す（<400のみ）。displayEmploymentリンクも一緒に収穫。
+  async _fetchPage(page, url, harvestEmployment) {
+    const resp = await page.goto(url, { waitUntil: 'domcontentloaded' }).catch(() => null);
+    if (resp && resp.status() >= 400) return null;
+    await page.waitForLoadState('networkidle', { timeout: 6000 }).catch(() => {});
+    await page.mouse.wheel(0, 800).catch(() => {});  // 遅延描画トリガ
+    await sleep(300);
+    const text = await page.evaluate(() => (document.body ? document.body.innerText : '')).catch(() => '');
+    let empLinks = [];
+    if (harvestEmployment) {
+      empLinks = await page.evaluate(() => Array.from(document.querySelectorAll('a[href]'))
+        .map((a) => a.getAttribute('href') || '')
+        .filter((h) => /displayEmployment\/index\/\?corpId=\d+&recruitingCourseId=\d+/.test(h))).catch(() => []);
+      empLinks = [...new Set(empLinks)].map((h) => (h.startsWith('http') ? h : 'https://job.mynavi.jp' + h));
+    }
+    return { text, empLinks };
+  }
+
+  // ユーザー指定の3パターンで担当者名を取る。濃い順（outline→employment/displayEmployment→is→message）に巡回し、
+  // 各面へ専用抽出器(extractMynaviName)を当てる。displayEmployment は employment.html から動的に辿る。
   async _chaseContact(page, id, r) {
-    for (const url of CONFIG.contactPages(this.gradYear, id)) {
-      const resp = await page.goto(url, { waitUntil: 'domcontentloaded' }).catch(() => null);
-      if (resp && resp.status() >= 400) continue;
-      await page.waitForLoadState('networkidle', { timeout: 6000 }).catch(() => {});
-      await page.mouse.wheel(0, 600).catch(() => {});  // 遅延描画トリガ
-      await sleep(300);
-      const text = await page.evaluate(() => (document.body ? document.body.innerText : '')).catch(() => '');
+    const queue = CONFIG.contactPages(this.gradYear, id).slice();
+    const visited = new Set();
+    let empHopsLeft = 2; // 問合せ先ページは募集コース分あり得るので上限2面まで辿る
+
+    while (queue.length) {
+      const url = queue.shift();
+      if (visited.has(url)) continue;
+      visited.add(url);
+      const kind = pageKind(url);
+      const isEmploymentList = /\/employment\.html$/.test(url);
+      const got = await this._fetchPage(page, url, isEmploymentList);
+      if (!got) continue;
+      const { text, empLinks } = got;
       await this._dump(page, 'detail:' + r.企業名 + ':' + url.split('/').pop());
 
-      const c = parseContactBlock(text);
-      // ①問合せ先ブロック（is.html）：部署＋電話/メール共在を必須化した構造抽出（誤抽出に強い）。
-      const isContactPage = /\/is\.html$/.test(url);
-      if (c.採用担当者名 && !r.採用担当者名 && isContactPage && (c.電話番号 || c.メール)) {
-        r.採用担当者名 = c.採用担当者名;
-        r.担当者確度 = 0.8;
-        r.根拠 = '問合せ先から氏名抽出(' + url.split('/').pop() + ')';
+      // employment.html は一覧なので、その場の displayEmployment リンクを問合せ先本体として先頭に差し込む。
+      if (isEmploymentList && empLinks.length) {
+        for (const l of empLinks.slice(0, empHopsLeft)) if (!visited.has(l)) queue.unshift(l);
       }
-      // ②採用担当者メッセージ（outline/message等）：「採用担当の○○です」型の自己名乗りを
-      //   改良抽出器(extractFromRecruitText：姓辞書＋人名ゲート)で拾う。誤抽出(大塚商会は/地名)はゲートで排除。
+
+      // ── 3パターン専用抽出（最優先）──
+      // 氏名は抽出器内の normPersonToken で構造アンカー付き検証済み（辞書外フルネーム 山野 誠一郎 も通す）。
+      // ここで strict な isPlausiblePersonName で再ゲートすると辞書外5字フルネームを取りこぼすので掛けない。
       if (!r.採用担当者名) {
-        const hit = extractFromRecruitText(text);
-        if (hit && hit.name && isPlausiblePersonName(hit.name)) {
+        const hit = extractMynaviName(text, { page: kind });
+        if (hit && hit.name) {
           r.採用担当者名 = hit.name;
           r.役職 = r.役職 || hit.role || '';
-          r.部署 = r.部署 || hit.department || '';
-          r.担当者確度 = hit.confidence || 0.7;
-          r.根拠 = '採用担当者メッセージから氏名抽出(' + url.split('/').pop() + ')';
+          r.部署 = r.部署 || hit.dept || '';
+          r.担当者確度 = hit.confidence;
+          r.根拠 = `マイナビ[${hit.pattern}]から氏名抽出(${url.split('/').pop().split('?')[0] || 'displayEmployment'})`;
         }
       }
+      // ── 「採用担当の○○です」型メッセージのフォールバック（3パターンで取れなかった面のみ）──
+      //   ※旧 parseContactBlock の氏名抽出は 住所断片(福井県坂井/先住所) を拾う誤爆が多いので氏名には使わず、
+      //     問合せ先の 部署/電話/メール の到達性補完にのみ使う（下段）。氏名は必ず normPersonToken で再検証。
+      const c = parseContactBlock(text);
+      if (!r.採用担当者名) {
+        const hit = extractFromRecruitText(text);
+        const clean = hit && hit.name ? normPersonToken(hit.name) : '';
+        if (clean) {
+          r.採用担当者名 = clean; r.役職 = r.役職 || hit.role || ''; r.部署 = r.部署 || hit.department || '';
+          r.担当者確度 = hit.confidence || 0.7;
+          r.根拠 = '採用担当者メッセージから氏名抽出(' + url.split('/').pop().split('?')[0] + ')';
+        }
+      }
+
+      // 到達性・インテント（担当者名の有無に関わらず持ち帰る）
       if (c.部署 && !r.部署) r.部署 = c.部署;
       if (c.メール && !r.メール) r.メール = c.メール;
       if (c.電話番号 && !r.電話番号) r.電話番号 = c.電話番号;
-
       const sig = extractIntentSignals(text);
       if (sig.募集職種 && !r.募集職種) r.募集職種 = sig.募集職種;
       if (sig.募集職種数 && !r.募集職種数) r.募集職種数 = sig.募集職種数;
       if (sig.採用予定人数 && !r.採用予定人数) r.採用予定人数 = sig.採用予定人数;
       if (sig.卒年 && !r.卒年) r.卒年 = sig.卒年;
       if (sig.電話番号 && !r.電話番号) r.電話番号 = sig.電話番号;
+      if (sig.従業員数 && !r.従業員数) r.従業員数 = sig.従業員数;
 
-      if (r.採用担当者名) break; // 担当者名が取れたら十分
-      await sleep(800);
+      // 担当者名が高確度で取れたら十分。低確度（話者注記0.6）なら他面も見て上書きを狙う。
+      if (r.採用担当者名 && r.担当者確度 >= 0.75) break;
+      await sleep(600);
     }
     if (!r.根拠) r.根拠 = r.電話番号 ? 'マイナビ掲載確認(担当者名は非公開)' : 'マイナビ掲載確認';
   }
