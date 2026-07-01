@@ -15,6 +15,7 @@ const cheerio = require('cheerio');
 const { politeGet } = require('./polite');
 const { toCsv, readCsv, normCompanyName } = require('./csv');
 const { isPlausiblePersonName } = require('./jp-names');
+const { extractPressContact } = require('./press-contact');
 
 function getArg(name, def) {
   const i = process.argv.indexOf('--' + name);
@@ -92,6 +93,11 @@ function parseRelease(html) {
   rec.代表者名 = cleanRepName(pick(/代表者(?:名)?[：:\s]*([一-龥々ぁ-んァ-ヶ]{2,12}(?:[ 　][一-龥々ぁ-んァ-ヶ]{1,8})?)/));
   rec.上場 = pick(/上場\s*(未上場|東証[^\s]{0,6}|名証[^\s]{0,4}|上場)/);
   rec.設立 = (seg.match(/設立\s*((?:19|20)\d{2})\s*年/) || [, ''])[1];
+  // 追加レバー: 本文末尾の「お問い合わせ先 担当：氏名」を拾う（採用系リリースは人事/採用担当のことが多い）。
+  // 実測歩留まりは低い（PR TIMESは問合せをボタン化しており本文露出は稀）が、取れた時はラベル付き＝高確度。
+  const bodyText = ($('article').first().text() || $('main').first().text() || $('body').text()).replace(/[ \t　]+/g, ' ');
+  const contact = extractPressContact(bodyText);
+  if (contact && contact.name) { rec.採用担当者名 = contact.name; rec.担当役職 = contact.role || contact.dept || ''; }
   return rec;
 }
 
@@ -152,8 +158,8 @@ async function run() {
     if (!key || byCompany.has(key)) continue;
     const repOk = !!rec.代表者名;   // cleanRepName で整形・検証済み
     byCompany.set(key, {
-      企業名: rec.企業名, 代表者名: rec.代表者名, 採用担当者名: '',
-      架電宛名: repOk ? `${rec.代表者名} 様` : '', 公式URL: rec.公式URL,
+      企業名: rec.企業名, 代表者名: rec.代表者名, 採用担当者名: rec.採用担当者名 || '',
+      架電宛名: rec.採用担当者名 ? `${rec.採用担当者名} 様` : (repOk ? `${rec.代表者名} 様` : ''), 公式URL: rec.公式URL,
       業種: rec.業種, 都道府県: rec.都道府県, 電話番号: rec.電話番号,
       上場: rec.上場, 設立: rec.設立, 取得元: 'PR TIMES', 根拠URL: u, 取得日: today,
     });

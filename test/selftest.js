@@ -778,6 +778,50 @@ function testGoogleContacts() {
   return fail;
 }
 
+// ---- プレスリリース「お問い合わせ先」担当者抽出（精度優先・断片排除）検証 ----
+// 実測歩留まりは低い（PR TIMESは問合せボタン化）が、取れた時の精度＝断片/役割語/組織語を出さないことを固定。
+function testPressContact() {
+  let fail = 0;
+  const ok = (label, cond) => { if (cond) console.log('✓ ' + label); else { console.log('✗ ' + label); fail++; } };
+  const { extractPressContact } = require('../src/press-contact');
+  const nameOf = (t) => { const r = extractPressContact(t); return r ? r.name : ''; };
+
+  ok('press: 「人事部 採用担当：山田太郎」→山田太郎＋メール', (() => {
+    const r = extractPressContact('本件に関するお問い合わせ先 株式会社サンプル 人事部 採用担当：山田太郎 TEL: 03-1234-5678 E-mail: saiyo@sample.co.jp');
+    return r && r.name === '山田太郎' && r.email === 'saiyo@sample.co.jp' && /人事|採用/.test(r.role + r.dept);
+  })());
+  ok('press: 「広報部 担当 佐藤花子」→佐藤花子', nameOf('【お問い合わせ先】 広報部 担当 佐藤花子 Tel 06-1111-2222') === '佐藤花子');
+  ok('press: 「コーポレート本部 田中一郎」(ラベルなし部署+氏名)→田中一郎', nameOf('報道関係者からのお問い合わせ ○○株式会社 コーポレート本部 田中一郎 mail@x.co.jp') === '田中一郎');
+  // 精度: 役割語のみ・氏名なし・断片連結は出さない
+  ok('press: 役割語のみ「採用担当 まで」は氏名にしない', nameOf('お問い合わせ先 採用担当 までご連絡ください') === '');
+  ok('press: 氏名なし「経営企画室 新規事業」は出さない', nameOf('本リリースに関するお問い合わせ 経営企画室 新規事業 03-0000-0000') === '');
+  ok('press: 断片連結「小沢 お問」「関連リンク」を氏名にしない', nameOf('お問い合わせ先 広報 お問い合わせはこちら 関連リンク 詳細') === '');
+  ok('press: マーカーが無ければ抽出しない', nameOf('本日新サービスを発表しました。詳細はサイトをご覧ください。') === '');
+  return fail;
+}
+
+// ---- テック源（GitHub技術者／connpassイベント）氏名抽出の純ロジック検証 ----
+// IT/Web企業に限り公開APIで実名が構造的に取れる。ハンドルでなく実名のみ採用、社名一致で誤帰属排除。
+function testTechSources() {
+  let fail = 0;
+  const ok = (label, cond) => { if (cond) console.log('✓ ' + label); else { console.log('✗ ' + label); fail++; } };
+  const { looksLikeRealName } = require('../src/scrape-github');
+  const { presentersFromDescription, configured } = require('../src/scrape-connpass');
+
+  // 実名らしさ: 英字フルネーム/漢字フルネームは採用、ハンドルは却下
+  ok('github: 「Taro Yamada」は実名', looksLikeRealName('Taro Yamada'));
+  ok('github: 「柏木大輔」は実名', looksLikeRealName('柏木大輔'));
+  ok('github: ハンドル「xy_01」「dqneo」は却下', !looksLikeRealName('xy_01') && !looksLikeRealName('dqneo'));
+  ok('github: 単一英単語「mercari」は却下', !looksLikeRealName('mercari'));
+
+  // connpass description から登壇者/主催の氏名を姓辞書ゲートで抽出
+  const pres = presentersFromDescription('<p>登壇者：山田太郎（人事）、スピーカー 佐藤花子 司会 田中</p>');
+  ok('connpass: 「登壇者：山田太郎」「スピーカー 佐藤花子」を抽出', pres.includes('山田太郎') && pres.includes('佐藤花子'));
+  ok('connpass: 単独姓「田中」(役割直後でない)は拾わない', !pres.includes('田中'));
+  ok('connpass: キー未設定なら configured()=false（安全スキップ）', configured() === false);
+  return fail;
+}
+
 async function run() {
   const cases = [
     { name: 'サンプル株式会社', file: 'fixture.html', expect: 'HIT' },
@@ -851,6 +895,10 @@ async function run() {
   failures += testResearchAssist();
   console.log('\n--- Google Workspace 社内資産抽出（From/署名/メール姓推定）検証 ---');
   failures += testGoogleContacts();
+  console.log('\n--- プレスリリース「お問い合わせ先」担当者抽出（精度優先）検証 ---');
+  failures += testPressContact();
+  console.log('\n--- テック源（GitHub技術者／connpassイベント）氏名抽出 検証 ---');
+  failures += testTechSources();
 
   if (failures > 0) { console.error(`\nSELFTEST FAILED: ${failures} case(s)`); process.exit(1); }
   console.log('\nSELFTEST PASSED ✓  (抽出→検証→集計 ＋ スプレッドシートI/O ロジックが正常動作)');

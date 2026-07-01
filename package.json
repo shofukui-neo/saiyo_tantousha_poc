@@ -28,6 +28,8 @@
     "research:ingest": "node src/ingest-research.js --in sources/research-worksheet.csv --out sources/H-research-names.csv",
     "google:auth": "node src/google-auth.js",
     "names:google": "node src/build-google-names.js --in leads-mochica-target.csv --out sources/D-google-names.csv",
+    "names:tech": "node src/build-tech-names.js --in leads-mochica-target.csv --out sources/T-tech-names.csv --source both",
+    "names:github": "node src/build-tech-names.js --in leads-mochica-target.csv --out sources/T-tech-names.csv --source github",
     "build-list": "node src/build-list.js --sources sources/manifest.json --out leads.master.csv",
     "mochica": "node src/build-mochica-list.js --in leads-telapo-1000.csv --merge leads-daihyou-1000.csv,leads.master.csv,sources/A-pages.csv --out leads-mochica.scored.csv",
     "mochica:enrich": "node src/build-mochica-list.js --in leads-telapo-1000.csv --merge leads-daihyou-1000.csv,leads.master.csv,sources/A-pages.csv --out leads-mochica.scored.csv --enrich 40 --enrich-empty-only",

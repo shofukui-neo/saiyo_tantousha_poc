@@ -26,7 +26,8 @@ const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
 const { normCompanyName } = require('./csv');
-const { isFullName, splitName, isKnownSurname, stripNonName, completeSurname } = require('./jp-names');
+const { isFullName, splitName, isKnownSurname, stripNonName, completeSurname, isPlausiblePersonName } = require('./jp-names');
+const { extractFromRecruitText } = require('./probe-recruit-page');
 const { extractPhones, normalizeJpPhone } = require('./phone');
 const { looksLikePersonName } = require('./extract'); // 一般語(関連/関係/案内…)を弾く共通ブロックリスト
 const { nameFromEmail } = require('./romaji-name');   // 採用メールのローカル部から姓を推定（中堅大手の個人名レバー）
@@ -40,11 +41,13 @@ const CONFIG = {
   searchUrl: (gy, q) => `https://job.mynavi.jp/${gy}/pc/corpinfo/searchCorpListByGenCond/index?actionMode=searchFw&srchWord=${encodeURIComponent(q)}`,
   // 検索結果に出る企業詳細リンク（corp{ID}/outline.html）
   corpLinkRe: /corp(\d+)\/outline\.html/i,
-  // 採用担当者・問合せ先が載るタブ（is.html＝最有力 → employment.html → outline.html）
+  // 採用担当者・問合せ先が載るタブ。
+  //  is.html＝問合せ先(部署/電話/稀に個人名)、outline/message＝「採用担当の○○です」の担当者メッセージ(個人名が濃い)。
   contactPages: (gy, id) => [
     `https://job.mynavi.jp/${gy}/pc/search/corp${id}/is.html`,
-    `https://job.mynavi.jp/${gy}/pc/search/corp${id}/employment.html`,
     `https://job.mynavi.jp/${gy}/pc/search/corp${id}/outline.html`,
+    `https://job.mynavi.jp/${gy}/pc/search/corp${id}/message.html`,
+    `https://job.mynavi.jp/${gy}/pc/search/corp${id}/employment.html`,
   ],
 };
 
@@ -326,13 +329,24 @@ class MynaviScraper {
       await this._dump(page, 'detail:' + r.企業名 + ':' + url.split('/').pop());
 
       const c = parseContactBlock(text);
-      // 氏名は is.html（較正済みの『問合せ先』ブロック）からのみ採る。outline/employment は会社概要・採用実績で
-      // 「大塚商会は/岡三にい/神田神保(地名)/南大学」等の社名・地名・断片を氏名と誤抽出するため除外。
-      // さらに同ブロック内に電話 or メールが共在することを必須化（本物の問合せ先の構造）。
+      // ①問合せ先ブロック（is.html）：部署＋電話/メール共在を必須化した構造抽出（誤抽出に強い）。
       const isContactPage = /\/is\.html$/.test(url);
       if (c.採用担当者名 && !r.採用担当者名 && isContactPage && (c.電話番号 || c.メール)) {
         r.採用担当者名 = c.採用担当者名;
+        r.担当者確度 = 0.8;
         r.根拠 = '問合せ先から氏名抽出(' + url.split('/').pop() + ')';
+      }
+      // ②採用担当者メッセージ（outline/message等）：「採用担当の○○です」型の自己名乗りを
+      //   改良抽出器(extractFromRecruitText：姓辞書＋人名ゲート)で拾う。誤抽出(大塚商会は/地名)はゲートで排除。
+      if (!r.採用担当者名) {
+        const hit = extractFromRecruitText(text);
+        if (hit && hit.name && isPlausiblePersonName(hit.name)) {
+          r.採用担当者名 = hit.name;
+          r.役職 = r.役職 || hit.role || '';
+          r.部署 = r.部署 || hit.department || '';
+          r.担当者確度 = hit.confidence || 0.7;
+          r.根拠 = '採用担当者メッセージから氏名抽出(' + url.split('/').pop() + ')';
+        }
       }
       if (c.部署 && !r.部署) r.部署 = c.部署;
       if (c.メール && !r.メール) r.メール = c.メール;
