@@ -4,9 +4,14 @@
 // ローカル（正規表現）経路へ自動フォールバックする（= キー無しでも全体は動く）。
 const cfg = require('./config');
 
-/** GEMINI_KEY が設定されていて AI 経路が使えるか */
+// 無料枠クォータ枯渇(429)を検知したらプロセス内で以降の呼び出しを止める（サイレント劣化の可視化）。
+//  これが無いと 429 が null に握り潰され「AI抽出が0件」に見え、枠切れとロジック不良を区別できない（実験で判明）。
+let _quotaExhausted = false;
+function geminiQuotaExhausted() { return _quotaExhausted; }
+
+/** GEMINI_KEY が設定されていて AI 経路が使えるか（クォータ枯渇後は false＝即regexフォールバック） */
 function geminiAvailable(c = cfg) {
-  return !!(c && c.GEMINI_KEY);
+  return !!(c && c.GEMINI_KEY) && !_quotaExhausted;
 }
 
 /**
@@ -56,7 +61,14 @@ async function geminiJson(prompt, opt = {}, c = cfg) {
         generationConfig,
       }),
     });
-    if (!res.ok) return null;
+    if (!res.ok) {
+      // 429=無料枠枯渇。以降の呼び出しを止め、一度だけ警告（サイレント劣化の可視化）。
+      if (res.status === 429 && !_quotaExhausted) {
+        _quotaExhausted = true;
+        console.warn('[gemini] 429 Too Many Requests — 無料枠クォータ枯渇。以降はregex経路のみで動作します（AI抽出=採用担当個人名の歩留まりが低下）。');
+      }
+      return null;
+    }
     const j = await res.json();
     const text = j && j.candidates && j.candidates[0] &&
       j.candidates[0].content && j.candidates[0].content.parts &&
@@ -70,4 +82,4 @@ async function geminiJson(prompt, opt = {}, c = cfg) {
   }
 }
 
-module.exports = { geminiAvailable, geminiJson };
+module.exports = { geminiAvailable, geminiJson, geminiQuotaExhausted };

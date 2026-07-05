@@ -4,7 +4,7 @@
       "dry": 0,
       "active": true,
       "born": "seed",
-      "hits": 95
+      "hits": 103
     },
     "新卒 営業 大阪": {
       "dry": 3,
@@ -76,67 +76,67 @@
       "dry": 0,
       "active": true,
       "born": "from:新卒 営業 東京",
-      "hits": 36
+      "hits": 48
     },
     "新卒 販売 東京": {
       "dry": 0,
       "active": true,
       "born": "from:新卒 営業 東京",
-      "hits": 44
+      "hits": 64
     },
     "新卒 エンジニア 大阪": {
       "dry": 0,
       "active": true,
       "born": "from:新卒 営業 大阪",
-      "hits": 49
+      "hits": 71
     },
     "新卒 企画 大阪": {
       "dry": 0,
       "active": true,
       "born": "from:新卒 営業 大阪",
-      "hits": 38
+      "hits": 46
     },
     "新卒 総合職 大阪": {
       "dry": 0,
       "active": true,
       "born": "from:新卒 営業 大阪",
-      "hits": 57
+      "hits": 88
     },
     "新卒 マーケティング 大阪": {
       "dry": 0,
       "active": true,
       "born": "from:新卒 営業 大阪",
-      "hits": 34
+      "hits": 44
     },
     "新卒 コンサル 大阪": {
       "dry": 0,
       "active": true,
       "born": "from:新卒 営業 大阪",
-      "hits": 35
+      "hits": 46
     },
     "新卒 事務 大阪": {
       "dry": 0,
       "active": true,
       "born": "from:新卒 営業 大阪",
-      "hits": 44
+      "hits": 56
     },
     "新卒 販売 大阪": {
       "dry": 0,
       "active": true,
       "born": "from:新卒 営業 大阪",
-      "hits": 57
+      "hits": 89
     },
     "新卒 エンジニア 名古屋": {
       "dry": 0,
       "active": true,
       "born": "from:新卒 営業 名古屋",
-      "hits": 28
+      "hits": 33
     },
     "新卒 企画 名古屋": {
       "dry": 0,
       "active": true,
       "born": "from:新卒 営業 名古屋",
-      "hits": 33
+      "hits": 49
     },
     "新卒 総合職 名古屋": {
       "dry": 0,
@@ -337,6 +337,6 @@
       "hits": 0
     }
   },
-  "cycle": 13,
+  "cycle": 16,
   "staleSources": []
 }

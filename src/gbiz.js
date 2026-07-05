@@ -7,14 +7,32 @@ const cfg = require('./config');
 
 function gbizAvailable(c = cfg) { return !!(c && c.GBIZ_TOKEN); }
 
+// gBizは並列で叩くと429。プロセス内で直列化し最小間隔を空ける（実測: 逐次+間隔で代表者名93%、並列だと429で50%）。
+let _gbizChain = Promise.resolve(); let _gbizLast = 0;
+function _gbizThrottle(c) {
+  const gap = parseInt((c && c.GBIZ_MIN_INTERVAL_MS) || process.env.GBIZ_MIN_INTERVAL_MS || '700', 10);
+  _gbizChain = _gbizChain.then(async () => {
+    const wait = _gbizLast + gap - Date.now();
+    if (wait > 0) await new Promise((r) => setTimeout(r, wait));
+    _gbizLast = Date.now();
+  });
+  return _gbizChain;
+}
+
 async function gbizFetch(url, c) {
+  await _gbizThrottle(c);
   const ctrl = new AbortController();
   const t = setTimeout(() => ctrl.abort(), c.PER_PAGE_TIMEOUT_MS || 15000);
   try {
-    const res = await fetch(url, {
+    let res = await fetch(url, {
       headers: { 'X-hojinInfo-api-token': c.GBIZ_TOKEN, 'Accept': 'application/json' },
       signal: ctrl.signal, redirect: 'follow',
     });
+    // 429はレート超過。1回だけ待って再試行。
+    if (res && res.status === 429) {
+      await new Promise((r) => setTimeout(r, 1500));
+      res = await fetch(url, { headers: { 'X-hojinInfo-api-token': c.GBIZ_TOKEN, 'Accept': 'application/json' }, signal: ctrl.signal, redirect: 'follow' });
+    }
     return res;
   } finally { clearTimeout(t); }
 }
