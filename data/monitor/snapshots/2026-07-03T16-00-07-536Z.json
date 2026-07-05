@@ -1,0 +1,1170 @@
+{
+  "cycle": "2026-07-03T16:00:07.536Z",
+  "companies": {
+    "ネオキャリア": {
+      "企業名": "株式会社ネオキャリア",
+      "totalJobs": 1,
+      "gradYears": [],
+      "recencyDays": null,
+      "sources": {
+        "求人ボックス": {
+          "jobCount": 1,
+          "jobs": [
+            "「東京」新卒領域の採用コンサルティング営業／一気通貫型の新規営業"
+          ],
+          "queries": [
+            "新卒 営業 東京"
+          ],
+          "recencyDays": null
+        }
+      }
+    },
+    "kirim": {
+      "企業名": "kirim",
+      "totalJobs": 1,
+      "gradYears": [],
+      "recencyDays": null,
+      "sources": {
+        "求人ボックス": {
+          "jobCount": 1,
+          "jobs": [
+            "月給23万～／東京有名店20年の技術が学べる／アシスタント募集"
+          ],
+          "queries": [
+            "新卒 営業 東京"
+          ],
+          "recencyDays": null
+        }
+      }
+    },
+    "井上定": {
+      "企業名": "井上定株式会社",
+      "totalJobs": 1,
+      "gradYears": [],
+      "recencyDays": null,
+      "sources": {
+        "求人ボックス": {
+          "jobCount": 1,
+          "jobs": [
+            "東京／法人ルート営業 エクステリア／土日祝休み／残業20h程度"
+          ],
+          "queries": [
+            "新卒 営業 東京"
+          ],
+          "recencyDays": null
+        }
+      }
+    },
+    "iplug": {
+      "企業名": "株式会社i-plug",
+      "totalJobs": 1,
+      "gradYears": [],
+      "recencyDays": 0,
+      "sources": {
+        "求人ボックス": {
+          "jobCount": 1,
+          "jobs": [
+            "東京／在宅可／法人営業／新卒DRサービスOfferBox 成功報酬型で..."
+          ],
+          "queries": [
+            "新卒 営業 東京"
+          ],
+          "recencyDays": 0
+        }
+      }
+    },
+    "日本瓦斯": {
+      "企業名": "日本瓦斯株式会社",
+      "totalJobs": 1,
+      "gradYears": [],
+      "recencyDays": null,
+      "sources": {
+        "求人ボックス": {
+          "jobCount": 1,
+          "jobs": [
+            "ニチガスの提案営業 要車免許／~35歳／上場／賞与4.6ヵ月／社宅完備"
+          ],
+          "queries": [
+            "新卒 営業 東京"
+          ],
+          "recencyDays": null
+        }
+      }
+    },
+    "mitty": {
+      "企業名": "Mitty株式会社",
+      "totalJobs": 1,
+      "gradYears": [],
+      "recencyDays": null,
+      "sources": {
+        "求人ボックス": {
+          "jobCount": 1,
+          "jobs": [
+            "渋谷ヒカリエ／フィールドセールス 東京オフィス立上げ・裁量権"
+          ],
+          "queries": [
+            "新卒 営業 東京"
+          ],
+          "recencyDays": null
+        }
+      }
+    },
+    "パナック": {
+      "企業名": "パナック株式会社",
+      "totalJobs": 1,
+      "gradYears": [],
+      "recencyDays": null,
+      "sources": {
+        "求人ボックス": {
+          "jobCount": 1,
+          "jobs": [
+            "東京／田町／法人営業 高機能フィルム／スマートフォン、半導体等にも使用"
+          ],
+          "queries": [
+            "新卒 営業 東京"
+          ],
+          "recencyDays": null
+        }
+      }
+    },
+    "マエダ": {
+      "企業名": "株式会社マエダ",
+      "totalJobs": 1,
+      "gradYears": [],
+      "recencyDays": 11,
+      "sources": {
+        "求人ボックス": {
+          "jobCount": 1,
+          "jobs": [
+            "ルート営業／歴史に残る建築物づくりに携わる・未経験歓迎・年間休日131..."
+          ],
+          "queries": [
+            "新卒 営業 東京"
+          ],
+          "recencyDays": 11
+        }
+      }
+    },
+    "長谷工リアルエステート": {
+      "企業名": "株式会社長谷工リアルエステート",
+      "totalJobs": 1,
+      "gradYears": [],
+      "recencyDays": null,
+      "sources": {
+        "求人ボックス": {
+          "jobCount": 1,
+          "jobs": [
+            "東京／第2新卒歓迎／売買仲介営業 中途入社者多数活躍 PC19"
+          ],
+          "queries": [
+            "新卒 営業 東京"
+          ],
+          "recencyDays": null
+        }
+      }
+    },
+    "フクシマガリレイ": {
+      "企業名": "フクシマガリレイ株式会社",
+      "totalJobs": 1,
+      "gradYears": [],
+      "recencyDays": null,
+      "sources": {
+        "求人ボックス": {
+          "jobCount": 1,
+          "jobs": [
+            "東京／未経験・第2新卒歓迎／法人営業 店舗プロデュース／業務用冷蔵冷凍..."
+          ],
+          "queries": [
+            "新卒 営業 東京"
+          ],
+          "recencyDays": null
+        }
+      }
+    },
+    "三田電業": {
+      "企業名": "三田電業株式会社",
+      "totalJobs": 1,
+      "gradYears": [],
+      "recencyDays": null,
+      "sources": {
+        "求人ボックス": {
+          "jobCount": 1,
+          "jobs": [
+            "小型モーター等電気電子部品のルート営業"
+          ],
+          "queries": [
+            "新卒 営業 東京"
+          ],
+          "recencyDays": null
+        }
+      }
+    },
+    "インフィニティエージェント": {
+      "企業名": "株式会社インフィニティエージェント",
+      "totalJobs": 1,
+      "gradYears": [],
+      "recencyDays": null,
+      "sources": {
+        "求人ボックス": {
+          "jobCount": 1,
+          "jobs": [
+            "DX事業の営業サポート事務／データ入力・お客様対応／20代"
+          ],
+          "queries": [
+            "新卒 営業 東京"
+          ],
+          "recencyDays": null
+        }
+      }
+    },
+    "ヨシモリ": {
+      "企業名": "株式会社ヨシモリ",
+      "totalJobs": 1,
+      "gradYears": [],
+      "recencyDays": 10,
+      "sources": {
+        "求人ボックス": {
+          "jobCount": 1,
+          "jobs": [
+            "地球にやさしい資源収集サービスのルート営業"
+          ],
+          "queries": [
+            "新卒 営業 東京"
+          ],
+          "recencyDays": 10
+        }
+      }
+    },
+    "スマートアナリティクス会津若松事務所": {
+      "企業名": "スマート・アナリティクス株式会社 会津若松事務所",
+      "totalJobs": 1,
+      "gradYears": [],
+      "recencyDays": null,
+      "sources": {
+        "求人ボックス": {
+          "jobCount": 1,
+          "jobs": [
+            "研究支援やソフトウェア販売の営業・営業事務"
+          ],
+          "queries": [
+            "新卒 営業 東京"
+          ],
+          "recencyDays": null
+        }
+      }
+    },
+    "ネクステージ葛飾店": {
+      "企業名": "ネクステージ葛飾店",
+      "totalJobs": 1,
+      "gradYears": [],
+      "recencyDays": null,
+      "sources": {
+        "求人ボックス": {
+          "jobCount": 1,
+          "jobs": [
+            "積極採用中!営業／⏩️営業、販売経験活かしてご活躍可能!1000万円越..."
+          ],
+          "queries": [
+            "新卒 営業 東京"
+          ],
+          "recencyDays": null
+        }
+      }
+    },
+    "lvup": {
+      "企業名": "株式会社LVUP",
+      "totalJobs": 1,
+      "gradYears": [],
+      "recencyDays": null,
+      "sources": {
+        "求人ボックス": {
+          "jobCount": 1,
+          "jobs": [
+            "東京限定／オンライン恋愛カウンセラー／月収100万円以上も可"
+          ],
+          "queries": [
+            "新卒 営業 東京"
+          ],
+          "recencyDays": null
+        }
+      }
+    },
+    "ネクステージ世田谷店": {
+      "企業名": "ネクステージ世田谷店",
+      "totalJobs": 1,
+      "gradYears": [],
+      "recencyDays": null,
+      "sources": {
+        "求人ボックス": {
+          "jobCount": 1,
+          "jobs": [
+            "積極採用中!営業／⏩️営業、販売経験活かしてご活躍可能!1000万円越..."
+          ],
+          "queries": [
+            "新卒 営業 東京"
+          ],
+          "recencyDays": null
+        }
+      }
+    },
+    "カーレントサービス": {
+      "企業名": "株式会社カーレントサービス",
+      "totalJobs": 1,
+      "gradYears": [
+        "2026"
+      ],
+      "recencyDays": null,
+      "sources": {
+        "求人ボックス": {
+          "jobCount": 1,
+          "jobs": [
+            "2026年卒 新卒採用 什器・オフィス家具の組立・設置スタッフ"
+          ],
+          "queries": [
+            "新卒 営業 東京"
+          ],
+          "recencyDays": null
+        }
+      }
+    },
+    "ネクステージ江戸川店": {
+      "企業名": "ネクステージ江戸川店",
+      "totalJobs": 1,
+      "gradYears": [],
+      "recencyDays": null,
+      "sources": {
+        "求人ボックス": {
+          "jobCount": 1,
+          "jobs": [
+            "接客／⏩️営業、販売経験活かして早期キャリアUP可能!固定給1000万..."
+          ],
+          "queries": [
+            "新卒 営業 東京"
+          ],
+          "recencyDays": null
+        }
+      }
+    },
+    "大協建材": {
+      "企業名": "株式会社大協建材",
+      "totalJobs": 1,
+      "gradYears": [],
+      "recencyDays": null,
+      "sources": {
+        "求人ボックス": {
+          "jobCount": 1,
+          "jobs": [
+            "東京でキャリアをつくる!新卒から挑戦できる営業職募集"
+          ],
+          "queries": [
+            "新卒 営業 東京"
+          ],
+          "recencyDays": null
+        }
+      }
+    },
+    "alh": {
+      "企業名": "ALH株式会社",
+      "totalJobs": 1,
+      "gradYears": [],
+      "recencyDays": null,
+      "sources": {
+        "求人ボックス": {
+          "jobCount": 1,
+          "jobs": [
+            "27新卒 ITソリューション営業職／東京勤務確約／説明会+1次選考が6..."
+          ],
+          "queries": [
+            "新卒 営業 東京"
+          ],
+          "recencyDays": null
+        }
+      }
+    },
+    "トーコン": {
+      "企業名": "株式会社トーコン",
+      "totalJobs": 1,
+      "gradYears": [],
+      "recencyDays": null,
+      "sources": {
+        "求人ボックス": {
+          "jobCount": 1,
+          "jobs": [
+            "東京／在宅勤務あり 2027年新卒採用 総合職:採用プランナー営業"
+          ],
+          "queries": [
+            "新卒 営業 東京"
+          ],
+          "recencyDays": null
+        }
+      }
+    },
+    "ファナティック": {
+      "企業名": "株式会社ファナティック",
+      "totalJobs": 1,
+      "gradYears": [],
+      "recencyDays": null,
+      "sources": {
+        "求人ボックス": {
+          "jobCount": 1,
+          "jobs": [
+            "オーダーメイド・ハードウェア 営業職 入社時期応相談 新卒／既卒"
+          ],
+          "queries": [
+            "新卒 営業 東京"
+          ],
+          "recencyDays": null
+        }
+      }
+    },
+    "オンテックス": {
+      "企業名": "株式会社オンテックス",
+      "totalJobs": 1,
+      "gradYears": [],
+      "recencyDays": null,
+      "sources": {
+        "求人ボックス": {
+          "jobCount": 1,
+          "jobs": [
+            "新卒採用 東京勤務したい方集合!内定まで最短1週間!#企画営業"
+          ],
+          "queries": [
+            "新卒 営業 東京"
+          ],
+          "recencyDays": null
+        }
+      }
+    },
+    "ハートインターナショナルグループ": {
+      "企業名": "ハート・インターナショナルグループ",
+      "totalJobs": 1,
+      "gradYears": [],
+      "recencyDays": null,
+      "sources": {
+        "求人ボックス": {
+          "jobCount": 1,
+          "jobs": [
+            "新卒採用2027 総合職／営業スタートコース 東京"
+          ],
+          "queries": [
+            "新卒 営業 東京"
+          ],
+          "recencyDays": null
+        }
+      }
+    },
+    "バンダイ": {
+      "企業名": "株式会社バンダイ",
+      "totalJobs": 1,
+      "gradYears": [],
+      "recencyDays": null,
+      "sources": {
+        "リクナビ": {
+          "jobCount": 1,
+          "jobs": [],
+          "queries": [
+            "新卒 営業 東京"
+          ],
+          "recencyDays": null
+        }
+      }
+    },
+    "森永製菓": {
+      "企業名": "森永製菓株式会社",
+      "totalJobs": 1,
+      "gradYears": [],
+      "recencyDays": null,
+      "sources": {
+        "リクナビ": {
+          "jobCount": 1,
+          "jobs": [],
+          "queries": [
+            "新卒 営業 東京"
+          ],
+          "recencyDays": null
+        }
+      }
+    },
+    "日本航空": {
+      "企業名": "日本航空株式会社",
+      "totalJobs": 1,
+      "gradYears": [],
+      "recencyDays": null,
+      "sources": {
+        "リクナビ": {
+          "jobCount": 1,
+          "jobs": [],
+          "queries": [
+            "新卒 営業 東京"
+          ],
+          "recencyDays": null
+        }
+      }
+    },
+    "ロッテ": {
+      "企業名": "株式会社ロッテ",
+      "totalJobs": 1,
+      "gradYears": [],
+      "recencyDays": null,
+      "sources": {
+        "リクナビ": {
+          "jobCount": 1,
+          "jobs": [],
+          "queries": [
+            "新卒 営業 東京"
+          ],
+          "recencyDays": null
+        }
+      }
+    },
+    "アサヒグループジャパン": {
+      "企業名": "アサヒグループジャパン株式会社",
+      "totalJobs": 1,
+      "gradYears": [],
+      "recencyDays": null,
+      "sources": {
+        "リクナビ": {
+          "jobCount": 1,
+          "jobs": [],
+          "queries": [
+            "新卒 営業 東京"
+          ],
+          "recencyDays": null
+        }
+      }
+    },
+    "kadokawa": {
+      "企業名": "株式会社KADOKAWA",
+      "totalJobs": 1,
+      "gradYears": [],
+      "recencyDays": null,
+      "sources": {
+        "リクナビ": {
+          "jobCount": 1,
+          "jobs": [],
+          "queries": [
+            "新卒 営業 東京"
+          ],
+          "recencyDays": null
+        }
+      }
+    },
+    "味の素agf": {
+      "企業名": "味の素AGF株式会社",
+      "totalJobs": 1,
+      "gradYears": [],
+      "recencyDays": null,
+      "sources": {
+        "リクナビ": {
+          "jobCount": 1,
+          "jobs": [],
+          "queries": [
+            "新卒 営業 東京"
+          ],
+          "recencyDays": null
+        }
+      }
+    },
+    "キリンホールディングス": {
+      "企業名": "キリンホールディングス株式会社",
+      "totalJobs": 1,
+      "gradYears": [],
+      "recencyDays": null,
+      "sources": {
+        "リクナビ": {
+          "jobCount": 1,
+          "jobs": [],
+          "queries": [
+            "新卒 営業 東京"
+          ],
+          "recencyDays": null
+        }
+      }
+    },
+    "sky": {
+      "企業名": "Ｓｋｙ株式会社",
+      "totalJobs": 1,
+      "gradYears": [],
+      "recencyDays": null,
+      "sources": {
+        "リクナビ": {
+          "jobCount": 1,
+          "jobs": [],
+          "queries": [
+            "新卒 営業 東京"
+          ],
+          "recencyDays": null
+        }
+      }
+    },
+    "サントリーホールディングス": {
+      "企業名": "サントリーホールディングス株式会社",
+      "totalJobs": 1,
+      "gradYears": [],
+      "recencyDays": null,
+      "sources": {
+        "リクナビ": {
+          "jobCount": 1,
+          "jobs": [],
+          "queries": [
+            "新卒 営業 東京"
+          ],
+          "recencyDays": null
+        }
+      }
+    },
+    "伊藤忠商事": {
+      "企業名": "伊藤忠商事株式会社",
+      "totalJobs": 1,
+      "gradYears": [],
+      "recencyDays": null,
+      "sources": {
+        "リクナビ": {
+          "jobCount": 1,
+          "jobs": [],
+          "queries": [
+            "新卒 営業 東京"
+          ],
+          "recencyDays": null
+        }
+      }
+    },
+    "日清食品": {
+      "企業名": "日清食品株式会社",
+      "totalJobs": 1,
+      "gradYears": [],
+      "recencyDays": null,
+      "sources": {
+        "リクナビ": {
+          "jobCount": 1,
+          "jobs": [],
+          "queries": [
+            "新卒 営業 東京"
+          ],
+          "recencyDays": null
+        }
+      }
+    },
+    "全日本空輸": {
+      "企業名": "全日本空輸株式会社",
+      "totalJobs": 1,
+      "gradYears": [],
+      "recencyDays": null,
+      "sources": {
+        "リクナビ": {
+          "jobCount": 1,
+          "jobs": [],
+          "queries": [
+            "新卒 営業 東京"
+          ],
+          "recencyDays": null
+        }
+      }
+    },
+    "東映": {
+      "企業名": "東映株式会社",
+      "totalJobs": 1,
+      "gradYears": [],
+      "recencyDays": null,
+      "sources": {
+        "リクナビ": {
+          "jobCount": 1,
+          "jobs": [],
+          "queries": [
+            "新卒 営業 東京"
+          ],
+          "recencyDays": null
+        }
+      }
+    },
+    "ヤクルト本社": {
+      "企業名": "株式会社ヤクルト本社",
+      "totalJobs": 1,
+      "gradYears": [],
+      "recencyDays": null,
+      "sources": {
+        "リクナビ": {
+          "jobCount": 1,
+          "jobs": [],
+          "queries": [
+            "新卒 営業 東京"
+          ],
+          "recencyDays": null
+        }
+      }
+    },
+    "アシックス": {
+      "企業名": "株式会社アシックス",
+      "totalJobs": 1,
+      "gradYears": [],
+      "recencyDays": null,
+      "sources": {
+        "リクナビ": {
+          "jobCount": 1,
+          "jobs": [],
+          "queries": [
+            "新卒 営業 東京"
+          ],
+          "recencyDays": null
+        }
+      }
+    },
+    "nttデータグループ": {
+      "企業名": "株式会社NTTデータグループ",
+      "totalJobs": 1,
+      "gradYears": [],
+      "recencyDays": null,
+      "sources": {
+        "リクナビ": {
+          "jobCount": 1,
+          "jobs": [],
+          "queries": [
+            "新卒 営業 東京"
+          ],
+          "recencyDays": null
+        }
+      }
+    },
+    "jtb": {
+      "企業名": "株式会社JTB",
+      "totalJobs": 1,
+      "gradYears": [],
+      "recencyDays": null,
+      "sources": {
+        "リクナビ": {
+          "jobCount": 1,
+          "jobs": [],
+          "queries": [
+            "新卒 営業 東京"
+          ],
+          "recencyDays": null
+        }
+      }
+    },
+    "オリエンタルランド": {
+      "企業名": "株式会社オリエンタルランド",
+      "totalJobs": 1,
+      "gradYears": [],
+      "recencyDays": null,
+      "sources": {
+        "リクナビ": {
+          "jobCount": 1,
+          "jobs": [],
+          "queries": [
+            "新卒 営業 東京"
+          ],
+          "recencyDays": null
+        }
+      }
+    },
+    "ニトリ": {
+      "企業名": "株式会社ニトリ",
+      "totalJobs": 1,
+      "gradYears": [],
+      "recencyDays": null,
+      "sources": {
+        "リクナビ": {
+          "jobCount": 1,
+          "jobs": [],
+          "queries": [
+            "新卒 営業 東京"
+          ],
+          "recencyDays": null
+        }
+      }
+    },
+    "東宝": {
+      "企業名": "東宝株式会社",
+      "totalJobs": 1,
+      "gradYears": [],
+      "recencyDays": null,
+      "sources": {
+        "リクナビ": {
+          "jobCount": 1,
+          "jobs": [],
+          "queries": [
+            "新卒 営業 東京"
+          ],
+          "recencyDays": null
+        }
+      }
+    },
+    "三菱ufj銀行": {
+      "企業名": "株式会社三菱UFJ銀行",
+      "totalJobs": 1,
+      "gradYears": [],
+      "recencyDays": null,
+      "sources": {
+        "リクナビ": {
+          "jobCount": 1,
+          "jobs": [],
+          "queries": [
+            "新卒 営業 東京"
+          ],
+          "recencyDays": null
+        }
+      }
+    },
+    "tbsテレビ": {
+      "企業名": "株式会社TBSテレビ",
+      "totalJobs": 1,
+      "gradYears": [],
+      "recencyDays": null,
+      "sources": {
+        "リクナビ": {
+          "jobCount": 1,
+          "jobs": [],
+          "queries": [
+            "新卒 営業 東京"
+          ],
+          "recencyDays": null
+        }
+      }
+    },
+    "講談社": {
+      "企業名": "株式会社講談社",
+      "totalJobs": 1,
+      "gradYears": [],
+      "recencyDays": null,
+      "sources": {
+        "リクナビ": {
+          "jobCount": 1,
+          "jobs": [],
+          "queries": [
+            "新卒 営業 東京"
+          ],
+          "recencyDays": null
+        }
+      }
+    },
+    "江崎グリコ": {
+      "企業名": "江崎グリコ株式会社",
+      "totalJobs": 1,
+      "gradYears": [],
+      "recencyDays": null,
+      "sources": {
+        "リクナビ": {
+          "jobCount": 1,
+          "jobs": [],
+          "queries": [
+            "新卒 営業 東京"
+          ],
+          "recencyDays": null
+        }
+      }
+    },
+    "タカラトミー": {
+      "企業名": "株式会社タカラトミー",
+      "totalJobs": 1,
+      "gradYears": [],
+      "recencyDays": null,
+      "sources": {
+        "リクナビ": {
+          "jobCount": 1,
+          "jobs": [],
+          "queries": [
+            "新卒 営業 東京"
+          ],
+          "recencyDays": null
+        }
+      }
+    },
+    "エイベックス": {
+      "企業名": "エイベックス株式会社",
+      "totalJobs": 1,
+      "gradYears": [],
+      "recencyDays": null,
+      "sources": {
+        "リクナビ": {
+          "jobCount": 1,
+          "jobs": [],
+          "queries": [
+            "新卒 営業 東京"
+          ],
+          "recencyDays": null
+        }
+      }
+    },
+    "本田技研工業": {
+      "企業名": "本田技研工業株式会社",
+      "totalJobs": 1,
+      "gradYears": [],
+      "recencyDays": null,
+      "sources": {
+        "リクナビ": {
+          "jobCount": 1,
+          "jobs": [],
+          "queries": [
+            "新卒 営業 東京"
+          ],
+          "recencyDays": null
+        }
+      }
+    },
+    "バンダイナムコエンターテインメント": {
+      "企業名": "株式会社バンダイナムコエンターテインメント",
+      "totalJobs": 1,
+      "gradYears": [],
+      "recencyDays": null,
+      "sources": {
+        "リクナビ": {
+          "jobCount": 1,
+          "jobs": [],
+          "queries": [
+            "新卒 営業 東京"
+          ],
+          "recencyDays": null
+        }
+      }
+    },
+    "エイチアイエス": {
+      "企業名": "株式会社エイチ・アイ・エス",
+      "totalJobs": 1,
+      "gradYears": [],
+      "recencyDays": null,
+      "sources": {
+        "リクナビ": {
+          "jobCount": 1,
+          "jobs": [],
+          "queries": [
+            "新卒 営業 東京"
+          ],
+          "recencyDays": null
+        }
+      }
+    },
+    "王将フードサービス": {
+      "企業名": "株式会社王将フードサービス",
+      "totalJobs": 1,
+      "gradYears": [
+        "2027"
+      ],
+      "recencyDays": null,
+      "sources": {
+        "キャリタス就活": {
+          "jobCount": 1,
+          "jobs": [],
+          "queries": [
+            "新卒"
+          ],
+          "recencyDays": null
+        }
+      }
+    },
+    "生活協同組合コープみらい": {
+      "企業名": "生活協同組合コープみらい",
+      "totalJobs": 1,
+      "gradYears": [
+        "2027"
+      ],
+      "recencyDays": null,
+      "sources": {
+        "キャリタス就活": {
+          "jobCount": 1,
+          "jobs": [],
+          "queries": [
+            "新卒"
+          ],
+          "recencyDays": null
+        }
+      }
+    },
+    "セコム": {
+      "企業名": "セコム株式会社",
+      "totalJobs": 1,
+      "gradYears": [
+        "2027"
+      ],
+      "recencyDays": null,
+      "sources": {
+        "キャリタス就活": {
+          "jobCount": 1,
+          "jobs": [],
+          "queries": [
+            "新卒"
+          ],
+          "recencyDays": null
+        }
+      }
+    },
+    "マルエツ": {
+      "企業名": "株式会社マルエツ",
+      "totalJobs": 1,
+      "gradYears": [
+        "2027"
+      ],
+      "recencyDays": null,
+      "sources": {
+        "キャリタス就活": {
+          "jobCount": 1,
+          "jobs": [],
+          "queries": [
+            "新卒"
+          ],
+          "recencyDays": null
+        }
+      }
+    },
+    "農林中央金庫": {
+      "企業名": "農林中央金庫",
+      "totalJobs": 1,
+      "gradYears": [
+        "2027"
+      ],
+      "recencyDays": null,
+      "sources": {
+        "キャリタス就活": {
+          "jobCount": 1,
+          "jobs": [],
+          "queries": [
+            "新卒"
+          ],
+          "recencyDays": null
+        }
+      }
+    },
+    "りそなグループ(りそな銀行埼玉りそな銀行)": {
+      "企業名": "りそなグループ（りそな銀行・埼玉りそな銀行）",
+      "totalJobs": 1,
+      "gradYears": [
+        "2027"
+      ],
+      "recencyDays": null,
+      "sources": {
+        "キャリタス就活": {
+          "jobCount": 1,
+          "jobs": [],
+          "queries": [
+            "新卒"
+          ],
+          "recencyDays": null
+        }
+      }
+    },
+    "ドットライン": {
+      "企業名": "株式会社ドットライン",
+      "totalJobs": 1,
+      "gradYears": [
+        "2027"
+      ],
+      "recencyDays": null,
+      "sources": {
+        "キャリタス就活": {
+          "jobCount": 1,
+          "jobs": [],
+          "queries": [
+            "新卒"
+          ],
+          "recencyDays": null
+        }
+      }
+    },
+    "三井不動産レジデンシャルサービス": {
+      "企業名": "三井不動産レジデンシャルサービス株式会社",
+      "totalJobs": 1,
+      "gradYears": [
+        "2027"
+      ],
+      "recencyDays": null,
+      "sources": {
+        "キャリタス就活": {
+          "jobCount": 1,
+          "jobs": [],
+          "queries": [
+            "新卒"
+          ],
+          "recencyDays": null
+        }
+      }
+    },
+    "デイリースポーツ": {
+      "企業名": "株式会社デイリースポーツ",
+      "totalJobs": 1,
+      "gradYears": [
+        "2027"
+      ],
+      "recencyDays": null,
+      "sources": {
+        "キャリタス就活": {
+          "jobCount": 1,
+          "jobs": [],
+          "queries": [
+            "新卒"
+          ],
+          "recencyDays": null
+        }
+      }
+    },
+    "イオンフィナンシャルサービス、イオン銀行": {
+      "企業名": "イオンフィナンシャルサービス株式会社 、株式会社イオン銀行",
+      "totalJobs": 1,
+      "gradYears": [
+        "2027"
+      ],
+      "recencyDays": null,
+      "sources": {
+        "キャリタス就活": {
+          "jobCount": 1,
+          "jobs": [],
+          "queries": [
+            "新卒"
+          ],
+          "recencyDays": null
+        }
+      }
+    },
+    "いわて愛隣会": {
+      "企業名": "株式会社いわて愛隣会",
+      "totalJobs": 1,
+      "gradYears": [
+        "2027"
+      ],
+      "recencyDays": null,
+      "sources": {
+        "キャリタス就活": {
+          "jobCount": 1,
+          "jobs": [],
+          "queries": [
+            "新卒"
+          ],
+          "recencyDays": null
+        }
+      }
+    },
+    "後藤木材": {
+      "企業名": "後藤木材株式会社",
+      "totalJobs": 1,
+      "gradYears": [
+        "2027"
+      ],
+      "recencyDays": null,
+      "sources": {
+        "キャリタス就活": {
+          "jobCount": 1,
+          "jobs": [],
+          "queries": [
+            "新卒"
+          ],
+          "recencyDays": null
+        }
+      }
+    }
+  },
+  "stats": {
+    "perSource": {
+      "求人ボックス": {
+        "cards": 25,
+        "companies": 25
+      },
+      "リクナビ": {
+        "cards": 30,
+        "companies": 30
+      },
+      "キャリタス就活": {
+        "cards": 12,
+        "companies": 12
+      }
+    },
+    "staleSources": []
+  }
+}
