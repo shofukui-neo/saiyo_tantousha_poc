@@ -828,6 +828,68 @@ function testTechSources() {
   return fail;
 }
 
+// ---- MOCHICA採点：採用ファネル次元（エントリー数×採用人数×歩留まり）検証 ----
+// MOCHICAが最も刺さるICPの核。エントリー100+/採用10+/歩留まり50%以下が揃うほど押し上げ、
+// 歩留まりは“低いほど痛み＝加点”の向きであることを固定。データ欠損は中立に留め全件を持ち上げない。
+function testMochicaFunnel() {
+  let fail = 0;
+  const ok = (label, cond) => { if (cond) console.log('✓ ' + label); else { console.log('✗ ' + label); fail++; } };
+  const { scoreFunnel, scoreMochica, parsePercent, getWeights, FUNNEL_TH } = require('../src/mochica-fit');
+  const now = new Date('2026-09-15T00:00:00+09:00'); // 9月＝28卒計画ピーク（両レコードで相殺）
+
+  // 目安の既定値（ユーザー指定: エントリー100 / 採用10 / 歩留まり50）
+  ok('FUNNEL_TH: 既定 エントリー100/採用10/歩留50', FUNNEL_TH.entry === 100 && FUNNEL_TH.hire === 10 && FUNNEL_TH.yieldMax === 50);
+
+  // parsePercent: ％表記/比率/裸数字/範囲外
+  ok('parsePercent: "45%"→45', parsePercent('45%') === 45);
+  ok('parsePercent: 比率"0.45"→45', parsePercent('0.45') === 45);
+  ok('parsePercent: 裸"50"→50', parsePercent('50') === 50);
+  ok('parsePercent: 範囲外"120"→null', parsePercent('120') === null);
+  ok('parsePercent: 空→null', parsePercent('') === null);
+
+  // 理想プロファイル（3条件ヒット）は高得点＋combo、確信度も高い
+  const ideal = scoreFunnel({ 'エントリー数': '150', '採用人数': '12', '歩留まり': '40%' });
+  ok('scoreFunnel: 理想(E150/採12/歩40%)は高得点・3ヒット', ideal.score >= 95 && ideal.hitCount === 3);
+  ok('scoreFunnel: 理想は確信度が高い(実数値裏取り)', ideal.confidence >= 85);
+
+  // データ欠損は中立(45)＋低確信度（全件を持ち上げない）
+  const none = scoreFunnel({});
+  ok('scoreFunnel: 指標なしは中立45・0ヒット', none.score === 45 && none.hitCount === 0);
+  ok('scoreFunnel: 指標なしは低確信度', none.confidence <= 30);
+  ok('scoreFunnel: 理想 > 指標なし', ideal.score > none.score);
+
+  // 歩留まりは“低いほど加点”の向き（MOCHICAの改善余地＝痛み）
+  const yLow = scoreFunnel({ '歩留まり': '30%' });
+  const yHigh = scoreFunnel({ '歩留まり': '90%' });
+  ok('scoreFunnel: 歩留まり低(30%) > 高(90%)（痛み＝加点）', yLow.score > yHigh.score);
+
+  // 採用予定人数を採用人数の代理に使える
+  const proxy = scoreFunnel({ '採用予定人数': '10' });
+  ok('scoreFunnel: 採用予定人数10を採用枠として加点', proxy.hire === 10 && proxy.hireHit === true && proxy.score >= 90);
+
+  // 大型採用ヒット：エントリー100+ × 採用10+
+  const big = scoreFunnel({ 'エントリー数': '100', '採用人数': '10' });
+  ok('scoreFunnel: E100×採用10 でヒット2件', big.entryHit && big.hireHit && big.hitCount >= 2);
+
+  // scoreMochica: 同一レコードでファネル指標ありは無しより総合が上がる
+  const baseRec = { '従業員数': '100', '電話番号': '03-1234-5678', '採用担当者名': '山田太郎', '新卒フラグ': '○' };
+  const withF = Object.assign({}, baseRec, { 'エントリー数': '150', '採用人数': '12', '歩留まり': '40%' });
+  const sBase = scoreMochica(baseRec, { now });
+  const sWith = scoreMochica(withF, { now });
+  ok('scoreMochica: ファネル指標ありは総合が上がる', sWith.total > sBase.total);
+  ok('scoreMochica: dims.funnel を返す', typeof sWith.dims.funnel === 'number' && sWith.dims.funnel >= 95);
+  ok('scoreMochica: funnelFit/bigFunnel フラグが立つ', sWith.flags.funnelFit === true && sWith.flags.bigFunnel === true);
+  ok('scoreMochica: 指標なしは funnelFit=false', sBase.flags.funnelFit === false && sBase.flags.bigFunnel === false);
+  ok('scoreMochica: なぜ今…にファネル根拠が載る', /エントリー|採用|歩留|★/.test(sWith.why));
+
+  // 重みに funnel が含まれ、正規化後の合計は1
+  const w = getWeights();
+  const wsum = w.intent + w.funnel + w.size + w.reach + w.timing + w.trust;
+  ok('getWeights: funnel を含み合計1に正規化', w.funnel > 0 && Math.abs(wsum - 1) < 1e-9);
+
+  return fail;
+}
+
 async function run() {
   const cases = [
     { name: 'サンプル株式会社', file: 'fixture.html', expect: 'HIT' },
@@ -905,6 +967,8 @@ async function run() {
   failures += testPressContact();
   console.log('\n--- テック源（GitHub技術者／connpassイベント）氏名抽出 検証 ---');
   failures += testTechSources();
+  console.log('\n--- MOCHICA採点：採用ファネル(エントリー数×採用人数×歩留まり)次元 検証 ---');
+  failures += testMochicaFunnel();
 
   if (failures > 0) { console.error(`\nSELFTEST FAILED: ${failures} case(s)`); process.exit(1); }
   console.log('\nSELFTEST PASSED ✓  (抽出→検証→集計 ＋ スプレッドシートI/O ロジックが正常動作)');

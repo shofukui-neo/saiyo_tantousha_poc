@@ -12,11 +12,16 @@
  *   到達性  : テレアポで“担当者名指し”で繋ぐため、電話＋採用担当者名を重視
  *
  * ── アポ取得期待値 = Σ(dim × weight) − ペナルティ ──────────────────
- *   A 新卒インテント  0.34  実在性で階級化（マイナビ実取得＞新卒フラグ＞採用中＞代理）
- *   B 規模フィット    0.26  50-150名=100。大企業/零細は強めに減点（自前ATS・低母数）
- *   C 到達性          0.20  電話妥当＋採用担当者名＋部署（テレアポが成立する条件）
- *   D タイミング      0.14  28卒設計期係数＋レコード単位トリガー（更新/出稿増/辞退）
- *   E 継続・信用      0.06  設立年（新卒を継続採用できる体力）＋補助金
+ *   A 新卒インテント  0.30  実在性で階級化（マイナビ実取得＞新卒フラグ＞採用中＞代理）
+ *   F 採用ファネル    0.16  エントリー数×採用人数×歩留まり＝MOCHICAが最も刺さるICPの核
+ *   B 規模フィット    0.22  50-150名=100。大企業/零細は強めに減点（自前ATS・低母数）
+ *   C 到達性          0.18  電話妥当＋採用担当者名＋部署（テレアポが成立する条件）
+ *   D タイミング      0.10  28卒設計期係数＋レコード単位トリガー（更新/出稿増/辞退）
+ *   E 継続・信用      0.04  設立年（新卒を継続採用できる体力）＋補助金
+ *
+ *   F の狙い: 「大量エントリーを捌く／歩留まり(＝選考離脱・辞退)を防ぐ」がMOCHICAの価値。
+ *   ゆえに エントリー100人以上・採用10人以上・歩留まり50%以下 が揃う相手ほど刺さる（ユーザー指定 2026-07）。
+ *   3条件とも数値が取れたときは確信度を跳ね上げ、揃うほどスコアも階段状に押し上げる。
  *
  * さらに「確信度(confidence)」を併走させる：スコアが“実データ”由来か“代理推定”由来かを
  * 0-100で可視化し、上位リストの何割が検証済みシグナルで裏打ちされているかを言い切れるようにする。
@@ -28,13 +33,28 @@ const { normalizeJpPhone } = require('./phone');
 
 // ── 既定の重み（合計1.0）。MOCHICA_W_* env で上書き可 ─────────────
 const flt = (v, d) => (v !== undefined && v !== '' && !Number.isNaN(parseFloat(v)) ? parseFloat(v) : d);
+const intEnv = (v, d) => (v !== undefined && v !== '' && Number.isFinite(parseInt(v, 10)) ? parseInt(v, 10) : d);
 const DEFAULT_WEIGHTS = {
-  intent: flt(process.env.MOCHICA_W_INTENT, 0.34),
-  size:   flt(process.env.MOCHICA_W_SIZE, 0.26),
-  reach:  flt(process.env.MOCHICA_W_REACH, 0.20),
-  timing: flt(process.env.MOCHICA_W_TIMING, 0.14),
-  trust:  flt(process.env.MOCHICA_W_TRUST, 0.06),
+  intent: flt(process.env.MOCHICA_W_INTENT, 0.30),
+  funnel: flt(process.env.MOCHICA_W_FUNNEL, 0.16),
+  size:   flt(process.env.MOCHICA_W_SIZE, 0.22),
+  reach:  flt(process.env.MOCHICA_W_REACH, 0.18),
+  timing: flt(process.env.MOCHICA_W_TIMING, 0.10),
+  trust:  flt(process.env.MOCHICA_W_TRUST, 0.04),
 };
+
+// ── 採用ファネルの“刺さる”目安（ユーザー指定）。MOCHICA_FUNNEL_* env で上書き可 ──
+// entry:エントリー数の目安, hire:採用人数の目安, yieldMax:これ以下の歩留まり(%)を「痛みあり」とみなす
+const FUNNEL_TH = {
+  entry:    intEnv(process.env.MOCHICA_FUNNEL_ENTRY, 100),
+  hire:     intEnv(process.env.MOCHICA_FUNNEL_HIRE, 10),
+  yieldMax: flt(process.env.MOCHICA_FUNNEL_YIELD, 50),
+};
+
+// 採用ファネル指標の列名ゆれ（最初に見つかった非空値を採用）
+const ENTRY_COLS = ['エントリー数', 'エントリー人数', 'プレエントリー数', '応募者数', '応募数', 'エントリー'];
+const HIRE_COLS  = ['採用人数', '採用予定人数', '採用数', '採用予定数', '内定者数', '内定数'];
+const YIELD_COLS = ['歩留まり', '歩留り', '歩留まり率', '歩留率', '歩留', '内定承諾率', '選考通過率'];
 
 // 従業員数を整数へ（"150名 [ICP60]" / "150" / 150 → 150、不明は null）
 function parseEmployees(v) {
@@ -46,6 +66,29 @@ function parseEmployees(v) {
   return Number.isNaN(n) ? null : n;
 }
 function parseIntLoose(v) { return parseEmployees(v); }
+
+// レコードから列名候補の最初の非空値を取り出す
+function pickFirst(rec, cols) {
+  for (const c of cols) {
+    const v = rec[c];
+    if (v != null && String(v).trim() !== '') return v;
+  }
+  return null;
+}
+
+// 歩留まりを％整数へ。"45%"/"45"→45、小数比率 "0.45"/"0.5"→45/50。範囲外(0未満/100超)はnull。
+function parsePercent(v) {
+  if (v == null || v === '') return null;
+  const s = String(v);
+  const m = s.match(/-?\d+(?:\.\d+)?/);
+  if (!m) return null;
+  let n = parseFloat(m[0]);
+  if (Number.isNaN(n)) return null;
+  // 小数点付きで1以下、かつ％表記でない → 比率(0.45)とみなし100倍
+  if (n <= 1 && /\./.test(m[0]) && !s.includes('%')) n *= 100;
+  if (n < 0 || n > 100) return null;
+  return Math.round(n);
+}
 
 // =====================================================================
 // A. 新卒採用インテント（最重要・実在性で階級化）
@@ -171,6 +214,70 @@ function scoreTrust(rec) {
 }
 
 // =====================================================================
+// F. 採用ファネル規模・歩留まり痛み（MOCHICAが最も刺さるICPの核）
+// =====================================================================
+// MOCHICA＝LINE×採用管理の価値は「大量エントリーを捌く」「歩留まり(選考離脱・辞退)を防ぐ」こと。
+// ゆえに ①エントリー数が多い(母集団形成に成功＝手作業では捌けない) ②採用人数が多い(本気の採用枠＝予算/必要性)
+// ③歩留まりが低い(離脱・辞退が多い＝MOCHICAの改善余地が大きい) の3点が揃うほど刺さる。
+// ユーザー指定の目安: エントリー100人以上／採用10人以上／歩留まり50%以下。歩留まりは “低いほど痛み＝加点” の向き。
+// ※データが無いレコードは中立(45)＋低確信度に留め、実数値が取れた相手だけを押し上げる（誤って全件を持ち上げない）。
+function scoreFunnel(rec) {
+  const reasons = [];
+  const parts = [];     // 既知サブシグナルのスコア(0-100)
+  let confidence = 25;  // 何も無ければ代理推定
+
+  const entry = parseIntLoose(pickFirst(rec, ENTRY_COLS));
+  const hire  = parseIntLoose(pickFirst(rec, HIRE_COLS));
+  const yld   = parsePercent(pickFirst(rec, YIELD_COLS));
+
+  // ① エントリー数（母集団の大きさ＝手作業では捌けない痛み）
+  if (entry != null) {
+    let s;
+    if (entry >= FUNNEL_TH.entry) { s = 100; reasons.push(`エントリー${entry}名(≥${FUNNEL_TH.entry})=大量母集団`); }
+    else if (entry >= FUNNEL_TH.entry * 0.5) { s = 72; reasons.push(`エントリー${entry}名=母集団中規模`); }
+    else if (entry >= FUNNEL_TH.entry * 0.2) { s = 45; reasons.push(`エントリー${entry}名=母集団小`); }
+    else { s = 22; reasons.push(`エントリー${entry}名=母集団薄い`); }
+    parts.push(s); confidence += 25;
+  }
+
+  // ② 採用人数（採用枠の本気度＝予算・必要性）。採用予定人数を代理に許容。
+  if (hire != null) {
+    let s;
+    if (hire >= FUNNEL_TH.hire) { s = 100; reasons.push(`採用${hire}名(≥${FUNNEL_TH.hire})=大型採用枠`); }
+    else if (hire >= FUNNEL_TH.hire * 0.5) { s = 70; reasons.push(`採用${hire}名=中型枠`); }
+    else if (hire >= 2) { s = 45; reasons.push(`採用${hire}名=小型枠`); }
+    else { s = 25; reasons.push(`採用${hire}名=単発枠`); }
+    parts.push(s); confidence += 25;
+  }
+
+  // ③ 歩留まり（低いほど離脱・辞退が多い＝MOCHICAの改善余地が大きい＝加点）
+  if (yld != null) {
+    let s;
+    if (yld <= FUNNEL_TH.yieldMax * 0.6) { s = 100; reasons.push(`歩留まり${yld}%=離脱大(改善余地最大)`); }
+    else if (yld <= FUNNEL_TH.yieldMax) { s = 85; reasons.push(`歩留まり${yld}%(≤${FUNNEL_TH.yieldMax}%)=改善余地大`); }
+    else if (yld <= 70) { s = 55; reasons.push(`歩留まり${yld}%=中程度`); }
+    else { s = 30; reasons.push(`歩留まり${yld}%=良好(痛み小)`); }
+    parts.push(s); confidence += 20;
+  }
+
+  // 理想プロファイル: 閾値ヒット数で階段状に加点（3条件揃い＝教科書的MOCHICA顧客）
+  const entryHit = entry != null && entry >= FUNNEL_TH.entry;
+  const hireHit  = hire  != null && hire  >= FUNNEL_TH.hire;
+  const yieldHit = yld   != null && yld   <= FUNNEL_TH.yieldMax;
+  const hitCount = [entryHit, hireHit, yieldHit].filter(Boolean).length;
+  let combo = 0;
+  if (entryHit && hireHit && yieldHit) { combo = 12; reasons.push(`★エントリー${FUNNEL_TH.entry}+×採用${FUNNEL_TH.hire}+×歩留${FUNNEL_TH.yieldMax}%↓=理想MOCHICA像`); }
+  else if (entryHit && hireHit) { combo = 8; reasons.push('エントリー大×採用大=大型母集団×大型枠'); }
+
+  let base;
+  if (parts.length) base = Math.round(parts.reduce((a, b) => a + b, 0) / parts.length);
+  else { base = 45; reasons.push('採用ファネル指標なし(代理推定)'); }
+
+  const score = Math.max(0, Math.min(100, base + combo));
+  return { score, confidence: Math.min(100, confidence), reasons, hitCount, entry, hire, yield: yld, entryHit, hireHit, yieldHit };
+}
+
+// =====================================================================
 // ペナルティ（アポにならない／取ってはいけない相手を沈める）
 // =====================================================================
 function penalties(rec, sizeEmp) {
@@ -194,9 +301,12 @@ function priorityOf(total) {
 
 function getWeights() {
   const w = DEFAULT_WEIGHTS;
-  const sum = w.intent + w.size + w.reach + w.timing + w.trust;
+  const sum = w.intent + w.funnel + w.size + w.reach + w.timing + w.trust;
   // 正規化（env上書きで合計が1.0からずれても安全に）
-  return { intent: w.intent / sum, size: w.size / sum, reach: w.reach / sum, timing: w.timing / sum, trust: w.trust / sum };
+  return {
+    intent: w.intent / sum, funnel: w.funnel / sum, size: w.size / sum,
+    reach: w.reach / sum, timing: w.timing / sum, trust: w.trust / sum,
+  };
 }
 
 /**
@@ -212,15 +322,18 @@ function scoreMochica(rec, opt = {}) {
   const C = scoreReach(rec);
   const D = scoreTiming(rec, now);
   const E = scoreTrust(rec);
+  const F = scoreFunnel(rec);
   const P = penalties(rec, B.emp);
 
-  const raw = A.score * w.intent + B.score * w.size + C.score * w.reach + D.score * w.timing + E.score * w.trust;
+  const raw = A.score * w.intent + F.score * w.funnel + B.score * w.size +
+    C.score * w.reach + D.score * w.timing + E.score * w.trust;
   const total = Math.max(0, Math.min(100, Math.round(raw - P.penalty)));
 
   // 確信度＝各次元の確信度を「スコアへの寄与（重み×スコア）」で加重平均。
   // “上位の何割が検証済みシグナルで裏打ちされているか”を言い切るための指標。
   const contrib = [
     { c: A.confidence, x: A.score * w.intent },
+    { c: F.confidence, x: F.score * w.funnel },
     { c: B.confidence, x: B.score * w.size },
     { c: C.confidence, x: C.score * w.reach },
     { c: D.confidence, x: D.score * w.timing },
@@ -229,12 +342,14 @@ function scoreMochica(rec, opt = {}) {
   const cw = contrib.reduce((s, p) => s + p.x, 0) || 1;
   const confidence = Math.round(contrib.reduce((s, p) => s + p.c * p.x, 0) / cw);
 
-  const dims = { intent: A.score, size: B.score, reach: C.score, timing: D.score, trust: E.score };
+  const dims = { intent: A.score, funnel: F.score, size: B.score, reach: C.score, timing: D.score, trust: E.score };
   const priority = priorityOf(total);
 
   // ── 「なぜ今・なぜこの企業」一行サマリ（営業がそのまま読める） ──
   const whyParts = [];
   whyParts.push(A.reasons[0]);                 // 新卒の根拠
+  // 採用ファネルが強シグナル（実数値でヒット）なら最優先で見せる
+  if (F.score >= 70 && F.hitCount >= 1) whyParts.push(F.reasons.find(r => /★|エントリー|採用\d|歩留/.test(r)) || F.reasons[0]);
   whyParts.push(B.reasons[0]);                 // 規模の適合
   if (C.score >= 60) whyParts.push(C.reasons.find(r => /担当者名|電話妥当/.test(r)) || C.reasons[0]);
   whyParts.push(D.reasons.find(r => /辞退|来期|アクション|設計期/.test(r)) || D.reasons[0]);
@@ -242,6 +357,7 @@ function scoreMochica(rec, opt = {}) {
 
   const reasons = []
     .concat(A.reasons.map(r => 'INT:' + r))
+    .concat(F.reasons.map(r => 'FUNNEL:' + r))
     .concat(B.reasons.map(r => 'SIZE:' + r))
     .concat(C.reasons.map(r => 'REACH:' + r))
     .concat(D.reasons.map(r => 'TIM:' + r))
@@ -254,12 +370,14 @@ function scoreMochica(rec, opt = {}) {
     sizeFit: dims.size >= 90,                      // スイート規模
     callable: /電話妥当/.test(C.reasons.join('')), // 架電できる
     named: /担当者名あり/.test(C.reasons.join('')), // 担当者名指しできる
+    funnelFit: F.hitCount >= 2,                    // エントリー/採用/歩留まりのうち2つ以上が目安内
+    bigFunnel: F.entryHit && F.hireHit,            // エントリー100+ × 採用10+ の大型採用
   };
 
   return { total, dims, priority, confidence, why, reasons, flags };
 }
 
 module.exports = {
-  scoreMochica, scoreIntent, scoreSize, scoreReach, scoreTiming, scoreTrust,
-  priorityOf, getWeights, parseEmployees, DEFAULT_WEIGHTS,
+  scoreMochica, scoreIntent, scoreSize, scoreReach, scoreTiming, scoreTrust, scoreFunnel,
+  priorityOf, getWeights, parseEmployees, parsePercent, DEFAULT_WEIGHTS, FUNNEL_TH,
 };
