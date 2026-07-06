@@ -35,7 +35,7 @@
 
 const fs = require('fs');
 const path = require('path');
-const { readCsv, toCsv, normCorpNumber, normCompanyName } = require('./csv');
+const { parseCsv, toCsv, normCorpNumber, normCompanyName } = require('./csv');
 const { buildNgIndex, ngHit } = require('./ng-index');
 
 function getArg(name, def) {
@@ -46,8 +46,10 @@ function getArg(name, def) {
 
 const LIST_CSV  = getArg('list', 'leads-mochica-named-consolidated.csv');
 const NG_FILE   = getArg('ng', 'data/アプローチ禁止企業一覧.txt');
-const CUST_FILE = getArg('customers', 'data/existing-bango.json');
-const SF_FILE   = getArg('sf', '');                    // 既定なし（後日指定）
+// 既存顧客はカンマ区切りで複数指定可（社名CSV＋法人番号JSONを合算＝安全側の既定）。
+const CUST_FILE = getArg('customers',
+  'data/MOCHICAの既存顧客リスト - mochica-companies-list.csv,data/existing-bango.json');
+const SF_FILE   = getArg('sf', 'data/セールスフォースMOCHICA参照 - 全てのリードSitoke突合用.csv');
 const NAME_COL  = getArg('name-col', '企業名');
 const CORP_COL  = getArg('corp-col', '法人番号');
 
@@ -63,74 +65,115 @@ function writeBom(fp, headers, recs) {
 }
 
 // レコード（CSV由来 or JSONオブジェクト）から論理項目を、列名揺れを吸収して取り出す
-const NAME_CANDS = ['企業名', '会社名', '会社', '取引先名', '会社名/取引先名', '企業名/取引先名',
-  'Company', 'company', 'CompanyName', 'name'];
+const NAME_CANDS = ['企業名', '会社名', '会社', '取引先名', '会社名/取引先名', '会社名/取引先',
+  '企業名/取引先名', '法人名', 'LINEアカウント登録企業名', 'Company', 'company', 'CompanyName', 'name'];
 const CORP_CANDS = ['法人番号', 'CorporateNumber__c', '法人番号__c', 'Corporate Number',
   'corporate_number', 'corpNumber', '法人番号(13桁)', '法人番号（13桁）'];
+
+// ヘッダ名の表記揺れ吸収（空白除去・小文字化）。'会社名 / 取引先'→'会社名/取引先'、'リード 状況'→'リード状況'
+function normHeader(s) { return String(s == null ? '' : s).replace(/\s+/g, '').toLowerCase(); }
+
+// 候補列を優先順で探して値を返す（列名の空白揺れを吸収）
 function pick(rec, cands) {
-  for (const c of cands) {
-    if (rec[c] != null && String(rec[c]).trim() !== '') return String(rec[c]).trim();
+  const keys = Object.keys(rec);
+  for (const cand of cands) {
+    const nc = normHeader(cand);
+    for (const k of keys) {
+      if (normHeader(k) === nc) {
+        const v = rec[k];
+        if (v != null && String(v).trim() !== '') return String(v).trim();
+      }
+    }
   }
   return '';
 }
 
-// ---- ② 既存顧客リストの索引化（JSON配列 or CSV を自動判定）----
-//   戻り: { byCorp:Set<13桁>, byName:Set<正規化社名>, raw:件数, hasName:社名索引が有効か }
-function buildCustomerIndex(fp) {
+// プリアンブル付きCSV（SFレポート等）からヘッダ行を自動検出して {headers, records} を返す。
+// wantCands のいずれかを含む最初の行をヘッダとみなし、それ以前（レポートのタイトル/日時/条件）は捨てる。
+function readCsvSmart(text, wantCands) {
+  const rows = parseCsv(text);
+  if (!rows.length) return { headers: [], records: [], headerRow: -1 };
+  const want = wantCands.map(normHeader);
+  let hi = 0;
+  for (let i = 0; i < rows.length; i++) {
+    const norm = rows[i].map(normHeader);
+    if (want.some((w) => norm.includes(w))) { hi = i; break; }
+  }
+  const headers = rows[hi].map((h) => String(h).trim());
+  const records = [];
+  for (let i = hi + 1; i < rows.length; i++) {
+    const rec = {};
+    headers.forEach((h, j) => { rec[h] = rows[i][j] != null ? rows[i][j] : ''; });
+    records.push(rec);
+  }
+  return { headers, records, headerRow: hi };
+}
+
+// ---- ② 既存顧客リストの索引化（JSON配列 or CSV を自動判定・複数ファイル合算可）----
+//   戻り: { byCorp:Set<13桁>, byName:Set<正規化社名>, raw:件数, hasName:社名索引が有効か, files:[] }
+function buildCustomerIndex(files) {
   const byCorp = new Set();
   const byName = new Set();
+  const used = [];
   let raw = 0;
-  const isJson = /\.json$/i.test(fp);
-  if (isJson) {
-    const arr = JSON.parse(readText(fp));
-    for (const item of Array.isArray(arr) ? arr : []) {
-      raw++;
-      if (typeof item === 'string' || typeof item === 'number') {
-        // 文字列/数値 … 13桁なら法人番号、それ以外は社名として扱う
-        const cn = normCorpNumber(item);
+  for (const fp of files) {
+    if (!exists(fp)) continue;
+    used.push(fp);
+    if (/\.json$/i.test(fp)) {
+      const arr = JSON.parse(readText(fp));
+      for (const item of Array.isArray(arr) ? arr : []) {
+        raw++;
+        if (typeof item === 'string' || typeof item === 'number') {
+          // 文字列/数値 … 13桁なら法人番号、それ以外は社名として扱う
+          const cn = normCorpNumber(item);
+          if (cn) byCorp.add(cn);
+          else { const nm = normCompanyName(item); if (nm) byName.add(nm); }
+        } else if (item && typeof item === 'object') {
+          const cn = normCorpNumber(pick(item, CORP_CANDS));
+          if (cn) byCorp.add(cn);
+          const nm = normCompanyName(pick(item, NAME_CANDS));
+          if (nm) byName.add(nm);
+        }
+      }
+    } else {
+      const { records } = readCsvSmart(readText(fp), NAME_CANDS.concat(CORP_CANDS));
+      for (const r of records) {
+        raw++;
+        const cn = normCorpNumber(pick(r, CORP_CANDS));
         if (cn) byCorp.add(cn);
-        else { const nm = normCompanyName(item); if (nm) byName.add(nm); }
-      } else if (item && typeof item === 'object') {
-        const cn = normCorpNumber(pick(item, CORP_CANDS));
-        if (cn) byCorp.add(cn);
-        const nm = normCompanyName(pick(item, NAME_CANDS));
+        const nm = normCompanyName(pick(r, NAME_CANDS));
         if (nm) byName.add(nm);
       }
     }
-  } else {
-    const { records } = readCsv(readText(fp));
-    for (const r of records) {
-      raw++;
-      const cn = normCorpNumber(pick(r, CORP_CANDS));
-      if (cn) byCorp.add(cn);
-      const nm = normCompanyName(pick(r, NAME_CANDS));
-      if (nm) byName.add(nm);
-    }
   }
-  return { byCorp, byName, raw, hasName: byName.size > 0 };
+  return { byCorp, byName, raw, hasName: byName.size > 0, files: used };
 }
 
 // ---- ③ SFリードリストの索引化（法人番号 / 正規化社名）----
 //   SF状態・所有者・リードIDも保持し、除外明細に注記できるようにする。
-const SF_STATUS_CANDS = ['Status', 'リード状態', '状態', 'リードステータス'];
+const SF_STATUS_CANDS = ['Status', 'リード状態', '状態', 'リードステータス', 'リード状況', 'リード 状況'];
 const SF_OWNER_CANDS  = ['Owner.Name', 'Owner', 'リード所有者', '所有者', '所有者名', 'リード所有者名'];
-const SF_ID_CANDS     = ['Id', 'リードID', 'Lead ID', 'リード ID'];
+const SF_ID_CANDS     = ['Id', 'リードID', 'Lead ID', 'リード ID', 'リードID18'];
 function buildSfIndex(fp) {
   const byCorp = new Map();
   const byName = new Map();
   let raw = 0, withCorp = 0;
-  const { records } = readCsv(readText(fp));
+  // SFレポートは先頭にタイトル/日時/条件のメタ行が入る → ヘッダを自動検出
+  const { records } = readCsvSmart(readText(fp), NAME_CANDS.concat(SF_ID_CANDS));
   for (const r of records) {
+    const company = pick(r, NAME_CANDS);
+    // 末尾の集計行（会社名列が数値のみ／IDが「合計」等）はスキップ
+    if (!company || /^\d+$/.test(company) || pick(r, SF_ID_CANDS) === '合計') continue;
     raw++;
     const slim = {
       id: pick(r, SF_ID_CANDS),
-      company: pick(r, NAME_CANDS),
+      company,
       status: pick(r, SF_STATUS_CANDS),
       owner: pick(r, SF_OWNER_CANDS),
     };
     const cn = normCorpNumber(pick(r, CORP_CANDS));
     if (cn) { byCorp.set(cn, slim); withCorp++; }
-    const nm = normCompanyName(slim.company);
+    const nm = normCompanyName(company);
     if (nm && !byName.has(nm)) byName.set(nm, slim);
   }
   return { byCorp, byName, raw, withCorp, hasCorp: withCorp > 0 };
@@ -167,7 +210,7 @@ function matchRow(name, corp, ctx) {
 
 function main() {
   if (!exists(LIST_CSV)) { console.error(`✗ 母集団リストが見つかりません: ${resolveP(LIST_CSV)}`); process.exit(1); }
-  const list = readCsv(readText(LIST_CSV));
+  const list = readCsvSmart(readText(LIST_CSV), [NAME_COL, CORP_COL, ...NAME_CANDS]);
   if (!list.headers.includes(NAME_COL)) {
     console.error(`✗ 母集団に「${NAME_COL}」列がありません。--name-col で指定してください。`);
     process.exit(1);
@@ -179,7 +222,8 @@ function main() {
   const skipped = [];
   if (exists(NG_FILE)) ctx.ng = buildNgIndex(readText(NG_FILE));
   else skipped.push(`禁止リスト(${NG_FILE})`);
-  if (exists(CUST_FILE)) ctx.cust = buildCustomerIndex(CUST_FILE);
+  const custFiles = String(CUST_FILE).split(',').map((s) => s.trim()).filter(Boolean);
+  if (custFiles.some(exists)) ctx.cust = buildCustomerIndex(custFiles);
   else skipped.push(`既存顧客(${CUST_FILE})`);
   if (exists(SF_FILE)) ctx.sf = buildSfIndex(SF_FILE);
   else if (SF_FILE) skipped.push(`SFリード(${SF_FILE})`);
