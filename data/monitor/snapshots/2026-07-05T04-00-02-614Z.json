@@ -1,5 +1,5 @@
 {
-  "cycle": "2026-07-05T22:00:07.598Z",
+  "cycle": "2026-07-05T04:00:02.614Z",
   "companies": {
     "ネオキャリア": {
       "企業名": "株式会社ネオキャリア",
@@ -11,6 +11,7 @@
           "jobCount": 5,
           "jobs": [
             "「東京」新卒領域の採用コンサルティング営業／一気通貫型の新規営業",
+            "「東京」新卒領域の採用コンサルティング営業",
             "「東京」クライアント企業の採用を支える!新卒・中途採用コンサルタント",
             "「関西」介護業界特化の人材派遣営業「支店長・マネージャー候補」"
           ],
@@ -18,7 +19,6 @@
             "新卒 営業 東京",
             "新卒 事務 東京",
             "新卒 販売 東京",
-            "新卒 企画 大阪",
             "新卒 コンサル 大阪"
           ],
           "recencyDays": null
@@ -29,12 +29,12 @@
       "企業名": "株式会社i-plug",
       "totalJobs": 4,
       "gradYears": [],
-      "recencyDays": 0,
+      "recencyDays": null,
       "sources": {
         "求人ボックス": {
           "jobCount": 4,
           "jobs": [
-            "東京／在宅可／法人営業／新卒DRサービスOfferBox 成功報酬型で...",
+            "東京／在宅勤務可／インサイドセールス 新卒DRサービスOfferBox",
             "在宅勤務可／UXディレクター 「OfferBox」新卒逆求人サービス",
             "大阪:リモート／コミュニティマーケティング推進者／新卒オファー型就活サ..."
           ],
@@ -43,42 +43,6 @@
             "新卒 企画 大阪",
             "新卒 マーケティング 大阪",
             "新卒 企画 名古屋"
-          ],
-          "recencyDays": 0
-        }
-      }
-    },
-    "mitty": {
-      "企業名": "Mitty株式会社",
-      "totalJobs": 1,
-      "gradYears": [],
-      "recencyDays": null,
-      "sources": {
-        "求人ボックス": {
-          "jobCount": 1,
-          "jobs": [
-            "渋谷ヒカリエ／フィールドセールス 東京オフィス立上げ・裁量権"
-          ],
-          "queries": [
-            "新卒 営業 東京"
-          ],
-          "recencyDays": null
-        }
-      }
-    },
-    "日本瓦斯": {
-      "企業名": "日本瓦斯株式会社",
-      "totalJobs": 1,
-      "gradYears": [],
-      "recencyDays": null,
-      "sources": {
-        "求人ボックス": {
-          "jobCount": 1,
-          "jobs": [
-            "ニチガスの提案営業 要車免許／~35歳／上場／賞与4.6ヵ月／社宅完備"
-          ],
-          "queries": [
-            "新卒 営業 東京"
           ],
           "recencyDays": null
         }
@@ -94,6 +58,42 @@
           "jobCount": 1,
           "jobs": [
             "東京／田町／法人営業 高機能フィルム／スマートフォン、半導体等にも使用"
+          ],
+          "queries": [
+            "新卒 営業 東京"
+          ],
+          "recencyDays": null
+        }
+      }
+    },
+    "マル一": {
+      "企業名": "株式会社マル一",
+      "totalJobs": 1,
+      "gradYears": [],
+      "recencyDays": null,
+      "sources": {
+        "求人ボックス": {
+          "jobCount": 1,
+          "jobs": [
+            "「東京／港区」営業 未経験・第2新卒歓迎 年休125日「土日祝」"
+          ],
+          "queries": [
+            "新卒 営業 東京"
+          ],
+          "recencyDays": null
+        }
+      }
+    },
+    "mitty": {
+      "企業名": "Mitty株式会社",
+      "totalJobs": 1,
+      "gradYears": [],
+      "recencyDays": null,
+      "sources": {
+        "求人ボックス": {
+          "jobCount": 1,
+          "jobs": [
+            "渋谷ヒカリエ／フィールドセールス 東京オフィス立上げ・裁量権"
           ],
           "queries": [
             "新卒 営業 東京"
@@ -120,37 +120,22 @@
         }
       }
     },
-    "マエダ": {
-      "企業名": "株式会社マエダ",
-      "totalJobs": 1,
-      "gradYears": [],
-      "recencyDays": 13,
-      "sources": {
-        "求人ボックス": {
-          "jobCount": 1,
-          "jobs": [
-            "ルート営業／飛び込みなし・テレアポなし・年間休日131日・東京ミッドタ..."
-          ],
-          "queries": [
-            "新卒 営業 東京"
-          ],
-          "recencyDays": 13
-        }
-      }
-    },
     "フクシマガリレイ": {
       "企業名": "フクシマガリレイ株式会社",
-      "totalJobs": 1,
+      "totalJobs": 3,
       "gradYears": [],
       "recencyDays": null,
       "sources": {
         "求人ボックス": {
-          "jobCount": 1,
+          "jobCount": 3,
           "jobs": [
-            "東京／未経験・第2新卒歓迎／法人営業 店舗プロデュース／業務用冷蔵冷凍..."
+            "「東京／未経験・第2新卒歓迎」法人営業「店舗プロデュース／業務用冷蔵冷...",
+            "「大阪／大阪市」設備設計／冷凍冷蔵設備の付帯設備設計／未経験歓迎"
           ],
           "queries": [
-            "新卒 営業 東京"
+            "新卒 営業 東京",
+            "新卒 エンジニア 大阪",
+            "新卒 コンサル 大阪"
           ],
           "recencyDays": null
         }
@@ -175,6 +160,151 @@
         }
       }
     },
+    "フォーラムエンジニアリング": {
+      "企業名": "株式会社フォーラムエンジニアリング",
+      "totalJobs": 1,
+      "gradYears": [],
+      "recencyDays": null,
+      "sources": {
+        "求人ボックス": {
+          "jobCount": 1,
+          "jobs": [
+            "「東京／八王子」「未経験歓迎」新卒紹介営業 年休120日／平均残業10..."
+          ],
+          "queries": [
+            "新卒 営業 東京"
+          ],
+          "recencyDays": null
+        }
+      }
+    },
+    "セイビ": {
+      "企業名": "株式会社セイビ",
+      "totalJobs": 1,
+      "gradYears": [],
+      "recencyDays": null,
+      "sources": {
+        "求人ボックス": {
+          "jobCount": 1,
+          "jobs": [
+            "「東京／提案営業「飛び込み・テレアポなし」未経験歓迎・第2新卒歓迎"
+          ],
+          "queries": [
+            "新卒 営業 東京"
+          ],
+          "recencyDays": null
+        }
+      }
+    },
+    "インフィニティエージェント": {
+      "企業名": "株式会社インフィニティエージェント",
+      "totalJobs": 2,
+      "gradYears": [],
+      "recencyDays": null,
+      "sources": {
+        "求人ボックス": {
+          "jobCount": 2,
+          "jobs": [
+            "DX事業の営業サポート事務／データ入力・お客様対応／20代"
+          ],
+          "queries": [
+            "新卒 営業 東京",
+            "新卒 事務 東京"
+          ],
+          "recencyDays": null
+        }
+      }
+    },
+    "エスパシオコンサルタント": {
+      "企業名": "株式会社エスパシオコンサルタント",
+      "totalJobs": 1,
+      "gradYears": [],
+      "recencyDays": 0,
+      "sources": {
+        "求人ボックス": {
+          "jobCount": 1,
+          "jobs": [
+            "「東京／第2新卒・未経験歓迎」商業施設の出店営業 街づくりをサポート"
+          ],
+          "queries": [
+            "新卒 営業 東京"
+          ],
+          "recencyDays": 0
+        }
+      }
+    },
+    "サイニチ": {
+      "企業名": "株式会社サイニチ",
+      "totalJobs": 1,
+      "gradYears": [],
+      "recencyDays": null,
+      "sources": {
+        "求人ボックス": {
+          "jobCount": 1,
+          "jobs": [
+            "「東京都」営業職／未経験・第2新卒歓迎／業界最大手アクティオグループ"
+          ],
+          "queries": [
+            "新卒 営業 東京"
+          ],
+          "recencyDays": null
+        }
+      }
+    },
+    "マエダ": {
+      "企業名": "株式会社マエダ",
+      "totalJobs": 1,
+      "gradYears": [],
+      "recencyDays": null,
+      "sources": {
+        "求人ボックス": {
+          "jobCount": 1,
+          "jobs": [
+            "ルート営業 売り込みなしの信頼構築!大手企業が主導するプロジェクトに総..."
+          ],
+          "queries": [
+            "新卒 営業 東京"
+          ],
+          "recencyDays": null
+        }
+      }
+    },
+    "第一生命保険": {
+      "企業名": "第一生命保険株式会社",
+      "totalJobs": 1,
+      "gradYears": [],
+      "recencyDays": null,
+      "sources": {
+        "求人ボックス": {
+          "jobCount": 1,
+          "jobs": [
+            "「東京」保険営業職 第2新卒歓迎／業界未経験歓迎／日系生保の安定基盤"
+          ],
+          "queries": [
+            "新卒 営業 東京"
+          ],
+          "recencyDays": null
+        }
+      }
+    },
+    "gsi": {
+      "企業名": "株式会社GSI",
+      "totalJobs": 1,
+      "gradYears": [],
+      "recencyDays": null,
+      "sources": {
+        "求人ボックス": {
+          "jobCount": 1,
+          "jobs": [
+            "「東京「新宿」」SES営業「未経験OK」「SES×人材コーディネーター..."
+          ],
+          "queries": [
+            "新卒 営業 東京"
+          ],
+          "recencyDays": null
+        }
+      }
+    },
     "三田電業": {
       "企業名": "三田電業株式会社",
       "totalJobs": 1,
@@ -193,82 +323,8 @@
         }
       }
     },
-    "ホームテック": {
-      "企業名": "ホームテック株式会社",
-      "totalJobs": 1,
-      "gradYears": [],
-      "recencyDays": 0,
-      "sources": {
-        "求人ボックス": {
-          "jobCount": 1,
-          "jobs": [
-            "「個人ノルマ無し!飛び込み無し!」100%反響営業によるリフォームの提..."
-          ],
-          "queries": [
-            "新卒 営業 東京"
-          ],
-          "recencyDays": 0
-        }
-      }
-    },
-    "ヨシモリ": {
-      "企業名": "株式会社ヨシモリ",
-      "totalJobs": 1,
-      "gradYears": [],
-      "recencyDays": 13,
-      "sources": {
-        "求人ボックス": {
-          "jobCount": 1,
-          "jobs": [
-            "地球にやさしい資源収集サービスのルート営業"
-          ],
-          "queries": [
-            "新卒 営業 東京"
-          ],
-          "recencyDays": 13
-        }
-      }
-    },
-    "インフィニティエージェント": {
-      "企業名": "株式会社インフィニティエージェント",
-      "totalJobs": 2,
-      "gradYears": [],
-      "recencyDays": null,
-      "sources": {
-        "求人ボックス": {
-          "jobCount": 2,
-          "jobs": [
-            "反響対応メインの事務スタッフ／日程調整・データ入力／営業ノルマなし",
-            "DX事業の営業サポート事務／データ入力・お客様対応／20代"
-          ],
-          "queries": [
-            "新卒 営業 東京",
-            "新卒 事務 東京"
-          ],
-          "recencyDays": null
-        }
-      }
-    },
-    "アセアンワン": {
-      "企業名": "アセアン・ワン株式会社",
-      "totalJobs": 1,
-      "gradYears": [],
-      "recencyDays": 0,
-      "sources": {
-        "求人ボックス": {
-          "jobCount": 1,
-          "jobs": [
-            "グローバル人材営業／成長したい人・未経験・第二新卒歓迎"
-          ],
-          "queries": [
-            "新卒 営業 東京"
-          ],
-          "recencyDays": 0
-        }
-      }
-    },
-    "新日本計装": {
-      "企業名": "新日本計装株式会社",
+    "日本瓦斯": {
+      "企業名": "日本瓦斯株式会社",
       "totalJobs": 1,
       "gradYears": [],
       "recencyDays": null,
@@ -276,66 +332,10 @@
         "求人ボックス": {
           "jobCount": 1,
           "jobs": [
-            "2027年大学新卒／計装技術者及び空調設備の工事士"
+            "「東京／提案営業」エネルギー業界／LPガス直販最大手／二新卒"
           ],
           "queries": [
             "新卒 営業 東京"
-          ],
-          "recencyDays": null
-        }
-      }
-    },
-    "富士産業": {
-      "企業名": "富士産業株式会社",
-      "totalJobs": 1,
-      "gradYears": [],
-      "recencyDays": null,
-      "sources": {
-        "求人ボックス": {
-          "jobCount": 1,
-          "jobs": [
-            "営業職"
-          ],
-          "queries": [
-            "新卒 営業 東京"
-          ],
-          "recencyDays": null
-        }
-      }
-    },
-    "都自動車": {
-      "企業名": "都自動車株式会社",
-      "totalJobs": 2,
-      "gradYears": [],
-      "recencyDays": null,
-      "sources": {
-        "求人ボックス": {
-          "jobCount": 2,
-          "jobs": [
-            "営業事務／年間休日120日以上／未経験OK"
-          ],
-          "queries": [
-            "新卒 営業 東京",
-            "新卒 事務 東京"
-          ],
-          "recencyDays": null
-        }
-      }
-    },
-    "lvup": {
-      "企業名": "株式会社LVUP",
-      "totalJobs": 2,
-      "gradYears": [],
-      "recencyDays": null,
-      "sources": {
-        "求人ボックス": {
-          "jobCount": 2,
-          "jobs": [
-            "東京限定／オンライン恋愛カウンセラー／月収100万円以上も可"
-          ],
-          "queries": [
-            "新卒 営業 東京",
-            "新卒 事務 東京"
           ],
           "recencyDays": null
         }
@@ -451,49 +451,11 @@
         }
       }
     },
-    "ニチイ学館": {
-      "企業名": "株式会社ニチイ学館",
-      "totalJobs": 1,
-      "gradYears": [],
-      "recencyDays": null,
-      "sources": {
-        "求人ボックス": {
-          "jobCount": 1,
-          "jobs": [
-            "新卒 第二新卒 医療事務職 東京都立墨東病院"
-          ],
-          "queries": [
-            "新卒 事務 東京"
-          ],
-          "recencyDays": null
-        }
-      }
-    },
-    "imaginate名古屋オフィス": {
-      "企業名": "株式会社imaginate 名古屋オフィス",
-      "totalJobs": 3,
-      "gradYears": [],
-      "recencyDays": 10,
-      "sources": {
-        "求人ボックス": {
-          "jobCount": 3,
-          "jobs": [
-            "名古屋 アイドル・アーティスト所属事務所の芸能マネージャー"
-          ],
-          "queries": [
-            "新卒 事務 東京",
-            "新卒 事務 大阪",
-            "新卒 企画 名古屋"
-          ],
-          "recencyDays": 10
-        }
-      }
-    },
     "imaginate大阪オフィス": {
       "企業名": "株式会社imaginate 大阪オフィス",
       "totalJobs": 3,
       "gradYears": [],
-      "recencyDays": 10,
+      "recencyDays": 9,
       "sources": {
         "求人ボックス": {
           "jobCount": 3,
@@ -505,7 +467,27 @@
             "新卒 企画 大阪",
             "新卒 事務 大阪"
           ],
-          "recencyDays": 10
+          "recencyDays": 9
+        }
+      }
+    },
+    "imaginate名古屋オフィス": {
+      "企業名": "株式会社imaginate 名古屋オフィス",
+      "totalJobs": 3,
+      "gradYears": [],
+      "recencyDays": 9,
+      "sources": {
+        "求人ボックス": {
+          "jobCount": 3,
+          "jobs": [
+            "名古屋 アイドル・アーティスト所属事務所の芸能マネージャー"
+          ],
+          "queries": [
+            "新卒 事務 東京",
+            "新卒 事務 大阪",
+            "新卒 企画 名古屋"
+          ],
+          "recencyDays": 9
         }
       }
     },
@@ -519,6 +501,61 @@
           "jobCount": 2,
           "jobs": [
             "エステティシャン／未経験歓迎／新卒／第2新卒"
+          ],
+          "queries": [
+            "新卒 事務 東京",
+            "新卒 販売 東京"
+          ],
+          "recencyDays": null
+        }
+      }
+    },
+    "tmj": {
+      "企業名": "株式会社TMJ",
+      "totalJobs": 1,
+      "gradYears": [],
+      "recencyDays": 0,
+      "sources": {
+        "求人ボックス": {
+          "jobCount": 1,
+          "jobs": [
+            "「週3日～&選べるシフト」未経験OK!転職希望者の面談調整・事務"
+          ],
+          "queries": [
+            "新卒 事務 東京"
+          ],
+          "recencyDays": 0
+        }
+      }
+    },
+    "lvup": {
+      "企業名": "株式会社LVUP",
+      "totalJobs": 1,
+      "gradYears": [],
+      "recencyDays": null,
+      "sources": {
+        "求人ボックス": {
+          "jobCount": 1,
+          "jobs": [
+            "東京限定／オンライン恋愛カウンセラー／月収100万円以上も可"
+          ],
+          "queries": [
+            "新卒 事務 東京"
+          ],
+          "recencyDays": null
+        }
+      }
+    },
+    "スマートアナリティクス会津若松事務所": {
+      "企業名": "スマート・アナリティクス株式会社 会津若松事務所",
+      "totalJobs": 2,
+      "gradYears": [],
+      "recencyDays": null,
+      "sources": {
+        "求人ボックス": {
+          "jobCount": 2,
+          "jobs": [
+            "研究者向けソフトウェア販売企業の事務スタッフ 1日3時間〜扶養内OK"
           ],
           "queries": [
             "新卒 事務 東京",
@@ -585,62 +622,6 @@
         }
       }
     },
-    "tmj": {
-      "企業名": "株式会社TMJ",
-      "totalJobs": 1,
-      "gradYears": [],
-      "recencyDays": 0,
-      "sources": {
-        "求人ボックス": {
-          "jobCount": 1,
-          "jobs": [
-            "「駅チカ×土日祝休み!」未経験スタート歓迎!転職希望者のサポート・事務"
-          ],
-          "queries": [
-            "新卒 事務 東京"
-          ],
-          "recencyDays": 0
-        }
-      }
-    },
-    "デザインフォーヘリテージ": {
-      "企業名": "株式会社デザイン・フォー・ヘリテージ",
-      "totalJobs": 1,
-      "gradYears": [],
-      "recencyDays": null,
-      "sources": {
-        "求人ボックス": {
-          "jobCount": 1,
-          "jobs": [
-            "施工監理員・現場事務員の募集"
-          ],
-          "queries": [
-            "新卒 事務 東京"
-          ],
-          "recencyDays": null
-        }
-      }
-    },
-    "スマートアナリティクス会津若松事務所": {
-      "企業名": "スマート・アナリティクス株式会社 会津若松事務所",
-      "totalJobs": 2,
-      "gradYears": [],
-      "recencyDays": null,
-      "sources": {
-        "求人ボックス": {
-          "jobCount": 2,
-          "jobs": [
-            "研究支援やソフトウェア販売の営業・営業事務",
-            "研究者向けソフトウェア販売企業の事務スタッフ 1日3時間〜扶養内OK"
-          ],
-          "queries": [
-            "新卒 事務 東京",
-            "新卒 販売 東京"
-          ],
-          "recencyDays": null
-        }
-      }
-    },
     "カーレントサービス": {
       "企業名": "株式会社カーレントサービス",
       "totalJobs": 1,
@@ -665,17 +646,55 @@
       "企業名": "マンパワーグループ株式会社",
       "totalJobs": 1,
       "gradYears": [],
-      "recencyDays": 12,
+      "recencyDays": 11,
       "sources": {
         "求人ボックス": {
           "jobCount": 1,
           "jobs": [
-            "電話少〜 丸の内スグ OAスキル活かす事務 残業なし"
+            "丸の内駅スグ 初心者OKな営業事務 正社員登用あり"
           ],
           "queries": [
             "新卒 事務 東京"
           ],
-          "recencyDays": 12
+          "recencyDays": 11
+        }
+      }
+    },
+    "ipartners": {
+      "企業名": "株式会社I・PARTNERS",
+      "totalJobs": 2,
+      "gradYears": [],
+      "recencyDays": 10,
+      "sources": {
+        "求人ボックス": {
+          "jobCount": 2,
+          "jobs": [
+            "スピード採用 有名不動産会社の事務",
+            "名古屋エリアのオフィスワーク／オープニングスタッフ"
+          ],
+          "queries": [
+            "新卒 事務 東京",
+            "新卒 企画 名古屋"
+          ],
+          "recencyDays": 10
+        }
+      }
+    },
+    "デザインフォーヘリテージ": {
+      "企業名": "株式会社デザイン・フォー・ヘリテージ",
+      "totalJobs": 1,
+      "gradYears": [],
+      "recencyDays": null,
+      "sources": {
+        "求人ボックス": {
+          "jobCount": 1,
+          "jobs": [
+            "施工監理員・現場事務員の募集"
+          ],
+          "queries": [
+            "新卒 事務 東京"
+          ],
+          "recencyDays": null
         }
       }
     },
@@ -697,8 +716,8 @@
         }
       }
     },
-    "pavingassist": {
-      "企業名": "株式会社PAVING ASSIST",
+    "ニチイ学館": {
+      "企業名": "株式会社ニチイ学館",
       "totalJobs": 1,
       "gradYears": [],
       "recencyDays": null,
@@ -706,7 +725,7 @@
         "求人ボックス": {
           "jobCount": 1,
           "jobs": [
-            "交通誘導／日給13,000円スタート・入社祝金5万円／日払い・週1日から自由シフ"
+            "新卒 第二新卒 医療事務職 東京科学大学病院"
           ],
           "queries": [
             "新卒 事務 東京"
@@ -733,11 +752,47 @@
         }
       }
     },
+    "pavingassist": {
+      "企業名": "株式会社PAVING ASSIST",
+      "totalJobs": 1,
+      "gradYears": [],
+      "recencyDays": null,
+      "sources": {
+        "求人ボックス": {
+          "jobCount": 1,
+          "jobs": [
+            "交通誘導／日給13,000円スタート・入社祝金5万円／日払い・週1日から自由シフ"
+          ],
+          "queries": [
+            "新卒 事務 東京"
+          ],
+          "recencyDays": null
+        }
+      }
+    },
+    "alsok常駐警備": {
+      "企業名": "ALSOK常駐警備株式会社",
+      "totalJobs": 1,
+      "gradYears": [],
+      "recencyDays": null,
+      "sources": {
+        "求人ボックス": {
+          "jobCount": 1,
+          "jobs": [
+            "ALSOKの施設警備／東京駅直結のオフィスビル／平均年収613万円"
+          ],
+          "queries": [
+            "新卒 事務 東京"
+          ],
+          "recencyDays": null
+        }
+      }
+    },
     "綜合キャリアトラスト": {
       "企業名": "株式会社綜合キャリアトラスト",
       "totalJobs": 1,
       "gradYears": [],
-      "recencyDays": 10,
+      "recencyDays": 9,
       "sources": {
         "求人ボックス": {
           "jobCount": 1,
@@ -747,7 +802,7 @@
           "queries": [
             "新卒 事務 東京"
           ],
-          "recencyDays": 10
+          "recencyDays": 9
         }
       }
     },
@@ -755,7 +810,7 @@
       "企業名": "株式会社シンアトラス",
       "totalJobs": 1,
       "gradYears": [],
-      "recencyDays": 10,
+      "recencyDays": 9,
       "sources": {
         "求人ボックス": {
           "jobCount": 1,
@@ -765,7 +820,7 @@
           "queries": [
             "新卒 事務 東京"
           ],
-          "recencyDays": 10
+          "recencyDays": 9
         }
       }
     },
@@ -791,7 +846,7 @@
       "企業名": "株式会社キャムテック",
       "totalJobs": 1,
       "gradYears": [],
-      "recencyDays": 10,
+      "recencyDays": 9,
       "sources": {
         "求人ボックス": {
           "jobCount": 1,
@@ -801,31 +856,7 @@
           "queries": [
             "新卒 事務 東京"
           ],
-          "recencyDays": 10
-        }
-      }
-    },
-    "アソウアルファ": {
-      "企業名": "株式会社アソウ・アルファ",
-      "totalJobs": 4,
-      "gradYears": [],
-      "recencyDays": null,
-      "sources": {
-        "求人ボックス": {
-          "jobCount": 4,
-          "jobs": [
-            "「教育担当／東京」若手エンジニアを1人前に・人材育成で社会貢献・",
-            "「教育担当／四日市」若手エンジニアを1人前に・人材育成で社会貢献・",
-            "「教育担当／大阪」若手エンジニアを1人前に・人材育成で社会貢献・",
-            "「教育担当／名古屋」若手エンジニアを1人前に・人材育成で社会貢献・"
-          ],
-          "queries": [
-            "新卒 事務 東京",
-            "新卒 エンジニア 大阪",
-            "新卒 企画 大阪",
-            "新卒 企画 名古屋"
-          ],
-          "recencyDays": null
+          "recencyDays": 9
         }
       }
     },
@@ -901,27 +932,8 @@
         }
       }
     },
-    "nrkotobuki": {
-      "企業名": "合同会社N.R.KOTOBUKI",
-      "totalJobs": 2,
-      "gradYears": [],
-      "recencyDays": null,
-      "sources": {
-        "求人ボックス": {
-          "jobCount": 2,
-          "jobs": [
-            "新卒・第二新卒歓迎の「物販・EC運営スタッフ」／海外エンタメグッズに関..."
-          ],
-          "queries": [
-            "新卒 販売 東京",
-            "新卒 販売 大阪"
-          ],
-          "recencyDays": null
-        }
-      }
-    },
-    "マセラティ江東": {
-      "企業名": "マセラティ江東",
+    "ネクステージ八王子店": {
+      "企業名": "ネクステージ八王子店",
       "totalJobs": 1,
       "gradYears": [],
       "recencyDays": null,
@@ -929,7 +941,7 @@
         "求人ボックス": {
           "jobCount": 1,
           "jobs": [
-            "自動車販売スタッフ／月給27万円以上スタート／キャリアアップ後は年収2..."
+            "積極採用中!営業／⏩️営業、販売経験活かしてご活躍可能!1000万円越..."
           ],
           "queries": [
             "新卒 販売 東京"
@@ -938,8 +950,8 @@
         }
       }
     },
-    "ボルボカーズ大田川崎": {
-      "企業名": "ボルボ・カーズ大田・川崎",
+    "マセラティ江東": {
+      "企業名": "マセラティ江東",
       "totalJobs": 1,
       "gradYears": [],
       "recencyDays": null,
@@ -974,8 +986,8 @@
         }
       }
     },
-    "サイクルスポット荻窪店": {
-      "企業名": "サイクルスポット荻窪店",
+    "ネクステージ昭島店": {
+      "企業名": "ネクステージ昭島店",
       "totalJobs": 1,
       "gradYears": [],
       "recencyDays": null,
@@ -983,7 +995,7 @@
         "求人ボックス": {
           "jobCount": 1,
           "jobs": [
-            "自転車販売店／サイクルショップ／の接客・販売"
+            "自動車の販売スタッフ／積極採用中!／未経験でも月給32万円以上!"
           ],
           "queries": [
             "新卒 販売 東京"
@@ -994,6 +1006,42 @@
     },
     "suvland横浜町田ネクステージ": {
       "企業名": "SUV LAND横浜町田／株式会社ネクステージ",
+      "totalJobs": 1,
+      "gradYears": [],
+      "recencyDays": null,
+      "sources": {
+        "求人ボックス": {
+          "jobCount": 1,
+          "jobs": [
+            "積極採用中!営業／⏩️営業、販売経験活かしてご活躍可能!1000万円越..."
+          ],
+          "queries": [
+            "新卒 販売 東京"
+          ],
+          "recencyDays": null
+        }
+      }
+    },
+    "ボルボカーズ大田川崎": {
+      "企業名": "ボルボ・カーズ大田・川崎",
+      "totalJobs": 1,
+      "gradYears": [],
+      "recencyDays": null,
+      "sources": {
+        "求人ボックス": {
+          "jobCount": 1,
+          "jobs": [
+            "自動車販売スタッフ／月給27万円以上スタート／キャリアアップ後は年収2..."
+          ],
+          "queries": [
+            "新卒 販売 東京"
+          ],
+          "recencyDays": null
+        }
+      }
+    },
+    "ネクステージ江戸川店": {
+      "企業名": "ネクステージ江戸川店",
       "totalJobs": 1,
       "gradYears": [],
       "recencyDays": null,
@@ -1028,8 +1076,8 @@
         }
       }
     },
-    "ネクステージ昭島店": {
-      "企業名": "ネクステージ昭島店",
+    "夢仕立工房": {
+      "企業名": "夢仕立工房",
       "totalJobs": 1,
       "gradYears": [],
       "recencyDays": null,
@@ -1037,61 +1085,7 @@
         "求人ボックス": {
           "jobCount": 1,
           "jobs": [
-            "自動車の販売スタッフ／積極採用中!／未経験でも月給32万円以上!"
-          ],
-          "queries": [
-            "新卒 販売 東京"
-          ],
-          "recencyDays": null
-        }
-      }
-    },
-    "サイクルスポット千川店": {
-      "企業名": "サイクルスポット千川店",
-      "totalJobs": 1,
-      "gradYears": [],
-      "recencyDays": null,
-      "sources": {
-        "求人ボックス": {
-          "jobCount": 1,
-          "jobs": [
-            "自転車販売店／サイクルショップ／の接客・販売"
-          ],
-          "queries": [
-            "新卒 販売 東京"
-          ],
-          "recencyDays": null
-        }
-      }
-    },
-    "ネクステージ世田谷店": {
-      "企業名": "ネクステージ世田谷店",
-      "totalJobs": 1,
-      "gradYears": [],
-      "recencyDays": null,
-      "sources": {
-        "求人ボックス": {
-          "jobCount": 1,
-          "jobs": [
-            "積極採用中!営業／⏩️営業、販売経験活かしてご活躍可能!1000万円越..."
-          ],
-          "queries": [
-            "新卒 販売 東京"
-          ],
-          "recencyDays": null
-        }
-      }
-    },
-    "サイクルスポット浅草店": {
-      "企業名": "サイクルスポット浅草店",
-      "totalJobs": 1,
-      "gradYears": [],
-      "recencyDays": null,
-      "sources": {
-        "求人ボックス": {
-          "jobCount": 1,
-          "jobs": [
-            "自転車販売店／サイクルショップ／の接客・販売"
+            "輝く!ジュエリーの仕事で生きていく!一生もののCADやデザイン画の技術..."
           ],
           "queries": [
             "新卒 販売 東京"
@@ -1115,6 +1109,24 @@
           "queries": [
             "新卒 販売 東京",
             "新卒 販売 大阪"
+          ],
+          "recencyDays": null
+        }
+      }
+    },
+    "ネクステージ世田谷店": {
+      "企業名": "ネクステージ世田谷店",
+      "totalJobs": 1,
+      "gradYears": [],
+      "recencyDays": null,
+      "sources": {
+        "求人ボックス": {
+          "jobCount": 1,
+          "jobs": [
+            "積極採用中!営業／⏩️営業、販売経験活かしてご活躍可能!1000万円越..."
+          ],
+          "queries": [
+            "新卒 販売 東京"
           ],
           "recencyDays": null
         }
@@ -1144,7 +1156,7 @@
       "企業名": "株式会社SCミート",
       "totalJobs": 1,
       "gradYears": [],
-      "recencyDays": 10,
+      "recencyDays": 9,
       "sources": {
         "求人ボックス": {
           "jobCount": 1,
@@ -1154,7 +1166,7 @@
           "queries": [
             "新卒 販売 東京"
           ],
-          "recencyDays": 10
+          "recencyDays": 9
         }
       }
     },
@@ -1162,7 +1174,7 @@
       "企業名": "大進ホンダ株式会社",
       "totalJobs": 2,
       "gradYears": [],
-      "recencyDays": 10,
+      "recencyDays": 9,
       "sources": {
         "求人ボックス": {
           "jobCount": 2,
@@ -1173,7 +1185,7 @@
             "新卒 販売 東京",
             "新卒 販売 大阪"
           ],
-          "recencyDays": 10
+          "recencyDays": 9
         }
       }
     },
@@ -1181,7 +1193,7 @@
       "企業名": "株式会社アミナコレクション",
       "totalJobs": 2,
       "gradYears": [],
-      "recencyDays": 10,
+      "recencyDays": 9,
       "sources": {
         "求人ボックス": {
           "jobCount": 2,
@@ -1193,273 +1205,12 @@
             "新卒 販売 東京",
             "新卒 販売 大阪"
           ],
-          "recencyDays": 10
-        }
-      }
-    },
-    "大斗": {
-      "企業名": "株式会社大斗",
-      "totalJobs": 2,
-      "gradYears": [
-        "2027"
-      ],
-      "recencyDays": 0,
-      "sources": {
-        "求人ボックス": {
-          "jobCount": 2,
-          "jobs": [
-            "AIゲームテストエンジニア「27卒」・第2新卒歓迎「完全週休2日制／定着率高い」",
-            "「新卒・27卒」ゲーム開発プロジェクト事務スタッフ／U・Iターン歓迎／初めての就"
-          ],
-          "queries": [
-            "新卒 エンジニア 大阪",
-            "新卒 事務 大阪"
-          ],
-          "recencyDays": 0
-        }
-      }
-    },
-    "irodas": {
-      "企業名": "株式会社irodas",
-      "totalJobs": 2,
-      "gradYears": [],
-      "recencyDays": 9,
-      "sources": {
-        "求人ボックス": {
-          "jobCount": 2,
-          "jobs": [
-            "年収600万〜:人材紹介事業責任者 新卒エンジニア向けエージェントサー...",
-            "大阪:新卒領域／カスタマーサクセス 年収500万~／ただのCS"
-          ],
-          "queries": [
-            "新卒 エンジニア 大阪",
-            "新卒 コンサル 大阪"
-          ],
           "recencyDays": 9
         }
       }
     },
-    "亜速ソフト": {
-      "企業名": "亜速ソフト",
-      "totalJobs": 1,
-      "gradYears": [],
-      "recencyDays": null,
-      "sources": {
-        "求人ボックス": {
-          "jobCount": 1,
-          "jobs": [
-            "C#エンジニア"
-          ],
-          "queries": [
-            "新卒 エンジニア 大阪"
-          ],
-          "recencyDays": null
-        }
-      }
-    },
-    "フジワーク": {
-      "企業名": "株式会社フジワーク",
-      "totalJobs": 1,
-      "gradYears": [],
-      "recencyDays": null,
-      "sources": {
-        "求人ボックス": {
-          "jobCount": 1,
-          "jobs": [
-            "半導体メンテナンスエンジニア／月収25万円以上可／20～40代活躍中"
-          ],
-          "queries": [
-            "新卒 エンジニア 大阪"
-          ],
-          "recencyDays": null
-        }
-      }
-    },
-    "アスパーク": {
-      "企業名": "株式会社アスパーク",
-      "totalJobs": 1,
-      "gradYears": [],
-      "recencyDays": null,
-      "sources": {
-        "求人ボックス": {
-          "jobCount": 1,
-          "jobs": [
-            "ITエンジニア／「人生を変える転職!」ITエンジニア 知識ゼロOK"
-          ],
-          "queries": [
-            "新卒 エンジニア 大阪"
-          ],
-          "recencyDays": null
-        }
-      }
-    },
-    "くすりの窓口": {
-      "企業名": "株式会社くすりの窓口",
-      "totalJobs": 1,
-      "gradYears": [],
-      "recencyDays": 9,
-      "sources": {
-        "求人ボックス": {
-          "jobCount": 1,
-          "jobs": [
-            "医療×IT営業／大阪"
-          ],
-          "queries": [
-            "新卒 エンジニア 大阪"
-          ],
-          "recencyDays": 9
-        }
-      }
-    },
-    "インターテクノ": {
-      "企業名": "株式会社インターテクノ",
-      "totalJobs": 2,
-      "gradYears": [],
-      "recencyDays": 9,
-      "sources": {
-        "求人ボックス": {
-          "jobCount": 2,
-          "jobs": [
-            "ソフトウェア開発 システムエンジニア",
-            "通関事務／紹介予定派遣／資格を活かす"
-          ],
-          "queries": [
-            "新卒 エンジニア 大阪",
-            "新卒 事務 大阪"
-          ],
-          "recencyDays": 9
-        }
-      }
-    },
-    "metateam": {
-      "企業名": "METATEAM株式会社",
-      "totalJobs": 2,
-      "gradYears": [],
-      "recencyDays": 0,
-      "sources": {
-        "求人ボックス": {
-          "jobCount": 2,
-          "jobs": [
-            "営業 大阪"
-          ],
-          "queries": [
-            "新卒 エンジニア 大阪",
-            "新卒 コンサル 大阪"
-          ],
-          "recencyDays": 0
-        }
-      }
-    },
-    "nmsエンジニアリング": {
-      "企業名": "nmsエンジニアリング株式会社",
-      "totalJobs": 1,
-      "gradYears": [],
-      "recencyDays": null,
-      "sources": {
-        "求人ボックス": {
-          "jobCount": 1,
-          "jobs": [
-            "設計・構築・運用を行うインフラエンジニア／未経験歓迎／寮・社宅あり"
-          ],
-          "queries": [
-            "新卒 エンジニア 大阪"
-          ],
-          "recencyDays": null
-        }
-      }
-    },
-    "日立エンジニアリング": {
-      "企業名": "株式会社日立エンジニアリング",
-      "totalJobs": 1,
-      "gradYears": [],
-      "recencyDays": null,
-      "sources": {
-        "求人ボックス": {
-          "jobCount": 1,
-          "jobs": [
-            "業務用エアコン保守エンジニア／研修充実! 未経験歓迎! 年収500万以..."
-          ],
-          "queries": [
-            "新卒 エンジニア 大阪"
-          ],
-          "recencyDays": null
-        }
-      }
-    },
-    "エンテックス": {
-      "企業名": "株式会社エンテックス",
-      "totalJobs": 1,
-      "gradYears": [],
-      "recencyDays": null,
-      "sources": {
-        "求人ボックス": {
-          "jobCount": 1,
-          "jobs": [
-            "インフラを設計・構築・運用するエンジニア／週休2日制／昇給あり"
-          ],
-          "queries": [
-            "新卒 エンジニア 大阪"
-          ],
-          "recencyDays": null
-        }
-      }
-    },
-    "アウトソーシングテクノロジー": {
-      "企業名": "株式会社アウトソーシングテクノロジー",
-      "totalJobs": 1,
-      "gradYears": [],
-      "recencyDays": null,
-      "sources": {
-        "求人ボックス": {
-          "jobCount": 1,
-          "jobs": [
-            "電気回路評価エンジニア職／未経験歓迎／経験者歓迎／寮・社宅あり"
-          ],
-          "queries": [
-            "新卒 エンジニア 大阪"
-          ],
-          "recencyDays": null
-        }
-      }
-    },
-    "ヒューマンリソシア": {
-      "企業名": "ヒューマンリソシア株式会社",
-      "totalJobs": 1,
-      "gradYears": [],
-      "recencyDays": null,
-      "sources": {
-        "求人ボックス": {
-          "jobCount": 1,
-          "jobs": [
-            "一般事務・OA事務／高時給VBA・マクロ活かす 通建企業で分析ツールエンジニア"
-          ],
-          "queries": [
-            "新卒 エンジニア 大阪"
-          ],
-          "recencyDays": null
-        }
-      }
-    },
-    "パラカ": {
-      "企業名": "パラカ株式会社",
-      "totalJobs": 1,
-      "gradYears": [],
-      "recencyDays": null,
-      "sources": {
-        "求人ボックス": {
-          "jobCount": 1,
-          "jobs": [
-            "農建機の油圧機器検査・NCプログラム作成エンジニア／未経験歓迎"
-          ],
-          "queries": [
-            "新卒 エンジニア 大阪"
-          ],
-          "recencyDays": null
-        }
-      }
-    },
-    "スタッフサービス": {
-      "企業名": "株式会社スタッフサービス",
+    "レオパレス21": {
+      "企業名": "株式会社レオパレス21",
       "totalJobs": 2,
       "gradYears": [],
       "recencyDays": null,
@@ -1467,12 +1218,12 @@
         "求人ボックス": {
           "jobCount": 2,
           "jobs": [
-            "事務／PC・データ入力 WEB登録OK 長期希望の方にお勧め 一般事務 大阪市中",
-            "企画・マーケティング 時給2300円／残業月15時間程度 旅行サイト分..."
+            "「新卒採用担当」／面接・説明会・戦略立案など／上場企業の変革期に携わる",
+            "レオパレス21の「開発営業」／未経験歓迎／土地の有効活用をご提案しお客..."
           ],
           "queries": [
-            "新卒 エンジニア 大阪",
-            "新卒 マーケティング 大阪"
+            "新卒 販売 東京",
+            "新卒 企画 大阪"
           ],
           "recencyDays": null
         }
@@ -1498,26 +1249,8 @@
         }
       }
     },
-    "トータルオフィスパートナー": {
-      "企業名": "株式会社トータルオフィスパートナー",
-      "totalJobs": 1,
-      "gradYears": [],
-      "recencyDays": 0,
-      "sources": {
-        "求人ボックス": {
-          "jobCount": 1,
-          "jobs": [
-            "建設・エンジニアリング企業グループで人事事務"
-          ],
-          "queries": [
-            "新卒 エンジニア 大阪"
-          ],
-          "recencyDays": 0
-        }
-      }
-    },
-    "ytvnextry": {
-      "企業名": "株式会社ytv Nextry",
+    "立花エレテック": {
+      "企業名": "株式会社立花エレテック",
       "totalJobs": 1,
       "gradYears": [],
       "recencyDays": null,
@@ -1525,7 +1258,7 @@
         "求人ボックス": {
           "jobCount": 1,
           "jobs": [
-            "大阪／ビデオエンジニア・読売テレビ放送株式会社のハウスプロダクション"
+            "「大阪」制御・技術職「OTエンジニア」／第2新卒枠"
           ],
           "queries": [
             "新卒 エンジニア 大阪"
@@ -1534,8 +1267,8 @@
         }
       }
     },
-    "dym": {
-      "企業名": "株式会社DYM",
+    "小森コーポレーション": {
+      "企業名": "株式会社小森コーポレーション",
       "totalJobs": 1,
       "gradYears": [],
       "recencyDays": null,
@@ -1543,7 +1276,7 @@
         "求人ボックス": {
           "jobCount": 1,
           "jobs": [
-            "東京／大崎／WEBディレクター マークアップエンジニア／HTMLコーダ..."
+            "「大阪」サービスエンジニア「電気」／電気系学部出身の方／第2新卒歓迎"
           ],
           "queries": [
             "新卒 エンジニア 大阪"
@@ -1552,8 +1285,191 @@
         }
       }
     },
-    "jhrconsulting": {
-      "企業名": "JHRconsulting株式会社",
+    "フジワーク": {
+      "企業名": "株式会社フジワーク",
+      "totalJobs": 1,
+      "gradYears": [],
+      "recencyDays": null,
+      "sources": {
+        "求人ボックス": {
+          "jobCount": 1,
+          "jobs": [
+            "半導体製造装置のスタートアップエンジニア／未経験歓迎／土日祝休みでプラ..."
+          ],
+          "queries": [
+            "新卒 エンジニア 大阪"
+          ],
+          "recencyDays": null
+        }
+      }
+    },
+    "イーガー": {
+      "企業名": "株式会社イーガー",
+      "totalJobs": 1,
+      "gradYears": [],
+      "recencyDays": null,
+      "sources": {
+        "求人ボックス": {
+          "jobCount": 1,
+          "jobs": [
+            "「大阪」組込・制御エンジニア 第2新卒・経験が浅い方も歓迎"
+          ],
+          "queries": [
+            "新卒 エンジニア 大阪"
+          ],
+          "recencyDays": null
+        }
+      }
+    },
+    "亜速ソフト": {
+      "企業名": "亜速ソフト",
+      "totalJobs": 1,
+      "gradYears": [],
+      "recencyDays": null,
+      "sources": {
+        "求人ボックス": {
+          "jobCount": 1,
+          "jobs": [
+            "C#エンジニア"
+          ],
+          "queries": [
+            "新卒 エンジニア 大阪"
+          ],
+          "recencyDays": null
+        }
+      }
+    },
+    "アスパーク": {
+      "企業名": "株式会社アスパーク",
+      "totalJobs": 3,
+      "gradYears": [],
+      "recencyDays": 9,
+      "sources": {
+        "求人ボックス": {
+          "jobCount": 3,
+          "jobs": [
+            "ITエンジニア／「人生を変える転職!」ITエンジニア 知識ゼロOK",
+            "ITエンジニア 知識ゼロOK／家賃補助95%／賞与3.5ヶ月分～"
+          ],
+          "queries": [
+            "新卒 エンジニア 大阪",
+            "新卒 エンジニア 名古屋"
+          ],
+          "recencyDays": 9
+        }
+      }
+    },
+    "上桜会ゆうメンタルクリニック大阪院": {
+      "企業名": "医療法人社団上桜会 ゆうメンタルクリニック 大阪院",
+      "totalJobs": 1,
+      "gradYears": [],
+      "recencyDays": 12,
+      "sources": {
+        "求人ボックス": {
+          "jobCount": 1,
+          "jobs": [
+            "クリニックの受付・事務・アシスタント／大阪駅／未経験歓迎／賞与あり"
+          ],
+          "queries": [
+            "新卒 エンジニア 大阪"
+          ],
+          "recencyDays": 12
+        }
+      }
+    },
+    "ティーアンドティー": {
+      "企業名": "ティー・アンド・ティー株式会社",
+      "totalJobs": 2,
+      "gradYears": [],
+      "recencyDays": null,
+      "sources": {
+        "求人ボックス": {
+          "jobCount": 2,
+          "jobs": [
+            "「大阪／プラント電気設備設計」年間休日126日／公共案件多数"
+          ],
+          "queries": [
+            "新卒 エンジニア 大阪",
+            "新卒 コンサル 大阪"
+          ],
+          "recencyDays": null
+        }
+      }
+    },
+    "ツカサテック": {
+      "企業名": "株式会社ツカサテック",
+      "totalJobs": 1,
+      "gradYears": [],
+      "recencyDays": null,
+      "sources": {
+        "求人ボックス": {
+          "jobCount": 1,
+          "jobs": [
+            "「大阪」高層煙突の構造設計 年休115日「土日祝」／残業少なめ"
+          ],
+          "queries": [
+            "新卒 エンジニア 大阪"
+          ],
+          "recencyDays": null
+        }
+      }
+    },
+    "コンピューターマネージメント": {
+      "企業名": "コンピューターマネージメント株式会社",
+      "totalJobs": 1,
+      "gradYears": [],
+      "recencyDays": null,
+      "sources": {
+        "求人ボックス": {
+          "jobCount": 1,
+          "jobs": [
+            "「大阪」mcframeエンジニア・コンサルタント「開発／導入」"
+          ],
+          "queries": [
+            "新卒 エンジニア 大阪"
+          ],
+          "recencyDays": null
+        }
+      }
+    },
+    "ヒューマンリソシア": {
+      "企業名": "ヒューマンリソシア株式会社",
+      "totalJobs": 1,
+      "gradYears": [],
+      "recencyDays": null,
+      "sources": {
+        "求人ボックス": {
+          "jobCount": 1,
+          "jobs": [
+            "一般事務・OA事務／高時給VBA・マクロ活かす通建企業で分析ツールエンジニア"
+          ],
+          "queries": [
+            "新卒 エンジニア 大阪"
+          ],
+          "recencyDays": null
+        }
+      }
+    },
+    "チェプロ": {
+      "企業名": "株式会社チェプロ",
+      "totalJobs": 1,
+      "gradYears": [],
+      "recencyDays": null,
+      "sources": {
+        "求人ボックス": {
+          "jobCount": 1,
+          "jobs": [
+            "「大阪／採用」経験者歓迎／IT企業の採用業務／採用計画から実施"
+          ],
+          "queries": [
+            "新卒 エンジニア 大阪"
+          ],
+          "recencyDays": null
+        }
+      }
+    },
+    "大斗": {
+      "企業名": "株式会社大斗",
       "totalJobs": 2,
       "gradYears": [
         "2027"
@@ -1563,39 +1479,41 @@
         "求人ボックス": {
           "jobCount": 2,
           "jobs": [
-            "新卒27卒歓迎／ゲームインフラエンジニア／ゼロから学べる／大阪市北区梅田1丁目",
-            "フロントエンドエンジニア「新卒・27卒歓迎」未経験OK／HTMLコーディング／賞"
+            "AIゲームテストエンジニア「27卒」・第2新卒歓迎「完全週休2日制／定着率高い」",
+            "「新卒・27卒歓迎!」ITサポート事務／正社員採用／パソコンの設定や確認／研修制"
           ],
           "queries": [
             "新卒 エンジニア 大阪",
-            "新卒 エンジニア 名古屋"
+            "新卒 事務 大阪"
           ],
           "recencyDays": 0
         }
       }
     },
-    "gum": {
-      "企業名": "株式会社GUM",
-      "totalJobs": 1,
-      "gradYears": [
-        "2027"
-      ],
-      "recencyDays": 0,
+    "フェンリル": {
+      "企業名": "フェンリル株式会社",
+      "totalJobs": 3,
+      "gradYears": [],
+      "recencyDays": null,
       "sources": {
         "求人ボックス": {
-          "jobCount": 1,
+          "jobCount": 3,
           "jobs": [
-            "新卒27卒歓迎／ゲームサーバーエンジニア／未経験からプロ／大阪市北区梅田2丁目"
+            "「島根」スマートフォンアプリ リードエンジニア「大手ゲーム会社オンライ...",
+            "大阪／在宅可／デザインディレクター 大手ゲーム会社オンラインサービス",
+            "「名古屋」スマートフォンアプリ リードエンジニア「大手ゲーム会社オンラ..."
           ],
           "queries": [
-            "新卒 エンジニア 大阪"
+            "新卒 エンジニア 大阪",
+            "新卒 企画 大阪",
+            "新卒 企画 名古屋"
           ],
-          "recencyDays": 0
+          "recencyDays": null
         }
       }
     },
-    "レバレジーズ": {
-      "企業名": "レバレジーズ株式会社",
+    "スタッフサービス": {
+      "企業名": "株式会社スタッフサービス",
       "totalJobs": 1,
       "gradYears": [],
       "recencyDays": null,
@@ -1603,7 +1521,120 @@
         "求人ボックス": {
           "jobCount": 1,
           "jobs": [
-            "人事本部／渋谷or大阪／企画／新卒採用担当"
+            "一般事務・OA事務／WEB登録OK長期希望の方にお勧め一般事務大阪市中..."
+          ],
+          "queries": [
+            "新卒 エンジニア 大阪"
+          ],
+          "recencyDays": null
+        }
+      }
+    },
+    "パーソルエクセルhrパートナーズ": {
+      "企業名": "パーソルエクセルHRパートナーズ株式会社",
+      "totalJobs": 1,
+      "gradYears": [],
+      "recencyDays": null,
+      "sources": {
+        "求人ボックス": {
+          "jobCount": 1,
+          "jobs": [
+            "未経験可「関東」組込みエンジニアパナソニックグループの開発を担当"
+          ],
+          "queries": [
+            "新卒 エンジニア 大阪"
+          ],
+          "recencyDays": null
+        }
+      }
+    },
+    "アソウアルファ": {
+      "企業名": "株式会社アソウ・アルファ",
+      "totalJobs": 3,
+      "gradYears": [],
+      "recencyDays": null,
+      "sources": {
+        "求人ボックス": {
+          "jobCount": 3,
+          "jobs": [
+            "「教育担当／四日市」若手エンジニアを1人前に・人材育成で社会貢献・",
+            "「教育担当／大阪」若手エンジニアを1人前に・人材育成で社会貢献・",
+            "「教育担当／名古屋」若手エンジニアを1人前に・人材育成で社会貢献・"
+          ],
+          "queries": [
+            "新卒 エンジニア 大阪",
+            "新卒 企画 大阪",
+            "新卒 企画 名古屋"
+          ],
+          "recencyDays": null
+        }
+      }
+    },
+    "デザインシステムサービス": {
+      "企業名": "株式会社デザインシステムサービス",
+      "totalJobs": 1,
+      "gradYears": [],
+      "recencyDays": 9,
+      "sources": {
+        "求人ボックス": {
+          "jobCount": 1,
+          "jobs": [
+            "システムエンジニア・プログラマー 大阪本社 転勤無し 大学生・専門生"
+          ],
+          "queries": [
+            "新卒 エンジニア 大阪"
+          ],
+          "recencyDays": 9
+        }
+      }
+    },
+    "日立エンジニアリング": {
+      "企業名": "株式会社日立エンジニアリング",
+      "totalJobs": 1,
+      "gradYears": [],
+      "recencyDays": 9,
+      "sources": {
+        "求人ボックス": {
+          "jobCount": 1,
+          "jobs": [
+            "研修充実! 未経験歓迎! 年収500万以上も可! エアコン保守エンジニア／806"
+          ],
+          "queries": [
+            "新卒 エンジニア 大阪"
+          ],
+          "recencyDays": 9
+        }
+      }
+    },
+    "テーピーエスサービス": {
+      "企業名": "テー・ピー・エスサービス株式会社",
+      "totalJobs": 1,
+      "gradYears": [],
+      "recencyDays": null,
+      "sources": {
+        "求人ボックス": {
+          "jobCount": 1,
+          "jobs": [
+            "新卒／システムエンジニア／システム開発／プログラマ／創業1978年"
+          ],
+          "queries": [
+            "新卒 エンジニア 大阪"
+          ],
+          "recencyDays": null
+        }
+      }
+    },
+    "レバレジーズ": {
+      "企業名": "レバレジーズ株式会社",
+      "totalJobs": 2,
+      "gradYears": [],
+      "recencyDays": null,
+      "sources": {
+        "求人ボックス": {
+          "jobCount": 2,
+          "jobs": [
+            "人事本部／渋谷or大阪／企画／新卒採用担当",
+            "未経験OK「人事採用部」渋谷or大阪／企画 新卒採用担当"
           ],
           "queries": [
             "新卒 企画 大阪"
@@ -1630,6 +1661,24 @@
         }
       }
     },
+    "証券保管振替機構": {
+      "企業名": "株式会社証券保管振替機構",
+      "totalJobs": 1,
+      "gradYears": [],
+      "recencyDays": null,
+      "sources": {
+        "求人ボックス": {
+          "jobCount": 1,
+          "jobs": [
+            "大阪「社内SE／IT運用の企画・管理」日本の証券決済を支えるシステムの..."
+          ],
+          "queries": [
+            "新卒 企画 大阪"
+          ],
+          "recencyDays": null
+        }
+      }
+    },
     "ライジングコーポレーション": {
       "企業名": "株式会社ライジングコーポレーション",
       "totalJobs": 3,
@@ -1639,8 +1688,9 @@
         "求人ボックス": {
           "jobCount": 3,
           "jobs": [
-            "採用 広報担当／大阪市北区／rc",
-            "採用兼広報担当／大阪市北区／rc"
+            "採用担当兼SNS 動画クリエーター／大阪市北区／rc",
+            "採用兼広報担当／大阪市北区／rc",
+            "採用 広報担当／大阪市北区／rc"
           ],
           "queries": [
             "新卒 企画 大阪",
@@ -1648,25 +1698,6 @@
             "新卒 事務 大阪"
           ],
           "recencyDays": null
-        }
-      }
-    },
-    "snk": {
-      "企業名": "株式会社SNK",
-      "totalJobs": 2,
-      "gradYears": [],
-      "recencyDays": 0,
-      "sources": {
-        "求人ボックス": {
-          "jobCount": 2,
-          "jobs": [
-            "人事・総務・労務／総務・人事・労務／SNKで人事育成担当／大阪"
-          ],
-          "queries": [
-            "新卒 企画 大阪",
-            "新卒 販売 大阪"
-          ],
-          "recencyDays": 0
         }
       }
     },
@@ -1693,8 +1724,8 @@
         }
       }
     },
-    "フェンリル": {
-      "企業名": "フェンリル株式会社",
+    "慶生会": {
+      "企業名": "社会福祉法人慶生会",
       "totalJobs": 1,
       "gradYears": [],
       "recencyDays": null,
@@ -1702,30 +1733,10 @@
         "求人ボックス": {
           "jobCount": 1,
           "jobs": [
-            "大阪／在宅可／デザインディレクター 大手ゲーム会社オンラインサービス"
+            "訪問看護ステーションでの看護師／新卒"
           ],
           "queries": [
             "新卒 企画 大阪"
-          ],
-          "recencyDays": null
-        }
-      }
-    },
-    "モスストアカンパニー": {
-      "企業名": "株式会社モスストアカンパニー",
-      "totalJobs": 2,
-      "gradYears": [],
-      "recencyDays": null,
-      "sources": {
-        "求人ボックス": {
-          "jobCount": 2,
-          "jobs": [
-            "モスバーガー茨木鮎川店の店長候補／月給29.2万～36.24万円",
-            "モスバーガー黒川駅前店の店長候補／月給29.2万～36.24万円／愛知県名古屋市"
-          ],
-          "queries": [
-            "新卒 企画 大阪",
-            "新卒 企画 名古屋"
           ],
           "recencyDays": null
         }
@@ -1762,7 +1773,6 @@
         "求人ボックス": {
           "jobCount": 2,
           "jobs": [
-            "アートディレクター マネージャー候補／新卒採用領域／toC・toB",
             "コミュニケーションデザイナー 新卒採用領域／toC・toB"
           ],
           "queries": [
@@ -1773,21 +1783,23 @@
         }
       }
     },
-    "ファーストクラスしらなみ校": {
-      "企業名": "ファーストクラスしらなみ校",
-      "totalJobs": 1,
+    "モスストアカンパニー": {
+      "企業名": "株式会社モスストアカンパニー",
+      "totalJobs": 2,
       "gradYears": [],
-      "recencyDays": 11,
+      "recencyDays": null,
       "sources": {
         "求人ボックス": {
-          "jobCount": 1,
+          "jobCount": 2,
           "jobs": [
-            "「児童指導員／有資格者」大阪市住之江区の小規模 放課後等デイサービス"
+            "モスバーガーなんばウォーク店の店長候補／月給29.2万～36.24万円／大阪府大",
+            "モスバーガー黒川駅前店の店長候補／月給29.2万～36.24万円／愛知県名古屋市"
           ],
           "queries": [
-            "新卒 企画 大阪"
+            "新卒 企画 大阪",
+            "新卒 企画 名古屋"
           ],
-          "recencyDays": 11
+          "recencyDays": null
         }
       }
     },
@@ -1800,7 +1812,7 @@
         "求人ボックス": {
           "jobCount": 1,
           "jobs": [
-            "都内／企画デザイナー／Jena espace merveilleux"
+            "東京／原宿／雑貨企画デザイナー ファッション雑貨「Lattice"
           ],
           "queries": [
             "新卒 企画 大阪"
@@ -1845,6 +1857,60 @@
         }
       }
     },
+    "ファーストクラスしらなみ校": {
+      "企業名": "ファーストクラスしらなみ校",
+      "totalJobs": 1,
+      "gradYears": [],
+      "recencyDays": 11,
+      "sources": {
+        "求人ボックス": {
+          "jobCount": 1,
+          "jobs": [
+            "「児童指導員／有資格者」大阪市住之江区の小規模 児童発達支援"
+          ],
+          "queries": [
+            "新卒 企画 大阪"
+          ],
+          "recencyDays": 11
+        }
+      }
+    },
+    "ダイフク": {
+      "企業名": "株式会社ダイフク",
+      "totalJobs": 1,
+      "gradYears": [],
+      "recencyDays": null,
+      "sources": {
+        "求人ボックス": {
+          "jobCount": 1,
+          "jobs": [
+            "「大阪」人事職 キャリア採用業務 コーポレート部門"
+          ],
+          "queries": [
+            "新卒 企画 大阪"
+          ],
+          "recencyDays": null
+        }
+      }
+    },
+    "リールスメイト豊里": {
+      "企業名": "リールスメイト豊里",
+      "totalJobs": 1,
+      "gradYears": [],
+      "recencyDays": null,
+      "sources": {
+        "求人ボックス": {
+          "jobCount": 1,
+          "jobs": [
+            "「児童指導員・保育士」大阪市東淀川区・未経験歓迎、経験者優遇"
+          ],
+          "queries": [
+            "新卒 企画 大阪"
+          ],
+          "recencyDays": null
+        }
+      }
+    },
     "プレックス": {
       "企業名": "株式会社プレックス",
       "totalJobs": 2,
@@ -1860,60 +1926,6 @@
           "queries": [
             "新卒 企画 大阪",
             "新卒 マーケティング 大阪"
-          ],
-          "recencyDays": null
-        }
-      }
-    },
-    "リールスメディカル新大阪": {
-      "企業名": "リールスメディカル新大阪",
-      "totalJobs": 1,
-      "gradYears": [],
-      "recencyDays": null,
-      "sources": {
-        "求人ボックス": {
-          "jobCount": 1,
-          "jobs": [
-            "「児童指導員／有資格者」大阪市東淀川区の小規模 放課後等デイサービス"
-          ],
-          "queries": [
-            "新卒 企画 大阪"
-          ],
-          "recencyDays": null
-        }
-      }
-    },
-    "スタッフサービスitソリューション": {
-      "企業名": "株式会社スタッフサービス ITソリューション",
-      "totalJobs": 1,
-      "gradYears": [],
-      "recencyDays": null,
-      "sources": {
-        "求人ボックス": {
-          "jobCount": 1,
-          "jobs": [
-            "WEBサイト企画と制作進行管理ディレクター 堺筋本町駅"
-          ],
-          "queries": [
-            "新卒 企画 大阪"
-          ],
-          "recencyDays": null
-        }
-      }
-    },
-    "リールスメディカル井高野": {
-      "企業名": "リールスメディカル井高野",
-      "totalJobs": 1,
-      "gradYears": [],
-      "recencyDays": null,
-      "sources": {
-        "求人ボックス": {
-          "jobCount": 1,
-          "jobs": [
-            "「児童指導員・保育士」大阪市東淀川区・未経験歓迎、経験者優遇"
-          ],
-          "queries": [
-            "新卒 企画 大阪"
           ],
           "recencyDays": null
         }
@@ -1959,24 +1971,6 @@
         }
       }
     },
-    "レオパレス21": {
-      "企業名": "株式会社レオパレス21",
-      "totalJobs": 1,
-      "gradYears": [],
-      "recencyDays": null,
-      "sources": {
-        "求人ボックス": {
-          "jobCount": 1,
-          "jobs": [
-            "レオパレス21の「開発営業」／未経験歓迎／土地の有効活用をご提案しお客..."
-          ],
-          "queries": [
-            "新卒 企画 大阪"
-          ],
-          "recencyDays": null
-        }
-      }
-    },
     "メルディア": {
       "企業名": "株式会社メルディア",
       "totalJobs": 2,
@@ -1992,44 +1986,6 @@
           "queries": [
             "新卒 企画 大阪",
             "新卒 企画 名古屋"
-          ],
-          "recencyDays": null
-        }
-      }
-    },
-    "スタンディングポイント": {
-      "企業名": "株式会社スタンディングポイント",
-      "totalJobs": 1,
-      "gradYears": [
-        "2026"
-      ],
-      "recencyDays": 9,
-      "sources": {
-        "求人ボックス": {
-          "jobCount": 1,
-          "jobs": [
-            "26卒・新卒採用／総合職 賞与年3回／住宅手当・扶養手当など充実／大阪"
-          ],
-          "queries": [
-            "新卒 総合職 大阪"
-          ],
-          "recencyDays": 9
-        }
-      }
-    },
-    "関西空港交通": {
-      "企業名": "関西空港交通",
-      "totalJobs": 1,
-      "gradYears": [],
-      "recencyDays": null,
-      "sources": {
-        "求人ボックス": {
-          "jobCount": 1,
-          "jobs": [
-            "管理部門スタッフ／総合職"
-          ],
-          "queries": [
-            "新卒 総合職 大阪"
           ],
           "recencyDays": null
         }
@@ -2055,6 +2011,44 @@
         }
       }
     },
+    "関西空港交通": {
+      "企業名": "関西空港交通",
+      "totalJobs": 1,
+      "gradYears": [],
+      "recencyDays": null,
+      "sources": {
+        "求人ボックス": {
+          "jobCount": 1,
+          "jobs": [
+            "管理部門スタッフ／総合職"
+          ],
+          "queries": [
+            "新卒 総合職 大阪"
+          ],
+          "recencyDays": null
+        }
+      }
+    },
+    "universe堺ネクステージ": {
+      "企業名": "UNIVERSE堺／株式会社ネクステージ",
+      "totalJobs": 2,
+      "gradYears": [],
+      "recencyDays": null,
+      "sources": {
+        "求人ボックス": {
+          "jobCount": 2,
+          "jobs": [
+            "総合職／未経験OK／研修充実／早期キャリアUP",
+            "接客・販売スタッフ／職種経験者は給与優遇あり／実質年休125日!"
+          ],
+          "queries": [
+            "新卒 総合職 大阪",
+            "新卒 販売 大阪"
+          ],
+          "recencyDays": null
+        }
+      }
+    },
     "光星工業": {
       "企業名": "光星工業株式会社",
       "totalJobs": 1,
@@ -2075,6 +2069,26 @@
     },
     "ネクステージ岸和田店": {
       "企業名": "ネクステージ岸和田店",
+      "totalJobs": 2,
+      "gradYears": [],
+      "recencyDays": null,
+      "sources": {
+        "求人ボックス": {
+          "jobCount": 2,
+          "jobs": [
+            "総合職／未経験OK／研修充実／早期キャリアUP",
+            "積極採用中!営業／⏩️営業、販売経験活かしてご活躍可能!1000万円越..."
+          ],
+          "queries": [
+            "新卒 総合職 大阪",
+            "新卒 販売 大阪"
+          ],
+          "recencyDays": null
+        }
+      }
+    },
+    "ネクステージ寝屋川店": {
+      "企業名": "ネクステージ寝屋川店",
       "totalJobs": 1,
       "gradYears": [],
       "recencyDays": null,
@@ -2082,7 +2096,7 @@
         "求人ボックス": {
           "jobCount": 1,
           "jobs": [
-            "総合職／未経験OK／研修充実／早期キャリアUP"
+            "総合職／異業種経験歓迎／研修あり／キャリアUP"
           ],
           "queries": [
             "新卒 総合職 大阪"
@@ -2093,53 +2107,19 @@
     },
     "ネクステージ箕面店": {
       "企業名": "ネクステージ箕面店",
-      "totalJobs": 1,
+      "totalJobs": 2,
       "gradYears": [],
       "recencyDays": null,
       "sources": {
         "求人ボックス": {
-          "jobCount": 1,
+          "jobCount": 2,
           "jobs": [
-            "総合職／異業種経験歓迎／研修あり／キャリアUP"
+            "総合職／未経験OK／研修充実／早期キャリアUP",
+            "積極採用中!営業／⏩️営業、販売経験活かしてご活躍可能!1000万円越..."
           ],
           "queries": [
-            "新卒 総合職 大阪"
-          ],
-          "recencyDays": null
-        }
-      }
-    },
-    "エーゼット": {
-      "企業名": "株式会社エーゼット",
-      "totalJobs": 1,
-      "gradYears": [],
-      "recencyDays": 13,
-      "sources": {
-        "求人ボックス": {
-          "jobCount": 1,
-          "jobs": [
-            "化学メーカーでの総合職／25歳以下の採用／残業月3h以下・年間休日最大..."
-          ],
-          "queries": [
-            "新卒 総合職 大阪"
-          ],
-          "recencyDays": 13
-        }
-      }
-    },
-    "ネクステージ外環東大阪店": {
-      "企業名": "ネクステージ外環東大阪店",
-      "totalJobs": 1,
-      "gradYears": [],
-      "recencyDays": null,
-      "sources": {
-        "求人ボックス": {
-          "jobCount": 1,
-          "jobs": [
-            "総合職／異業種経験歓迎／研修あり／キャリアUP"
-          ],
-          "queries": [
-            "新卒 総合職 大阪"
+            "新卒 総合職 大阪",
+            "新卒 販売 大阪"
           ],
           "recencyDays": null
         }
@@ -2165,26 +2145,26 @@
         }
       }
     },
-    "フリゴ": {
-      "企業名": "株式会社フリゴ",
+    "エーゼット": {
+      "企業名": "株式会社エーゼット",
       "totalJobs": 1,
       "gradYears": [],
-      "recencyDays": null,
+      "recencyDays": 13,
       "sources": {
         "求人ボックス": {
           "jobCount": 1,
           "jobs": [
-            "「年間休日120日×年3回の賞与あり」食品加工作業 やその管理を行う総合職"
+            "化学メーカーでの総合職／25歳以下の採用／残業月3h以下・年間休日最大..."
           ],
           "queries": [
             "新卒 総合職 大阪"
           ],
-          "recencyDays": null
+          "recencyDays": 13
         }
       }
     },
-    "ネクステージ寝屋川店": {
-      "企業名": "ネクステージ寝屋川店",
+    "ネクステージ茨木スバル車専門店": {
+      "企業名": "ネクステージ茨木スバル車専門店",
       "totalJobs": 2,
       "gradYears": [],
       "recencyDays": null,
@@ -2221,8 +2201,26 @@
         }
       }
     },
-    "universe堺ネクステージ": {
-      "企業名": "UNIVERSE堺／株式会社ネクステージ",
+    "ネクステージ外環東大阪店": {
+      "企業名": "ネクステージ外環東大阪店",
+      "totalJobs": 1,
+      "gradYears": [],
+      "recencyDays": null,
+      "sources": {
+        "求人ボックス": {
+          "jobCount": 1,
+          "jobs": [
+            "総合職／未経験OK／研修充実／早期キャリアUP"
+          ],
+          "queries": [
+            "新卒 総合職 大阪"
+          ],
+          "recencyDays": null
+        }
+      }
+    },
+    "suvland堺ネクステージ": {
+      "企業名": "SUV LAND堺／株式会社ネクステージ",
       "totalJobs": 2,
       "gradYears": [],
       "recencyDays": null,
@@ -2230,12 +2228,102 @@
         "求人ボックス": {
           "jobCount": 2,
           "jobs": [
-            "総合職／未経験OK／研修充実／早期キャリアUP",
-            "接客・販売スタッフ／職種経験者は給与優遇あり／実質年休125日!"
+            "総合職／異業種経験歓迎／研修あり／キャリアUP",
+            "積極採用中!営業／⏩️営業、販売経験活かしてご活躍可能!1000万円越..."
           ],
           "queries": [
             "新卒 総合職 大阪",
             "新卒 販売 大阪"
+          ],
+          "recencyDays": null
+        }
+      }
+    },
+    "ネクステージ香里園セダンスポーツ専門店": {
+      "企業名": "ネクステージ香里園セダン・スポーツ専門店",
+      "totalJobs": 1,
+      "gradYears": [],
+      "recencyDays": null,
+      "sources": {
+        "求人ボックス": {
+          "jobCount": 1,
+          "jobs": [
+            "総合職／未経験OK／研修充実／早期キャリアUP"
+          ],
+          "queries": [
+            "新卒 総合職 大阪"
+          ],
+          "recencyDays": null
+        }
+      }
+    },
+    "フリゴ": {
+      "企業名": "株式会社フリゴ",
+      "totalJobs": 1,
+      "gradYears": [],
+      "recencyDays": null,
+      "sources": {
+        "求人ボックス": {
+          "jobCount": 1,
+          "jobs": [
+            "「年間休日120日×年3回の賞与あり」食品加工作業 やその管理を行う総合職"
+          ],
+          "queries": [
+            "新卒 総合職 大阪"
+          ],
+          "recencyDays": null
+        }
+      }
+    },
+    "ネクステージ藤井寺店": {
+      "企業名": "ネクステージ藤井寺店",
+      "totalJobs": 1,
+      "gradYears": [],
+      "recencyDays": null,
+      "sources": {
+        "求人ボックス": {
+          "jobCount": 1,
+          "jobs": [
+            "総合職／未経験OK／研修充実／早期キャリアUP"
+          ],
+          "queries": [
+            "新卒 総合職 大阪"
+          ],
+          "recencyDays": null
+        }
+      }
+    },
+    "日本教育クリエイト": {
+      "企業名": "株式会社日本教育クリエイト",
+      "totalJobs": 1,
+      "gradYears": [],
+      "recencyDays": null,
+      "sources": {
+        "求人ボックス": {
+          "jobCount": 1,
+          "jobs": [
+            "総合病院の医療事務／大阪梅田駅／未経験歓迎／土日祝休み"
+          ],
+          "queries": [
+            "新卒 総合職 大阪"
+          ],
+          "recencyDays": null
+        }
+      }
+    },
+    "ネクステージ摂津店": {
+      "企業名": "ネクステージ摂津店",
+      "totalJobs": 1,
+      "gradYears": [],
+      "recencyDays": null,
+      "sources": {
+        "求人ボックス": {
+          "jobCount": 1,
+          "jobs": [
+            "総合職／未経験OK／研修充実／早期キャリアUP"
+          ],
+          "queries": [
+            "新卒 総合職 大阪"
           ],
           "recencyDays": null
         }
@@ -2270,63 +2358,7 @@
         "求人ボックス": {
           "jobCount": 1,
           "jobs": [
-            "事務総合職／新卒・第2新卒／2027年3月大学・短大卒業見込み者対象／残業少なめ"
-          ],
-          "queries": [
-            "新卒 総合職 大阪"
-          ],
-          "recencyDays": null
-        }
-      }
-    },
-    "城東特別養護老人ホーム": {
-      "企業名": "城東特別養護老人ホーム",
-      "totalJobs": 1,
-      "gradYears": [],
-      "recencyDays": null,
-      "sources": {
-        "求人ボックス": {
-          "jobCount": 1,
-          "jobs": [
-            "介護職員／夜勤のみ／ブランクOK／資格手当あり／大阪市城東区／介護"
-          ],
-          "queries": [
-            "新卒 総合職 大阪"
-          ],
-          "recencyDays": null
-        }
-      }
-    },
-    "ネクステージ香里園セダンスポーツ専門店": {
-      "企業名": "ネクステージ香里園セダン・スポーツ専門店",
-      "totalJobs": 2,
-      "gradYears": [],
-      "recencyDays": null,
-      "sources": {
-        "求人ボックス": {
-          "jobCount": 2,
-          "jobs": [
-            "総合職／未経験OK／研修充実／早期キャリアUP",
-            "自動車販売スタッフ／月給27万円以上スタート／キャリアアップ後は年収2..."
-          ],
-          "queries": [
-            "新卒 総合職 大阪",
-            "新卒 販売 大阪"
-          ],
-          "recencyDays": null
-        }
-      }
-    },
-    "ネクステージ藤井寺店": {
-      "企業名": "ネクステージ藤井寺店",
-      "totalJobs": 1,
-      "gradYears": [],
-      "recencyDays": null,
-      "sources": {
-        "求人ボックス": {
-          "jobCount": 1,
-          "jobs": [
-            "総合職／異業種経験歓迎／研修あり／キャリアUP"
+            "事務総合職／新卒・第2新卒／2027年3月大学・短大卒業見込み者対象"
           ],
           "queries": [
             "新卒 総合職 大阪"
@@ -2389,24 +2421,6 @@
         }
       }
     },
-    "吉武工務店": {
-      "企業名": "株式会社吉武工務店",
-      "totalJobs": 1,
-      "gradYears": [],
-      "recencyDays": 0,
-      "sources": {
-        "求人ボックス": {
-          "jobCount": 1,
-          "jobs": [
-            "不動産・建築の総合職"
-          ],
-          "queries": [
-            "新卒 総合職 大阪"
-          ],
-          "recencyDays": 0
-        }
-      }
-    },
     "シナジーマーケティング": {
       "企業名": "シナジーマーケティング株式会社",
       "totalJobs": 1,
@@ -2422,44 +2436,6 @@
             "新卒 マーケティング 大阪"
           ],
           "recencyDays": null
-        }
-      }
-    },
-    "ぷらす整骨院南森町院": {
-      "企業名": "ぷらす整骨院 南森町院",
-      "totalJobs": 1,
-      "gradYears": [],
-      "recencyDays": null,
-      "sources": {
-        "求人ボックス": {
-          "jobCount": 1,
-          "jobs": [
-            "鍼灸師／整・接骨院／大阪天満宮駅"
-          ],
-          "queries": [
-            "新卒 マーケティング 大阪"
-          ],
-          "recencyDays": null
-        }
-      }
-    },
-    "ギブクリエーション": {
-      "企業名": "ギブクリエーション株式会社",
-      "totalJobs": 2,
-      "gradYears": [],
-      "recencyDays": 0,
-      "sources": {
-        "求人ボックス": {
-          "jobCount": 2,
-          "jobs": [
-            "大阪／Webマーケター SEO広告運用・ライター／第二創業期",
-            "大阪／淀屋橋／人材コンサル マネージャー／メーカー領域／事業成長を牽引"
-          ],
-          "queries": [
-            "新卒 マーケティング 大阪",
-            "新卒 コンサル 大阪"
-          ],
-          "recencyDays": 0
         }
       }
     },
@@ -2499,6 +2475,26 @@
         }
       }
     },
+    "無限": {
+      "企業名": "株式会社無限",
+      "totalJobs": 1,
+      "gradYears": [
+        "2026"
+      ],
+      "recencyDays": 9,
+      "sources": {
+        "求人ボックス": {
+          "jobCount": 1,
+          "jobs": [
+            "WEBマーケ／26年卒歓迎／20人で年商55億の少数精鋭チーム"
+          ],
+          "queries": [
+            "新卒 マーケティング 大阪"
+          ],
+          "recencyDays": 9
+        }
+      }
+    },
     "新東通信": {
       "企業名": "株式会社新東通信",
       "totalJobs": 1,
@@ -2535,64 +2531,6 @@
         }
       }
     },
-    "無限": {
-      "企業名": "株式会社無限",
-      "totalJobs": 1,
-      "gradYears": [
-        "2026"
-      ],
-      "recencyDays": 10,
-      "sources": {
-        "求人ボックス": {
-          "jobCount": 1,
-          "jobs": [
-            "WEBマーケ／26年卒歓迎／20人で年商55億の少数精鋭チーム"
-          ],
-          "queries": [
-            "新卒 マーケティング 大阪"
-          ],
-          "recencyDays": 10
-        }
-      }
-    },
-    "uzuz": {
-      "企業名": "株式会社UZUZ",
-      "totalJobs": 2,
-      "gradYears": [],
-      "recencyDays": 0,
-      "sources": {
-        "求人ボックス": {
-          "jobCount": 2,
-          "jobs": [
-            "キャリアアドバイザー 大阪",
-            "リクルーティングアドバイザー 大阪／新卒・第二新卒特化のエージェント"
-          ],
-          "queries": [
-            "新卒 マーケティング 大阪",
-            "新卒 コンサル 大阪"
-          ],
-          "recencyDays": 0
-        }
-      }
-    },
-    "scenelive": {
-      "企業名": "株式会社SceneLive",
-      "totalJobs": 1,
-      "gradYears": [],
-      "recencyDays": 10,
-      "sources": {
-        "求人ボックス": {
-          "jobCount": 1,
-          "jobs": [
-            "大阪／人事／採用 リーダー／戦略設計 実務、改善 土日祝休み"
-          ],
-          "queries": [
-            "新卒 マーケティング 大阪"
-          ],
-          "recencyDays": 10
-        }
-      }
-    },
     "force": {
       "企業名": "株式会社FORCE",
       "totalJobs": 1,
@@ -2611,8 +2549,26 @@
         }
       }
     },
-    "アインファーマシーズ": {
-      "企業名": "株式会社アインファーマシーズ",
+    "scenelive": {
+      "企業名": "株式会社SceneLive",
+      "totalJobs": 1,
+      "gradYears": [],
+      "recencyDays": 9,
+      "sources": {
+        "求人ボックス": {
+          "jobCount": 1,
+          "jobs": [
+            "大阪／人事／採用 リーダー／戦略設計 実務、改善 土日祝休み"
+          ],
+          "queries": [
+            "新卒 マーケティング 大阪"
+          ],
+          "recencyDays": 9
+        }
+      }
+    },
+    "ゴウリカ": {
+      "企業名": "ゴウリカ株式会社",
       "totalJobs": 1,
       "gradYears": [],
       "recencyDays": null,
@@ -2620,7 +2576,7 @@
         "求人ボックス": {
           "jobCount": 1,
           "jobs": [
-            "新宿／プロダクトマーケティング 化粧品ブランド「AYURA」"
+            "大阪／HRコンサルタント 年休125日／裁量 採用のプロフェッショナル..."
           ],
           "queries": [
             "新卒 マーケティング 大阪"
@@ -2629,26 +2585,8 @@
         }
       }
     },
-    "liberty": {
-      "企業名": "株式会社Liberty",
-      "totalJobs": 1,
-      "gradYears": [],
-      "recencyDays": 0,
-      "sources": {
-        "求人ボックス": {
-          "jobCount": 1,
-          "jobs": [
-            "第二新卒歓迎／総合職／事業企画・人事兼務多数／前年比売上229%超成長..."
-          ],
-          "queries": [
-            "新卒 マーケティング 大阪"
-          ],
-          "recencyDays": 0
-        }
-      }
-    },
-    "ショウヨウ": {
-      "企業名": "ショウヨウ株式会社",
+    "マテリアル": {
+      "企業名": "株式会社マテリアル",
       "totalJobs": 1,
       "gradYears": [],
       "recencyDays": null,
@@ -2656,7 +2594,61 @@
         "求人ボックス": {
           "jobCount": 1,
           "jobs": [
-            "事務／企画・マーケティング／PC・データ入力 人気 カッコいい商品企画..."
+            "大阪／ブランドプロデューサー マーケティングPR業界成長率トップクラス"
+          ],
+          "queries": [
+            "新卒 マーケティング 大阪"
+          ],
+          "recencyDays": null
+        }
+      }
+    },
+    "キャンパスサポート": {
+      "企業名": "株式会社キャンパスサポート",
+      "totalJobs": 1,
+      "gradYears": [],
+      "recencyDays": null,
+      "sources": {
+        "求人ボックス": {
+          "jobCount": 1,
+          "jobs": [
+            "「大阪」法人向け採用サービスのマーケティング・営業企画 リモート中心"
+          ],
+          "queries": [
+            "新卒 マーケティング 大阪"
+          ],
+          "recencyDays": null
+        }
+      }
+    },
+    "進研アド": {
+      "企業名": "株式会社進研アド",
+      "totalJobs": 1,
+      "gradYears": [],
+      "recencyDays": null,
+      "sources": {
+        "求人ボックス": {
+          "jobCount": 1,
+          "jobs": [
+            "東京／新宿／人事・新卒・中途採用 採用戦略立案・要員計画など裁量大"
+          ],
+          "queries": [
+            "新卒 マーケティング 大阪"
+          ],
+          "recencyDays": null
+        }
+      }
+    },
+    "ftgcompany": {
+      "企業名": "株式会社FTG Company",
+      "totalJobs": 1,
+      "gradYears": [],
+      "recencyDays": null,
+      "sources": {
+        "求人ボックス": {
+          "jobCount": 1,
+          "jobs": [
+            "中目黒／フレックス／新卒採用担当 福利厚生／GPTW「働きがいのある会..."
           ],
           "queries": [
             "新卒 マーケティング 大阪"
@@ -2739,21 +2731,21 @@
         }
       }
     },
-    "エルコーエイ": {
-      "企業名": "株式会社エル・コーエイ",
+    "ワンシード": {
+      "企業名": "株式会社ワンシード",
       "totalJobs": 1,
       "gradYears": [],
-      "recencyDays": 0,
+      "recencyDays": null,
       "sources": {
         "求人ボックス": {
           "jobCount": 1,
           "jobs": [
-            "一般事務・OA事務／即日安定の大手建設コンサル報告書作成・CAD補助駅..."
+            "「大阪・正社員」第2新卒歓迎／資産価値の高い不動産を扱うコンサル営業"
           ],
           "queries": [
             "新卒 コンサル 大阪"
           ],
-          "recencyDays": 0
+          "recencyDays": null
         }
       }
     },
@@ -2766,7 +2758,7 @@
         "求人ボックス": {
           "jobCount": 1,
           "jobs": [
-            "事務／PC・データ入力／オフィス系 グラングリーン大阪で働く"
+            "一般事務・OA事務／グラングリーン大阪で働く大手コンサルでのサポート事..."
           ],
           "queries": [
             "新卒 コンサル 大阪"
@@ -2779,60 +2771,40 @@
       "企業名": "アデコ株式会社",
       "totalJobs": 1,
       "gradYears": [],
-      "recencyDays": 11,
-      "sources": {
-        "求人ボックス": {
-          "jobCount": 1,
-          "jobs": [
-            "事務／PC・データ入力／オフィス系 在宅あり 電話少な目 建設コンサル..."
-          ],
-          "queries": [
-            "新卒 コンサル 大阪"
-          ],
-          "recencyDays": 11
-        }
-      }
-    },
-    "gsi": {
-      "企業名": "株式会社GSI",
-      "totalJobs": 1,
-      "gradYears": [],
-      "recencyDays": null,
-      "sources": {
-        "求人ボックス": {
-          "jobCount": 1,
-          "jobs": [
-            "2027新卒採用／ITエンジニア"
-          ],
-          "queries": [
-            "新卒 コンサル 大阪"
-          ],
-          "recencyDays": null
-        }
-      }
-    },
-    "リクルートスタッフィング": {
-      "企業名": "株式会社リクルートスタッフィング",
-      "totalJobs": 2,
-      "gradYears": [],
       "recencyDays": 10,
       "sources": {
         "求人ボックス": {
-          "jobCount": 2,
+          "jobCount": 1,
           "jobs": [
-            "一般事務職／未経験OK／時給1500円!未経験OK 土日祝休み!大手!駅チカ 事",
-            "梅田／リクルートGの派遣営業・販売・接客経験を活かせる／豊富なキャリア..."
+            "一般事務・OA事務／在宅あり 電話少な目 建設コンサル会社でサポート事..."
           ],
           "queries": [
-            "新卒 コンサル 大阪",
-            "新卒 販売 大阪"
+            "新卒 コンサル 大阪"
           ],
           "recencyDays": 10
         }
       }
     },
-    "reflame": {
-      "企業名": "株式会社REFLAME",
+    "エルコーエイ": {
+      "企業名": "株式会社エル・コーエイ",
+      "totalJobs": 1,
+      "gradYears": [],
+      "recencyDays": 0,
+      "sources": {
+        "求人ボックス": {
+          "jobCount": 1,
+          "jobs": [
+            "一般事務・OA事務／建設コンサル技術補助CAD・GIS・報告書作成経験..."
+          ],
+          "queries": [
+            "新卒 コンサル 大阪"
+          ],
+          "recencyDays": 0
+        }
+      }
+    },
+    "スリーエスコンサルタンツ": {
+      "企業名": "株式会社スリーエスコンサルタンツ",
       "totalJobs": 1,
       "gradYears": [],
       "recencyDays": null,
@@ -2840,7 +2812,7 @@
         "求人ボックス": {
           "jobCount": 1,
           "jobs": [
-            "大阪／両面型人材紹介営業 リーダー候補／注目の西日本ベンチャー100に..."
+            "「大阪市」発注者支援業務「電気」「未経験大歓迎 年間休日123日"
           ],
           "queries": [
             "新卒 コンサル 大阪"
@@ -2849,8 +2821,8 @@
         }
       }
     },
-    "ccc": {
-      "企業名": "株式会社CCC",
+    "計測リサーチコンサルタント": {
+      "企業名": "株式会社計測リサーチコンサルタント",
       "totalJobs": 1,
       "gradYears": [],
       "recencyDays": null,
@@ -2858,79 +2830,7 @@
         "求人ボックス": {
           "jobCount": 1,
           "jobs": [
-            "日払いOKで即日収入／モニター／「1回試すだけでも大歓迎」24時間いつ..."
-          ],
-          "queries": [
-            "新卒 コンサル 大阪"
-          ],
-          "recencyDays": null
-        }
-      }
-    },
-    "大和ハウス工業": {
-      "企業名": "大和ハウス工業株式会社",
-      "totalJobs": 1,
-      "gradYears": [],
-      "recencyDays": null,
-      "sources": {
-        "求人ボックス": {
-          "jobCount": 1,
-          "jobs": [
-            "北信越／土地活用コンサル営業 賃貸住宅／若手が活躍可能な環境"
-          ],
-          "queries": [
-            "新卒 コンサル 大阪"
-          ],
-          "recencyDays": null
-        }
-      }
-    },
-    "ダイハツ工業": {
-      "企業名": "ダイハツ工業株式会社",
-      "totalJobs": 1,
-      "gradYears": [],
-      "recencyDays": null,
-      "sources": {
-        "求人ボックス": {
-          "jobCount": 1,
-          "jobs": [
-            "人事 技術部門の採用戦略策定・人事制度運用 「大阪」軽自動車において高..."
-          ],
-          "queries": [
-            "新卒 コンサル 大阪"
-          ],
-          "recencyDays": null
-        }
-      }
-    },
-    "税理士法人日本経営": {
-      "企業名": "税理士法人日本経営",
-      "totalJobs": 1,
-      "gradYears": [],
-      "recencyDays": null,
-      "sources": {
-        "求人ボックス": {
-          "jobCount": 1,
-          "jobs": [
-            "会計・税務・医療経営コンサルタント／大阪 駅徒歩3分 年収420万円～"
-          ],
-          "queries": [
-            "新卒 コンサル 大阪"
-          ],
-          "recencyDays": null
-        }
-      }
-    },
-    "松原徳洲会病院": {
-      "企業名": "松原徳洲会病院",
-      "totalJobs": 1,
-      "gradYears": [],
-      "recencyDays": null,
-      "sources": {
-        "求人ボックス": {
-          "jobCount": 1,
-          "jobs": [
-            "病院での看護師・准看護師／大阪府松原市"
+            "「大阪／吹田」／土木管理業務／土木系の学校学科卒業者歓迎／相談しやすく..."
           ],
           "queries": [
             "新卒 コンサル 大阪"
@@ -2943,7 +2843,7 @@
       "企業名": "社労士法人フォーグッド",
       "totalJobs": 1,
       "gradYears": [],
-      "recencyDays": 10,
+      "recencyDays": 9,
       "sources": {
         "求人ボックス": {
           "jobCount": 1,
@@ -2953,48 +2853,12 @@
           "queries": [
             "新卒 コンサル 大阪"
           ],
-          "recencyDays": 10
-        }
-      }
-    },
-    "delight": {
-      "企業名": "株式会社Delight",
-      "totalJobs": 1,
-      "gradYears": [],
-      "recencyDays": 9,
-      "sources": {
-        "求人ボックス": {
-          "jobCount": 1,
-          "jobs": [
-            "人材領域のAI×SaaS事業／昇給年4回+インセンティブあり／大阪"
-          ],
-          "queries": [
-            "新卒 コンサル 大阪"
-          ],
           "recencyDays": 9
         }
       }
     },
-    "jagフィールド": {
-      "企業名": "JAGフィールド株式会社",
-      "totalJobs": 1,
-      "gradYears": [],
-      "recencyDays": 0,
-      "sources": {
-        "求人ボックス": {
-          "jobCount": 1,
-          "jobs": [
-            "発注者支援／大阪オフィス／建設コンサル／年休120日／無料社宅"
-          ],
-          "queries": [
-            "新卒 コンサル 大阪"
-          ],
-          "recencyDays": 0
-        }
-      }
-    },
-    "eir": {
-      "企業名": "Eir",
+    "irodas": {
+      "企業名": "株式会社irodas",
       "totalJobs": 1,
       "gradYears": [],
       "recencyDays": null,
@@ -3002,7 +2866,25 @@
         "求人ボックス": {
           "jobCount": 1,
           "jobs": [
-            "アシスタント「美容師」／2027年新卒生 産休育休実績あり"
+            "「大阪／北区」リクルーティングアドバイザー／新卒人材紹介事業部"
+          ],
+          "queries": [
+            "新卒 コンサル 大阪"
+          ],
+          "recencyDays": null
+        }
+      }
+    },
+    "採用戦略研究所": {
+      "企業名": "株式会社採用戦略研究所",
+      "totalJobs": 1,
+      "gradYears": [],
+      "recencyDays": null,
+      "sources": {
+        "求人ボックス": {
+          "jobCount": 1,
+          "jobs": [
+            "「大阪／採用代行「RPO」」WEB面接可／年間休日126日"
           ],
           "queries": [
             "新卒 コンサル 大阪"
@@ -3042,28 +2924,6 @@
           ],
           "queries": [
             "新卒 コンサル 大阪"
-          ],
-          "recencyDays": 0
-        }
-      }
-    },
-    "metasales": {
-      "企業名": "株式会社Meta Sales",
-      "totalJobs": 2,
-      "gradYears": [
-        "2027"
-      ],
-      "recencyDays": 0,
-      "sources": {
-        "求人ボックス": {
-          "jobCount": 2,
-          "jobs": [
-            "「求む!27卒・新卒」ゲーム会社での一般事務スタッフ／正社員採用／データ入力と備",
-            "「27卒」ショート動画編集スタッフ「SNSスキル習得・昇給・賞与あり」正社員／ク"
-          ],
-          "queries": [
-            "新卒 事務 大阪",
-            "新卒 企画 名古屋"
           ],
           "recencyDays": 0
         }
@@ -3143,62 +3003,24 @@
     },
     "人材プロオフィス": {
       "企業名": "人材プロオフィス株式会社",
-      "totalJobs": 2,
+      "totalJobs": 1,
       "gradYears": [],
       "recencyDays": null,
       "sources": {
         "求人ボックス": {
-          "jobCount": 2,
+          "jobCount": 1,
           "jobs": [
-            "車部品の設計部門での事務サポート",
-            "障がい者の方と訪問販売スタッフ"
+            "工場オフィスでの一般事務"
           ],
           "queries": [
-            "新卒 事務 大阪",
-            "新卒 販売 大阪"
+            "新卒 事務 大阪"
           ],
           "recencyDays": null
         }
       }
     },
-    "美喜有会整形外科みきゆうクリニック訪問": {
-      "企業名": "医療法人美喜有会 整形外科みきゆうクリニック訪問...",
-      "totalJobs": 1,
-      "gradYears": [],
-      "recencyDays": 13,
-      "sources": {
-        "求人ボックス": {
-          "jobCount": 1,
-          "jobs": [
-            "訪問診療の医療事務／内勤"
-          ],
-          "queries": [
-            "新卒 事務 大阪"
-          ],
-          "recencyDays": 13
-        }
-      }
-    },
-    "美喜有会訪問診療部": {
-      "企業名": "医療法人美喜有会 訪問診療部",
-      "totalJobs": 1,
-      "gradYears": [],
-      "recencyDays": 13,
-      "sources": {
-        "求人ボックス": {
-          "jobCount": 1,
-          "jobs": [
-            "訪問診療の医療事務"
-          ],
-          "queries": [
-            "新卒 事務 大阪"
-          ],
-          "recencyDays": 13
-        }
-      }
-    },
-    "サンワ": {
-      "企業名": "サンワ株式会社",
+    "ティーエムテックス": {
+      "企業名": "株式会社ティーエム・テックス",
       "totalJobs": 1,
       "gradYears": [],
       "recencyDays": 0,
@@ -3206,30 +3028,12 @@
         "求人ボックス": {
           "jobCount": 1,
           "jobs": [
-            "機械メーカーでの貿易事務／土日祝休み／年2回のボーナス制度あり"
+            "医療機器用品の一般事務及び簡単な入出荷のお仕事／20代～40代活躍中"
           ],
           "queries": [
             "新卒 事務 大阪"
           ],
           "recencyDays": 0
-        }
-      }
-    },
-    "sompoコミュニケーションズ": {
-      "企業名": "SOMPOコミュニケーションズ株式会社",
-      "totalJobs": 1,
-      "gradYears": [],
-      "recencyDays": null,
-      "sources": {
-        "求人ボックス": {
-          "jobCount": 1,
-          "jobs": [
-            "事務 月収例 28万円~ 髪·ネイル自由 顔が見えない接客のお仕事"
-          ],
-          "queries": [
-            "新卒 事務 大阪"
-          ],
-          "recencyDays": null
         }
       }
     },
@@ -3251,8 +3055,8 @@
         }
       }
     },
-    "サポート人材センター": {
-      "企業名": "サポート人材センター株式会社",
+    "サンワ": {
+      "企業名": "サンワ株式会社",
       "totalJobs": 1,
       "gradYears": [],
       "recencyDays": null,
@@ -3260,12 +3064,66 @@
         "求人ボックス": {
           "jobCount": 1,
           "jobs": [
-            "一般事務・OA事務／家庭事情のお休も柔軟に対応 未経験歓迎 共済事務"
+            "法務・特許事務／経験が活かせる／年間休日125日以上／賞与制度あり"
           ],
           "queries": [
             "新卒 事務 大阪"
           ],
           "recencyDays": null
+        }
+      }
+    },
+    "sompoコミュニケーションズ": {
+      "企業名": "SOMPOコミュニケーションズ株式会社",
+      "totalJobs": 1,
+      "gradYears": [],
+      "recencyDays": null,
+      "sources": {
+        "求人ボックス": {
+          "jobCount": 1,
+          "jobs": [
+            "事務 月収例 28万円~ 髪·ネイル自由 顔が見えない接客のお仕事"
+          ],
+          "queries": [
+            "新卒 事務 大阪"
+          ],
+          "recencyDays": null
+        }
+      }
+    },
+    "美喜有会整形外科みきゆうクリニック訪問": {
+      "企業名": "医療法人美喜有会 整形外科みきゆうクリニック訪問...",
+      "totalJobs": 1,
+      "gradYears": [],
+      "recencyDays": 12,
+      "sources": {
+        "求人ボックス": {
+          "jobCount": 1,
+          "jobs": [
+            "訪問診療の医療事務／内勤"
+          ],
+          "queries": [
+            "新卒 事務 大阪"
+          ],
+          "recencyDays": 12
+        }
+      }
+    },
+    "美喜有会訪問診療部": {
+      "企業名": "医療法人美喜有会 訪問診療部",
+      "totalJobs": 1,
+      "gradYears": [],
+      "recencyDays": 12,
+      "sources": {
+        "求人ボックス": {
+          "jobCount": 1,
+          "jobs": [
+            "訪問診療の医療事務"
+          ],
+          "queries": [
+            "新卒 事務 大阪"
+          ],
+          "recencyDays": 12
         }
       }
     },
@@ -3287,21 +3145,39 @@
         }
       }
     },
-    "マイナビワークス": {
-      "企業名": "株式会社マイナビワークス",
+    "ラブキャリア": {
+      "企業名": "株式会社ラブキャリア",
       "totalJobs": 1,
       "gradYears": [],
-      "recencyDays": 0,
+      "recencyDays": null,
       "sources": {
         "求人ボックス": {
           "jobCount": 1,
           "jobs": [
-            "一般事務・OA事務／有名大学イベントの事務アシ9時17時まで"
+            "データ入力・タイピング／週3から／1日7hOKかんたん事務郵便物のデー..."
           ],
           "queries": [
             "新卒 事務 大阪"
           ],
-          "recencyDays": 0
+          "recencyDays": null
+        }
+      }
+    },
+    "八光自動車工業": {
+      "企業名": "八光自動車工業株式会社",
+      "totalJobs": 1,
+      "gradYears": [],
+      "recencyDays": null,
+      "sources": {
+        "求人ボックス": {
+          "jobCount": 1,
+          "jobs": [
+            "面接1回「大阪」人事アシスタント「採用・教育」 高級輸入車正規ディーラ..."
+          ],
+          "queries": [
+            "新卒 事務 大阪"
+          ],
+          "recencyDays": null
         }
       }
     },
@@ -3316,7 +3192,7 @@
         "求人ボックス": {
           "jobCount": 2,
           "jobs": [
-            "「新卒・27卒歓迎!」IT事務／正社員採用／IT企業の書類作成",
+            "「新卒・27卒歓迎!」IT事務／正社員採用／IT企業の書類作成／20代30代活躍",
             "AIゲームテストエンジニア「27卒」・第2新卒歓迎「完全週休2日制／定着率高い」"
           ],
           "queries": [
@@ -3327,8 +3203,8 @@
         }
       }
     },
-    "lelien": {
-      "企業名": "株式会社Le Lien",
+    "albee": {
+      "企業名": "株式会社alBee",
       "totalJobs": 1,
       "gradYears": [
         "2027"
@@ -3338,7 +3214,7 @@
         "求人ボックス": {
           "jobCount": 1,
           "jobs": [
-            "「27卒・新卒」ゲーム開発サポート事務／安心の待遇／開発データの入力管理／大阪市"
+            "「27卒」第2新卒歓迎・SaaS・クラウドサービス会社での一般事務スタッフ／産育"
           ],
           "queries": [
             "新卒 事務 大阪"
@@ -3347,30 +3223,28 @@
         }
       }
     },
-    "creer": {
-      "企業名": "株式会社Creer",
-      "totalJobs": 2,
+    "gum": {
+      "企業名": "株式会社GUM",
+      "totalJobs": 1,
       "gradYears": [
         "2027"
       ],
       "recencyDays": 0,
       "sources": {
         "求人ボックス": {
-          "jobCount": 2,
+          "jobCount": 1,
           "jobs": [
-            "「27卒・新卒大歓迎」アニメ・ゲームのプロジェクトサポート事務／正社員採用／プロ",
-            "「27卒」ショート動画編集スタッフ正社員「SNS好き歓迎・残業少なめ」年間休日1"
+            "「27卒」ペット・動物関連会社での一般事務スタッフ・第2新卒歓迎／残業少なめ「正"
           ],
           "queries": [
-            "新卒 事務 大阪",
-            "新卒 企画 名古屋"
+            "新卒 事務 大阪"
           ],
           "recencyDays": 0
         }
       }
     },
-    "albee": {
-      "企業名": "株式会社alBee",
+    "jhrconsulting": {
+      "企業名": "JHRconsulting株式会社",
       "totalJobs": 2,
       "gradYears": [
         "2027"
@@ -3380,8 +3254,8 @@
         "求人ボックス": {
           "jobCount": 2,
           "jobs": [
-            "「27卒」第2新卒歓迎・SaaS・クラウドサービス会社での一般事務スタ...",
-            "新卒27卒歓迎／ゲームインフラエンジニア／ゼロから学べる／名古屋市中村区名駅南1"
+            "「27卒・新卒」一般事務／正社員採用／書類作成とデータ入力／昇給賞与あり／大阪市",
+            "フロントエンドエンジニア「新卒・27卒歓迎」未経験OK／HTMLコーディング／賞"
           ],
           "queries": [
             "新卒 事務 大阪",
@@ -3391,8 +3265,28 @@
         }
       }
     },
-    "ネクステージ岸和田買取課": {
-      "企業名": "ネクステージ岸和田買取課",
+    "ベンタス": {
+      "企業名": "ベンタス株式会社",
+      "totalJobs": 1,
+      "gradYears": [
+        "2027"
+      ],
+      "recencyDays": 0,
+      "sources": {
+        "求人ボックス": {
+          "jobCount": 1,
+          "jobs": [
+            "「27卒・新卒」営業事務／正社員採用／営業サポートと見積作成／土日祝休み／大阪市"
+          ],
+          "queries": [
+            "新卒 事務 大阪"
+          ],
+          "recencyDays": 0
+        }
+      }
+    },
+    "前田営工センター": {
+      "企業名": "株式会社前田営工センター",
       "totalJobs": 1,
       "gradYears": [],
       "recencyDays": null,
@@ -3400,7 +3294,25 @@
         "求人ボックス": {
           "jobCount": 1,
           "jobs": [
-            "自動車販売スタッフ／月給27万円以上スタート／キャリアアップ後は年収2..."
+            "ガス機器の取付施工／未経験歓迎／大阪ガス施設での研修有"
+          ],
+          "queries": [
+            "新卒 販売 大阪"
+          ],
+          "recencyDays": null
+        }
+      }
+    },
+    "関西興業": {
+      "企業名": "関西興業株式会社",
+      "totalJobs": 1,
+      "gradYears": [],
+      "recencyDays": null,
+      "sources": {
+        "求人ボックス": {
+          "jobCount": 1,
+          "jobs": [
+            "ガス機器の修理・他／未経験歓迎／大阪ガス施設での研修有"
           ],
           "queries": [
             "新卒 販売 大阪"
@@ -3411,78 +3323,6 @@
     },
     "suvland箕面": {
       "企業名": "SUV LAND箕面",
-      "totalJobs": 1,
-      "gradYears": [],
-      "recencyDays": null,
-      "sources": {
-        "求人ボックス": {
-          "jobCount": 1,
-          "jobs": [
-            "自動車販売スタッフ／月給27万円以上スタート／キャリアアップ後は年収2..."
-          ],
-          "queries": [
-            "新卒 販売 大阪"
-          ],
-          "recencyDays": null
-        }
-      }
-    },
-    "another": {
-      "企業名": "株式会社Another",
-      "totalJobs": 1,
-      "gradYears": [],
-      "recencyDays": 10,
-      "sources": {
-        "求人ボックス": {
-          "jobCount": 1,
-          "jobs": [
-            "大阪／梅田／販売企画職 携帯販売ショップ／完全週休2日制／平均残業5時..."
-          ],
-          "queries": [
-            "新卒 販売 大阪"
-          ],
-          "recencyDays": 10
-        }
-      }
-    },
-    "オートステージ堺": {
-      "企業名": "オートステージ堺",
-      "totalJobs": 1,
-      "gradYears": [],
-      "recencyDays": null,
-      "sources": {
-        "求人ボックス": {
-          "jobCount": 1,
-          "jobs": [
-            "自動車販売スタッフ／月給27万円以上スタート／キャリアアップ後は年収2..."
-          ],
-          "queries": [
-            "新卒 販売 大阪"
-          ],
-          "recencyDays": null
-        }
-      }
-    },
-    "イングリウッド": {
-      "企業名": "株式会社イングリウッド",
-      "totalJobs": 1,
-      "gradYears": [],
-      "recencyDays": 13,
-      "sources": {
-        "求人ボックス": {
-          "jobCount": 1,
-          "jobs": [
-            "大阪／バイヤー EC総合通販事業／ファッション領域 商品計画"
-          ],
-          "queries": [
-            "新卒 販売 大阪"
-          ],
-          "recencyDays": 13
-        }
-      }
-    },
-    "ネクステージ26号岸和田店": {
-      "企業名": "ネクステージ26号岸和田店",
       "totalJobs": 1,
       "gradYears": [],
       "recencyDays": null,
@@ -3517,8 +3357,62 @@
         }
       }
     },
-    "ネクステージ箕面セダンスポーツ専門店": {
-      "企業名": "ネクステージ箕面セダン・スポーツ専門店",
+    "ネクステージ堺美原店": {
+      "企業名": "ネクステージ堺美原店",
+      "totalJobs": 1,
+      "gradYears": [],
+      "recencyDays": null,
+      "sources": {
+        "求人ボックス": {
+          "jobCount": 1,
+          "jobs": [
+            "接客／⏩️営業、販売経験活かして早期キャリアUP可能!固定給1000万..."
+          ],
+          "queries": [
+            "新卒 販売 大阪"
+          ],
+          "recencyDays": null
+        }
+      }
+    },
+    "ネクステージ26号岸和田店": {
+      "企業名": "ネクステージ26号岸和田店",
+      "totalJobs": 1,
+      "gradYears": [],
+      "recencyDays": null,
+      "sources": {
+        "求人ボックス": {
+          "jobCount": 1,
+          "jobs": [
+            "自動車販売スタッフ／月給27万円以上スタート／キャリアアップ後は年収2..."
+          ],
+          "queries": [
+            "新卒 販売 大阪"
+          ],
+          "recencyDays": null
+        }
+      }
+    },
+    "ネクステージ守口店": {
+      "企業名": "ネクステージ守口店",
+      "totalJobs": 1,
+      "gradYears": [],
+      "recencyDays": null,
+      "sources": {
+        "求人ボックス": {
+          "jobCount": 1,
+          "jobs": [
+            "自動車の販売スタッフ／積極採用中!／未経験でも月給32万円以上!"
+          ],
+          "queries": [
+            "新卒 販売 大阪"
+          ],
+          "recencyDays": null
+        }
+      }
+    },
+    "ネクステージ岸和田買取課": {
+      "企業名": "ネクステージ岸和田買取課",
       "totalJobs": 1,
       "gradYears": [],
       "recencyDays": null,
@@ -3553,8 +3447,26 @@
         }
       }
     },
-    "ネクステージ茨木スバル車専門店": {
-      "企業名": "ネクステージ茨木スバル車専門店",
+    "オージー": {
+      "企業名": "株式会社オージー",
+      "totalJobs": 1,
+      "gradYears": [],
+      "recencyDays": null,
+      "sources": {
+        "求人ボックス": {
+          "jobCount": 1,
+          "jobs": [
+            "販売スタッフ"
+          ],
+          "queries": [
+            "新卒 販売 大阪"
+          ],
+          "recencyDays": null
+        }
+      }
+    },
+    "オートステージ堺": {
+      "企業名": "オートステージ堺",
       "totalJobs": 1,
       "gradYears": [],
       "recencyDays": null,
@@ -3589,29 +3501,11 @@
         }
       }
     },
-    "カスカード": {
-      "企業名": "株式会社カスカード",
-      "totalJobs": 1,
-      "gradYears": [],
-      "recencyDays": 10,
-      "sources": {
-        "求人ボックス": {
-          "jobCount": 1,
-          "jobs": [
-            "販売スタッフ／創業60年超の安定企業／未経験OK!阪急三番街店"
-          ],
-          "queries": [
-            "新卒 販売 大阪"
-          ],
-          "recencyDays": 10
-        }
-      }
-    },
     "釣具買取専門店ウェイブ": {
       "企業名": "釣具買取専門店ウェイブ",
       "totalJobs": 1,
       "gradYears": [],
-      "recencyDays": 10,
+      "recencyDays": 9,
       "sources": {
         "求人ボックス": {
           "jobCount": 1,
@@ -3621,27 +3515,43 @@
           "queries": [
             "新卒 販売 大阪"
           ],
-          "recencyDays": 10
+          "recencyDays": 9
         }
       }
     },
-    "elシステム": {
-      "企業名": "株式会社ELシステム",
+    "カスカード": {
+      "企業名": "株式会社カスカード",
       "totalJobs": 1,
-      "gradYears": [
-        "2027"
-      ],
-      "recencyDays": 0,
+      "gradYears": [],
+      "recencyDays": 9,
       "sources": {
         "求人ボックス": {
           "jobCount": 1,
           "jobs": [
-            "フロントエンドエンジニア「新卒・27卒歓迎」未経験OK／HTMLコーディング／賞"
+            "販売スタッフ／創業60年超の安定企業／未経験OK!阪急三番街店"
           ],
           "queries": [
-            "新卒 エンジニア 名古屋"
+            "新卒 販売 大阪"
           ],
-          "recencyDays": 0
+          "recencyDays": 9
+        }
+      }
+    },
+    "クレイブ": {
+      "企業名": "株式会社クレイブ",
+      "totalJobs": 1,
+      "gradYears": [],
+      "recencyDays": null,
+      "sources": {
+        "求人ボックス": {
+          "jobCount": 1,
+          "jobs": [
+            "関西勤務 店舗運営管理業務 店舗マネージメント、ラウンダー、販売応援"
+          ],
+          "queries": [
+            "新卒 販売 大阪"
+          ],
+          "recencyDays": null
         }
       }
     },
@@ -3681,24 +3591,6 @@
         }
       }
     },
-    "トランソニックソフトウェア": {
-      "企業名": "株式会社トランソニックソフトウェア",
-      "totalJobs": 1,
-      "gradYears": [],
-      "recencyDays": null,
-      "sources": {
-        "求人ボックス": {
-          "jobCount": 1,
-          "jobs": [
-            "システム開発会社の総務スタッフ 未経験可 土日祝休み 週3日から可 副業可 Wワ"
-          ],
-          "queries": [
-            "新卒 エンジニア 名古屋"
-          ],
-          "recencyDays": null
-        }
-      }
-    },
     "テクノプロ": {
       "企業名": "株式会社テクノプロ",
       "totalJobs": 1,
@@ -3717,18 +3609,16 @@
         }
       }
     },
-    "プロジェクトトリガー": {
-      "企業名": "株式会社プロジェクトトリガー",
+    "corecode": {
+      "企業名": "株式会社CORE CODE",
       "totalJobs": 1,
-      "gradYears": [
-        "2027"
-      ],
+      "gradYears": [],
       "recencyDays": 0,
       "sources": {
         "求人ボックス": {
           "jobCount": 1,
           "jobs": [
-            "新卒27卒歓迎／ゲームサーバーエンジニア／未経験からプロ／名古屋市中村区名駅南2"
+            "webデザイナー／アニメ・ゲーム好き必見!未経験歓迎アニメのLP制作などをお任せ"
           ],
           "queries": [
             "新卒 エンジニア 名古屋"
@@ -3737,8 +3627,26 @@
         }
       }
     },
-    "elm": {
-      "企業名": "株式会社ELM",
+    "スタッフサービスエンジニアリング": {
+      "企業名": "スタッフサービス・エンジニアリング",
+      "totalJobs": 1,
+      "gradYears": [],
+      "recencyDays": 12,
+      "sources": {
+        "求人ボックス": {
+          "jobCount": 1,
+          "jobs": [
+            "ものづくりサポート／愛知 ものづくりサポート 理系出身歓迎／自動車や最新家電のも"
+          ],
+          "queries": [
+            "新卒 エンジニア 名古屋"
+          ],
+          "recencyDays": 12
+        }
+      }
+    },
+    "elシステム": {
+      "企業名": "株式会社ELシステム",
       "totalJobs": 1,
       "gradYears": [
         "2027"
@@ -3748,7 +3656,7 @@
         "求人ボックス": {
           "jobCount": 1,
           "jobs": [
-            "新卒27卒歓迎／ゲームサーバーエンジニア／未経験からプロ／名古屋市中区栄4丁目"
+            "フロントエンドエンジニア「新卒・27卒歓迎」未経験OK／HTMLコーディング／賞"
           ],
           "queries": [
             "新卒 エンジニア 名古屋"
@@ -3767,6 +3675,24 @@
           "jobCount": 1,
           "jobs": [
             "未経験OK!新卒OK!ロボットサービスエンジニア、名古屋営業所スタッフ"
+          ],
+          "queries": [
+            "新卒 エンジニア 名古屋"
+          ],
+          "recencyDays": null
+        }
+      }
+    },
+    "永山コンピューターサービス": {
+      "企業名": "永山コンピューターサービス株式会社",
+      "totalJobs": 1,
+      "gradYears": [],
+      "recencyDays": null,
+      "sources": {
+        "求人ボックス": {
+          "jobCount": 1,
+          "jobs": [
+            "27新卒限定／名古屋／ITエンジニア新卒採用"
           ],
           "queries": [
             "新卒 エンジニア 名古屋"
@@ -3802,7 +3728,7 @@
         "求人ボックス": {
           "jobCount": 1,
           "jobs": [
-            "名古屋駅／YouTubeプロデューサー 代理店案件無／2028年上場目..."
+            "名古屋駅／動画プロデューサー 代理店案件無／2028年上場目指す"
           ],
           "queries": [
             "新卒 企画 名古屋"
@@ -3815,7 +3741,7 @@
       "企業名": "TGウェルフェア株式会社",
       "totalJobs": 1,
       "gradYears": [],
-      "recencyDays": 13,
+      "recencyDays": 12,
       "sources": {
         "求人ボックス": {
           "jobCount": 1,
@@ -3825,7 +3751,7 @@
           "queries": [
             "新卒 企画 名古屋"
           ],
-          "recencyDays": 13
+          "recencyDays": 12
         }
       }
     },
@@ -3839,6 +3765,24 @@
           "jobCount": 1,
           "jobs": [
             "物流センターの事業企画"
+          ],
+          "queries": [
+            "新卒 企画 名古屋"
+          ],
+          "recencyDays": null
+        }
+      }
+    },
+    "ベルサンテスタッフ": {
+      "企業名": "ベルサンテスタッフ株式会社",
+      "totalJobs": 1,
+      "gradYears": [],
+      "recencyDays": null,
+      "sources": {
+        "求人ボックス": {
+          "jobCount": 1,
+          "jobs": [
+            "保育士／固定シフト 平日のみ 2歳児クラス補助 名古屋市南区 車通勤可"
           ],
           "queries": [
             "新卒 企画 名古屋"
@@ -3865,8 +3809,8 @@
         }
       }
     },
-    "ベルサンテスタッフ": {
-      "企業名": "ベルサンテスタッフ株式会社",
+    "パナソニック環境エンジニアリング": {
+      "企業名": "パナソニック環境エンジニアリング株式会社",
       "totalJobs": 1,
       "gradYears": [],
       "recencyDays": null,
@@ -3874,43 +3818,7 @@
         "求人ボックス": {
           "jobCount": 1,
           "jobs": [
-            "保育士／名古屋市熱田区 9時～14時 土日祝休み 補助業務 社保加入可"
-          ],
-          "queries": [
-            "新卒 企画 名古屋"
-          ],
-          "recencyDays": null
-        }
-      }
-    },
-    "雇用先:ダブルエースbyアイメディ": {
-      "企業名": "雇用先:ダブルエース株式会社 by アイ・メディ...",
-      "totalJobs": 1,
-      "gradYears": [],
-      "recencyDays": 0,
-      "sources": {
-        "求人ボックス": {
-          "jobCount": 1,
-          "jobs": [
-            "イベント企画・販売スタッフ新卒中部・愛知・名古屋基本面接確約"
-          ],
-          "queries": [
-            "新卒 企画 名古屋"
-          ],
-          "recencyDays": 0
-        }
-      }
-    },
-    "クックビズ": {
-      "企業名": "クックビズ株式会社",
-      "totalJobs": 1,
-      "gradYears": [],
-      "recencyDays": null,
-      "sources": {
-        "求人ボックス": {
-          "jobCount": 1,
-          "jobs": [
-            "店長マネージャー候補／「未経験OK」愛知県・名古屋市／店長"
+            "「東京」人事・総務「人事企画職」"
           ],
           "queries": [
             "新卒 企画 名古屋"
@@ -3937,8 +3845,8 @@
         }
       }
     },
-    "ベンタス": {
-      "企業名": "ベンタス株式会社",
+    "lelien": {
+      "企業名": "株式会社Le Lien",
       "totalJobs": 1,
       "gradYears": [
         "2027"
@@ -3948,12 +3856,48 @@
         "求人ボックス": {
           "jobCount": 1,
           "jobs": [
-            "「27卒」クリエイター志望歓迎・ライブ配信コンテンツ制作スタッフ／昇給あり／賞与"
+            "生成AI活用ゲームモーション開発「27卒」正社員・交通費全額支給・研修充実／第2"
           ],
           "queries": [
             "新卒 企画 名古屋"
           ],
           "recencyDays": 0
+        }
+      }
+    },
+    "ビーマックス": {
+      "企業名": "ビー・マックス株式会社",
+      "totalJobs": 1,
+      "gradYears": [],
+      "recencyDays": 0,
+      "sources": {
+        "求人ボックス": {
+          "jobCount": 1,
+          "jobs": [
+            "企画・マーケティング 大型商業施設のプロモーション企画 未経験OK"
+          ],
+          "queries": [
+            "新卒 企画 名古屋"
+          ],
+          "recencyDays": 0
+        }
+      }
+    },
+    "東海時計商事": {
+      "企業名": "東海時計商事株式会社",
+      "totalJobs": 1,
+      "gradYears": [],
+      "recencyDays": null,
+      "sources": {
+        "求人ボックス": {
+          "jobCount": 1,
+          "jobs": [
+            "企画営業 注目の時計アイテム"
+          ],
+          "queries": [
+            "新卒 企画 名古屋"
+          ],
+          "recencyDays": null
         }
       }
     },
@@ -4040,10 +3984,8 @@
     },
     "ロッテ": {
       "企業名": "株式会社ロッテ",
-      "totalJobs": 13,
-      "gradYears": [
-        "2027"
-      ],
+      "totalJobs": 12,
+      "gradYears": [],
       "recencyDays": null,
       "sources": {
         "リクナビ": {
@@ -4062,14 +4004,6 @@
             "新卒 販売 大阪",
             "新卒 エンジニア 名古屋",
             "新卒 企画 名古屋"
-          ],
-          "recencyDays": null
-        },
-        "キャリタス就活": {
-          "jobCount": 1,
-          "jobs": [],
-          "queries": [
-            "新卒"
           ],
           "recencyDays": null
         }
@@ -4185,10 +4119,8 @@
     },
     "sky": {
       "企業名": "Ｓｋｙ株式会社",
-      "totalJobs": 13,
-      "gradYears": [
-        "2027"
-      ],
+      "totalJobs": 12,
+      "gradYears": [],
       "recencyDays": null,
       "sources": {
         "リクナビ": {
@@ -4207,14 +4139,6 @@
             "新卒 販売 大阪",
             "新卒 エンジニア 名古屋",
             "新卒 企画 名古屋"
-          ],
-          "recencyDays": null
-        },
-        "キャリタス就活": {
-          "jobCount": 1,
-          "jobs": [],
-          "queries": [
-            "新卒"
           ],
           "recencyDays": null
         }
@@ -4787,8 +4711,8 @@
         }
       }
     },
-    "富士通グループ": {
-      "企業名": "富士通グループ",
+    "松屋フーズホールディングス": {
+      "企業名": "株式会社松屋フーズホールディングス",
       "totalJobs": 1,
       "gradYears": [
         "2027"
@@ -4805,8 +4729,8 @@
         }
       }
     },
-    "東武鉄道グループ": {
-      "企業名": "東武鉄道グループ",
+    "ベネッセスタイルケア": {
+      "企業名": "株式会社ベネッセスタイルケア",
       "totalJobs": 1,
       "gradYears": [
         "2027"
@@ -4823,8 +4747,8 @@
         }
       }
     },
-    "セキスイハイムグループ": {
-      "企業名": "セキスイハイムグループ",
+    "ゼビオグループ": {
+      "企業名": "ゼビオグループ",
       "totalJobs": 1,
       "gradYears": [
         "2027"
@@ -4841,8 +4765,98 @@
         }
       }
     },
-    "オービック": {
-      "企業名": "株式会社オービック",
+    "大成建設": {
+      "企業名": "大成建設株式会社",
+      "totalJobs": 1,
+      "gradYears": [
+        "2027"
+      ],
+      "recencyDays": null,
+      "sources": {
+        "キャリタス就活": {
+          "jobCount": 1,
+          "jobs": [],
+          "queries": [
+            "新卒"
+          ],
+          "recencyDays": null
+        }
+      }
+    },
+    "王将フードサービス": {
+      "企業名": "株式会社王将フードサービス",
+      "totalJobs": 1,
+      "gradYears": [
+        "2027"
+      ],
+      "recencyDays": null,
+      "sources": {
+        "キャリタス就活": {
+          "jobCount": 1,
+          "jobs": [],
+          "queries": [
+            "新卒"
+          ],
+          "recencyDays": null
+        }
+      }
+    },
+    "ゾフ": {
+      "企業名": "株式会社ゾフ",
+      "totalJobs": 1,
+      "gradYears": [
+        "2027"
+      ],
+      "recencyDays": null,
+      "sources": {
+        "キャリタス就活": {
+          "jobCount": 1,
+          "jobs": [],
+          "queries": [
+            "新卒"
+          ],
+          "recencyDays": null
+        }
+      }
+    },
+    "デイリースポーツ": {
+      "企業名": "株式会社デイリースポーツ",
+      "totalJobs": 1,
+      "gradYears": [
+        "2027"
+      ],
+      "recencyDays": null,
+      "sources": {
+        "キャリタス就活": {
+          "jobCount": 1,
+          "jobs": [],
+          "queries": [
+            "新卒"
+          ],
+          "recencyDays": null
+        }
+      }
+    },
+    "いわて愛隣会": {
+      "企業名": "株式会社いわて愛隣会",
+      "totalJobs": 1,
+      "gradYears": [
+        "2027"
+      ],
+      "recencyDays": null,
+      "sources": {
+        "キャリタス就活": {
+          "jobCount": 1,
+          "jobs": [],
+          "queries": [
+            "新卒"
+          ],
+          "recencyDays": null
+        }
+      }
+    },
+    "後藤木材": {
+      "企業名": "後藤木材株式会社",
       "totalJobs": 1,
       "gradYears": [
         "2027"
@@ -4895,42 +4909,6 @@
         }
       }
     },
-    "いわて愛隣会": {
-      "企業名": "株式会社いわて愛隣会",
-      "totalJobs": 1,
-      "gradYears": [
-        "2027"
-      ],
-      "recencyDays": null,
-      "sources": {
-        "キャリタス就活": {
-          "jobCount": 1,
-          "jobs": [],
-          "queries": [
-            "新卒"
-          ],
-          "recencyDays": null
-        }
-      }
-    },
-    "デイリースポーツ": {
-      "企業名": "株式会社デイリースポーツ",
-      "totalJobs": 1,
-      "gradYears": [
-        "2027"
-      ],
-      "recencyDays": null,
-      "sources": {
-        "キャリタス就活": {
-          "jobCount": 1,
-          "jobs": [],
-          "queries": [
-            "新卒"
-          ],
-          "recencyDays": null
-        }
-      }
-    },
     "ドットライン": {
       "企業名": "株式会社ドットライン",
       "totalJobs": 1,
@@ -4953,16 +4931,16 @@
   "stats": {
     "perSource": {
       "求人ボックス": {
-        "cards": 272,
-        "companies": 212
+        "cards": 266,
+        "companies": 210
       },
       "リクナビ": {
         "cards": 360,
         "companies": 30
       },
       "キャリタス就活": {
-        "cards": 11,
-        "companies": 11
+        "cards": 12,
+        "companies": 12
       }
     },
     "staleSources": []
