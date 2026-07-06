@@ -15,6 +15,7 @@
     "target": "node src/build-target-list.js",
     "ng": "node src/exclude-ng.js --ng data/ng-companies.txt --list leads-mochica-target.csv",
     "ng:apply": "node src/exclude-ng.js --ng data/ng-companies.txt --list leads-mochica-target.csv --apply",
+    "dedupe": "node src/dedupe-approach.js --list leads-mochica-named-consolidated.csv --ng \"data/アプローチ禁止企業一覧.txt\" --customers data/existing-bango.json --sf sources/SF-leads.csv",
     "media": "node src/build-media.js --in leads-daihyou-1000.csv --out sources/A-media.csv",
     "discover": "node src/build-media.js --discover \"新卒 営業 東京;新卒 エンジニア 大阪\" --out sources/E-hiring.csv",
     "backfill": "node src/build-media.js --backfill leads-daihyou-1000.csv --out sources/E-hiring.csv --empty-only",

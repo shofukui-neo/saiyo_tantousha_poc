@@ -20,7 +20,9 @@
 
 const fs = require('fs');
 const path = require('path');
-const { readCsv, toCsv, normCompanyName, toHalfWidth, CORP_FORMS } = require('./csv');
+const { readCsv, toCsv, normCompanyName } = require('./csv');
+// 禁止リストの索引化・突合ロジックは ng-index.js に集約（dedupe-approach.js と共用）。
+const { buildNgIndex, ngHit } = require('./ng-index');
 
 function getArg(name, def) {
   const i = process.argv.indexOf('--' + name);
@@ -36,79 +38,11 @@ const NAME_COL = getArg('name-col', '企業名');
 // --ignore-corp-pos で従来どおり「素の社名一致」だけで除外。
 const IGNORE_POS = !!getArg('ignore-corp-pos', false);
 
-// 法人格の付き位置: 'pre'(前株) / 'post'(後株) / 'none'(法人格なし or 中間)
-function corpPos(name) {
-  const s = toHalfWidth(name).trim().replace(/[㈱㈲㈳㈿]/g, '');
-  for (const f of CORP_FORMS) {     // 配列は長い法人格が先(医療法人社団→医療法人)
-    if (s.startsWith(f)) return 'pre';
-    if (s.endsWith(f)) return 'post';
-  }
-  return 'none';
-}
-
 function resolveP(fp) { return path.isAbsolute(fp) ? fp : path.resolve(process.cwd(), fp); }
 function mustRead(fp) {
   const abs = resolveP(fp);
   if (!fs.existsSync(abs)) { console.error(`✗ ファイルが見つかりません: ${abs}`); process.exit(1); }
   return fs.readFileSync(abs, 'utf8');
-}
-
-// 1行から「社名候補」を全部取り出す(現社名＋旧社名)。
-// 旧社名は （旧：…）/（旧社名：…）/※旧社名：… 形式を抽出し、本体からは取り除く。
-function namesFromLine(rawLine) {
-  let s = String(rawLine || '').replace(/^﻿/, '').trim();
-  // 行頭/行末の囲みダブルクォート(CSVセル貼り付け対応)
-  s = s.replace(/^"+/, '').replace(/"+$/, '').trim();
-  if (!s) return [];
-  const out = [];
-
-  // 旧社名の抽出パターン
-  const oldPatterns = [
-    /[（(]\s*旧[：:]\s*([^（）()]+?)\s*[)）]/g,        // （旧：○○）
-    /[（(]\s*旧社名[：:]\s*([^（）()]+?)\s*[)）]/g,     // （旧社名：○○）
-    /※\s*旧社名[：:]\s*(.+)$/g,                        // ※旧社名：○○
-  ];
-  for (const re of oldPatterns) {
-    let m;
-    while ((m = re.exec(s)) !== null) { if (m[1]) out.push(m[1].trim()); }
-  }
-  // 旧社名表記を本体から除去 → 残りが現社名
-  let main = s
-    .replace(/[（(]\s*旧[：:][^（）()]*[)）]/g, '')
-    .replace(/[（(]\s*旧社名[：:][^（）()]*[)）]/g, '')
-    .replace(/※\s*旧社名[：:].*$/g, '')
-    .trim();
-  if (main) out.push(main);
-  return out.filter(Boolean);
-}
-
-function buildNgIndex(text) {
-  const byKey = new Map();      // 正規化社名 -> { display:代表表示名, posSet:法人格位置の集合 }
-  let rawNames = 0;
-  for (const line of text.split(/\r?\n/)) {
-    for (const nm of namesFromLine(line)) {
-      rawNames++;
-      const key = normCompanyName(nm);
-      if (!key) continue;
-      if (!byKey.has(key)) byKey.set(key, { display: nm, posSet: new Set() });
-      byKey.get(key).posSet.add(corpPos(nm));
-    }
-  }
-  return { byKey, rawNames };
-}
-
-// ターゲット1行が禁止と一致して「除外すべき」か。
-//   除外: 正規化社名が一致 かつ (位置判定を無視 OR ターゲットが法人格なし
-//         OR 禁止側に同位置の表記がある OR 禁止側に法人格なし表記がある)
-//   残す: 正規化社名は一致するが、法人格が前後逆で禁止側に同位置が存在しない(別法人扱い)
-function ngHit(name, ng) {
-  const key = normCompanyName(name);
-  if (!key || !ng.byKey.has(key)) return null;
-  const entry = ng.byKey.get(key);
-  if (IGNORE_POS) return entry;
-  const tPos = corpPos(name);
-  if (tPos === 'none' || entry.posSet.has('none') || entry.posSet.has(tPos)) return entry;
-  return null; // 前後逆 → 別法人として残す
 }
 
 function writeBom(fp, headers, recs) {
@@ -127,7 +61,7 @@ function main() {
   const excluded = [];   // { ...rec, NG一致名 }
   const survivedByPos = []; // 正規化は一致したが前後逆で残した(参考表示)
   for (const rec of list.records) {
-    const hit = ngHit(rec[NAME_COL], ng);
+    const hit = ngHit(rec[NAME_COL], ng, { ignorePos: IGNORE_POS });
     if (hit) {
       excluded.push({ ...rec, NG一致名: hit.display });
     } else {
