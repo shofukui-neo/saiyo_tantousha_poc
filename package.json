@@ -65,6 +65,9 @@
     "enrich:crossref": "node src/enrich-crossref.js --file data/leads-mochica-target-enriched.csv",
     "test:fusion": "node test/name-fusion.test.js",
     "test:all": "node test/name-fusion.test.js && node test/probe-social.test.js && node test/probe-site-deep.test.js && node test/selftest.js"
+    ,
+    "encrypt:lists": "node scripts/encrypt-lists.js",
+    "decrypt:lists": "node scripts/decrypt-lists.js"
   },
   "dependencies": {
     "cheerio": "^1.0.0",

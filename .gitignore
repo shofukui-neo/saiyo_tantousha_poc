@@ -14,3 +14,16 @@ dist/
 coverage/
 # scraping disk cache (transient, regenerable)
 data/scrape-cache/
+
+# Secure plaintext output (only encrypted artifacts should be checked in)
+secure/plain/
+
+# Reference lists (参照用リスト) — do not commit these data exports
+# アプローチ禁止リスト
+data/アプローチ禁止企業一覧.txt
+# 既存顧客リスト
+data/*既存顧客*.csv
+data/existing-bango.json
+# SFリードリスト
+data/*セールスフォース*.csv
+data/*SF*リード*.csv
