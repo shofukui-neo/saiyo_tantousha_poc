@@ -6,18 +6,25 @@
  * 汎用ICPスコア（quality.js）と決別し、MOCHICA＝LINE×新卒採用管理 の“刺さる相手”だけを
  * 上位に押し上げる。各サブスコアは「なぜアポが取れるのか」の因果で設計し、根拠を文字列で残す。
  *
- * ── 確定ターゲット（ユーザー指定 2026-06）───────────────────────────
- *   企業像 : 新卒を増やしたい中小（従業員 50〜150名）= 王道スイート
+ * ── 確定ターゲット（既存顧客の実データで再定義 2026-07）─────────────
+ *   ※旧仮説「従業員50〜150名の中小」は、MOCHICA既存顧客429社＋SF全リード86kの
+ *     実コンバージョン率分析で否定された。データが示す“本当に勝てる相手”は下記。
+ *   規模    : 従業員100〜2000名。スイートは300〜500名（成約率24%＝全体17%の1.4x）。
+ *             50名未満は成約率<10%で不適、1万名超も0.5xに失速。
+ *   新卒採用: 年6名以上で成約率が跳ね上がる（6-10名=26%が最良、1-2名は3.6%で不毛）。
+ *   業種    : 流通・小売(40%)/金融・保険(35%)/介護・医療(31%)/メーカー機電(30%)/
+ *             商社(26%)が高成約。ソフトウェア・IT系は6%前後で最下位＝狙わない。
  *   タイミング: 28卒の媒体選定・採用設計期 を最優先（＝いま動く相手）
  *   到達性  : テレアポで“担当者名指し”で繋ぐため、電話＋採用担当者名を重視
  *
- * ── アポ取得期待値 = Σ(dim × weight) − ペナルティ ──────────────────
+ * ── アポ取得期待値 = Σ(dim × weight) − ペナルティ ± 業種補正 ─────────
  *   A 新卒インテント  0.30  実在性で階級化（マイナビ実取得＞新卒フラグ＞採用中＞代理）
  *   F 採用ファネル    0.16  エントリー数×採用人数×歩留まり＝MOCHICAが最も刺さるICPの核
- *   B 規模フィット    0.22  50-150名=100。大企業/零細は強めに減点（自前ATS・低母数）
+ *   B 規模フィット    0.22  300-500名=100。100-2000名を有効域とし、<50名/1万名超を減点
  *   C 到達性          0.18  電話妥当＋採用担当者名＋部署（テレアポが成立する条件）
  *   D タイミング      0.10  28卒設計期係数＋レコード単位トリガー（更新/出稿増/辞退）
  *   E 継続・信用      0.04  設立年（新卒を継続採用できる体力）＋補助金
+ *   ＋業種補正        ±12  実コンバージョン率の高い/低い業種を加減点（scoreIndustry）
  *
  *   F の狙い: 「大量エントリーを捌く／歩留まり(＝選考離脱・辞退)を防ぐ」がMOCHICAの価値。
  *   ゆえに エントリー100人以上・採用10人以上・歩留まり50%以下 が揃う相手ほど刺さる（ユーザー指定 2026-07）。
@@ -45,9 +52,10 @@ const DEFAULT_WEIGHTS = {
 
 // ── 採用ファネルの“刺さる”目安（ユーザー指定）。MOCHICA_FUNNEL_* env で上書き可 ──
 // entry:エントリー数の目安, hire:採用人数の目安, yieldMax:これ以下の歩留まり(%)を「痛みあり」とみなす
+// hire=6: 実データで年6名以上から成約率が急伸(6-10名=26%,1-2名=3.6%)。旧値10から下方修正(2026-07)。
 const FUNNEL_TH = {
   entry:    intEnv(process.env.MOCHICA_FUNNEL_ENTRY, 100),
-  hire:     intEnv(process.env.MOCHICA_FUNNEL_HIRE, 10),
+  hire:     intEnv(process.env.MOCHICA_FUNNEL_HIRE, 6),
   yieldMax: flt(process.env.MOCHICA_FUNNEL_YIELD, 50),
 };
 
@@ -135,22 +143,26 @@ function scoreIntent(rec) {
 }
 
 // =====================================================================
-// B. 規模フィット（50-150名=スイート。大企業/零細を強めに減点）
+// B. 規模フィット（実コンバージョン率で再定義 2026-07。スイート=300-500名）
 // =====================================================================
-// 50-150名は「新卒を毎年数名〜十数名採るが専任の採用管理基盤が無い」MOCHICAの王道。
-// 500名超は自前ATS/競合導入済みが増え商談も長期化、20名未満は新卒母数・予算が薄い。
+// SF全リード86kの成約率分析: 300-500名=23.9%(1.41x) がピーク。100-2000名が有効域
+// (成約率19-24%)。50-100名で13.5%に落ち、50名未満は<10%＝新卒母数/予算が薄い。
+// 1万名超も7.9%へ失速（自前ATS/競合導入済み・商談長期化）。旧「50-150名=100」は誤り。
 function scoreSize(rec) {
   const emp = parseEmployees(rec['従業員数']);
   if (emp == null) return { score: 50, confidence: 30, reasons: ['規模不明(中立)'], emp: null };
   let score, reason;
-  if (emp >= 50 && emp <= 150) { score = 100; reason = `規模${emp}=スイート(50-150)`; }
-  else if (emp >= 30 && emp < 50) { score = 72; reason = `規模${emp}=やや小(30-50)`; }
-  else if (emp > 150 && emp <= 250) { score = 76; reason = `規模${emp}=スイート上限超(150-250)`; }
-  else if (emp >= 20 && emp < 30) { score = 46; reason = `規模${emp}=零細寄り`; }
-  else if (emp > 250 && emp <= 500) { score = 40; reason = `規模${emp}=中堅(自前管理化が進む)`; }
-  else if (emp > 500 && emp <= 1000) { score = 20; reason = `規模${emp}=大手寄り(競合ATS懸念)`; }
-  else if (emp > 1000) { score = 8; reason = `規模${emp}=大企業(自前/競合ATS濃厚)`; }
-  else { score = 25; reason = `規模${emp}=零細(新卒母数薄い)`; }
+  if (emp >= 300 && emp <= 500) { score = 100; reason = `規模${emp}=スイート(300-500,成約率24%)`; }
+  else if (emp > 500 && emp <= 1000) { score = 92; reason = `規模${emp}=有効(500-1000,成約率22%)`; }
+  else if (emp > 1000 && emp <= 2000) { score = 90; reason = `規模${emp}=有効(1000-2000,成約率22%)`; }
+  else if (emp >= 100 && emp < 300) { score = 88; reason = `規模${emp}=有効(100-300,成約率19%)`; }
+  else if (emp > 2000 && emp <= 5000) { score = 78; reason = `規模${emp}=やや大(2000-5000,成約率20%)`; }
+  else if (emp >= 50 && emp < 100) { score = 62; reason = `規模${emp}=下限寄り(50-100,成約率14%)`; }
+  else if (emp > 5000 && emp <= 10000) { score = 52; reason = `規模${emp}=大手(5000-1万)`; }
+  else if (emp >= 30 && emp < 50) { score = 40; reason = `規模${emp}=小(30-50,成約率10%)`; }
+  else if (emp > 10000) { score = 28; reason = `規模${emp}=超大企業(自前/競合ATS濃厚,成約率8%)`; }
+  else if (emp >= 20 && emp < 30) { score = 26; reason = `規模${emp}=零細寄り(成約率<7%)`; }
+  else { score = 15; reason = `規模${emp}=零細(新卒母数薄い,成約率<7%)`; }
   return { score, confidence: 90, reasons: [reason], emp };
 }
 
@@ -214,6 +226,47 @@ function scoreTrust(rec) {
 }
 
 // =====================================================================
+// G. 業種フィット（実コンバージョン率で加減点。±12の補正）
+// =====================================================================
+// SF全リード86kの業種別成約率(全体17%)から、勝てる業種を加点/負ける業種を減点。
+// LINE×新卒採用は「大量に現場人材を新卒採用するが専任ATSを持たない非IT業種」に刺さる。
+// 逆にソフトウェア/IT/情報処理は成約率6%前後＝自前ツール文化で刺さらない。
+// 完全一致テーブル優先→無ければキーワードで概算。業種列が空なら中立(0)。
+const INDUSTRY_LIFT = {
+  '流通・小売・物販': 12, 'ドラッグストア': 11, 'スーパーマーケット': -6,
+  '金融・保険': 12, '銀行（地銀）': 10, '信用金庫・労働金庫・信用組合': 6, '信用金庫': -4,
+  '介護・保育・医療法人等': 11, '福祉サービス': -5, '福祉・介護': -5, '医療機関': -6,
+  'メーカー （機械・電気・電子）': 11, 'メーカー（素材・食品・医薬品他)': 8,
+  '公共インフラ・エネルギー・環境': 10, '商社': 10,
+  'その他サービス（個人向け）': 8, '不動産・建設・設備': 8, '運輸・交通・物流・倉庫': 8,
+  '外食・フードサービス': 6, 'レジャー・アミューズメントサービス': 5,
+  // 負け筋（成約率<0.6x）
+  'ソフトウエア': -12, 'ソフトウェア': -12, 'ソフトウェア業': -12, 'インターネット関連': -12,
+  'インターネット関連サービス': -12, '情報処理': -10, '情報処理サービス': -10, 'ゲームソフト': -12,
+  '受託開発': -8, '建設': -10, '建設・設備': -12, '建設業': -12, '土木建築工事': -12, '建築設計': -11,
+  '建設コンサルタント': -11, '化学': -9, '機械': -10, '金属製品': -11, '鉄鋼': -10, '住宅': -10,
+  '不動産': -9, '不動産（管理）': -12, '広告': -11, '印刷・印刷関連': -11, '出版': -12, '食品': -9,
+};
+function scoreIndustry(rec) {
+  const raw = String(rec['業種'] || rec['industry'] || '').trim();
+  if (!raw) return { adj: 0, confidence: 20, reasons: ['業種不明(中立)'] };
+  if (Object.prototype.hasOwnProperty.call(INDUSTRY_LIFT, raw)) {
+    const adj = INDUSTRY_LIFT[raw];
+    return { adj, confidence: 85, reasons: [`業種[${raw}]=${adj >= 0 ? '高成約+' : ''}${adj}`] };
+  }
+  // キーワード概算（完全一致に無い表記ゆれ）
+  const kw = [
+    [/(小売|流通|物販|百貨店)/, 8], [/(銀行|信用金庫|信金|保険|証券|金融|リース)/, 7],
+    [/(介護|保育|医療法人|クリニック)/, 7], [/(卸|商社)/, 6], [/(物流|運輸|倉庫|陸運|運送)/, 6],
+    [/(電機|電気|電子|機械.*メーカー|製造)/, 5], [/(エネルギー|ガス|電力|インフラ)/, 6],
+    [/(ソフトウ|ＩＴ|IT|SIer|SES|情報処理|システム開発|Web|ゲーム|アプリ|インターネット)/i, -11],
+    [/(建設|土木|建築|工務店|設備工事|プラント)/, -9], [/(印刷|出版|広告)/, -9],
+  ];
+  for (const [re, adj] of kw) if (re.test(raw)) return { adj, confidence: 55, reasons: [`業種[${raw}]≈${adj >= 0 ? '+' : ''}${adj}(概算)`] };
+  return { adj: 0, confidence: 30, reasons: [`業種[${raw}]=中立`] };
+}
+
+// =====================================================================
 // F. 採用ファネル規模・歩留まり痛み（MOCHICAが最も刺さるICPの核）
 // =====================================================================
 // MOCHICA＝LINE×採用管理の価値は「大量エントリーを捌く」「歩留まり(選考離脱・辞退)を防ぐ」こと。
@@ -241,12 +294,12 @@ function scoreFunnel(rec) {
   }
 
   // ② 採用人数（採用枠の本気度＝予算・必要性）。採用予定人数を代理に許容。
+  // 実データ: 6名以上で成約率26%(1.5x)へ急伸。3-5名=13%は中程度、1-2名=3.6%は不毛。
   if (hire != null) {
     let s;
-    if (hire >= FUNNEL_TH.hire) { s = 100; reasons.push(`採用${hire}名(≥${FUNNEL_TH.hire})=大型採用枠`); }
-    else if (hire >= FUNNEL_TH.hire * 0.5) { s = 70; reasons.push(`採用${hire}名=中型枠`); }
-    else if (hire >= 2) { s = 45; reasons.push(`採用${hire}名=小型枠`); }
-    else { s = 25; reasons.push(`採用${hire}名=単発枠`); }
+    if (hire >= FUNNEL_TH.hire) { s = 100; reasons.push(`採用${hire}名(≥${FUNNEL_TH.hire})=高成約枠(6名+で成約率26%)`); }
+    else if (hire >= 3) { s = 68; reasons.push(`採用${hire}名=中型枠(3-5名,成約率13%)`); }
+    else { s = 28; reasons.push(`採用${hire}名=単発枠(1-2名,成約率<4%)`); }
     parts.push(s); confidence += 25;
   }
 
@@ -323,11 +376,13 @@ function scoreMochica(rec, opt = {}) {
   const D = scoreTiming(rec, now);
   const E = scoreTrust(rec);
   const F = scoreFunnel(rec);
+  const G = scoreIndustry(rec);
   const P = penalties(rec, B.emp);
 
   const raw = A.score * w.intent + F.score * w.funnel + B.score * w.size +
     C.score * w.reach + D.score * w.timing + E.score * w.trust;
-  const total = Math.max(0, Math.min(100, Math.round(raw - P.penalty)));
+  // 業種補正: 実成約率の高い/低い業種を ±12 で加減点（重み体系は崩さない）
+  const total = Math.max(0, Math.min(100, Math.round(raw + G.adj - P.penalty)));
 
   // 確信度＝各次元の確信度を「スコアへの寄与（重み×スコア）」で加重平均。
   // “上位の何割が検証済みシグナルで裏打ちされているか”を言い切るための指標。
@@ -353,6 +408,7 @@ function scoreMochica(rec, opt = {}) {
   whyParts.push(B.reasons[0]);                 // 規模の適合
   if (C.score >= 60) whyParts.push(C.reasons.find(r => /担当者名|電話妥当/.test(r)) || C.reasons[0]);
   whyParts.push(D.reasons.find(r => /辞退|来期|アクション|設計期/.test(r)) || D.reasons[0]);
+  if (Math.abs(G.adj) >= 6) whyParts.push(G.reasons[0]); // 業種が強シグナルなら明示
   const why = whyParts.filter(Boolean).join('｜');
 
   const reasons = []
@@ -362,6 +418,7 @@ function scoreMochica(rec, opt = {}) {
     .concat(C.reasons.map(r => 'REACH:' + r))
     .concat(D.reasons.map(r => 'TIM:' + r))
     .concat(E.reasons.map(r => 'TRUST:' + r))
+    .concat(G.reasons.map(r => 'IND:' + r))
     .concat(P.reasons.map(r => 'NEG:' + r));
 
   // 検証フラグ（上位リストの裏取り集計に使う）
@@ -378,6 +435,6 @@ function scoreMochica(rec, opt = {}) {
 }
 
 module.exports = {
-  scoreMochica, scoreIntent, scoreSize, scoreReach, scoreTiming, scoreTrust, scoreFunnel,
-  priorityOf, getWeights, parseEmployees, parsePercent, DEFAULT_WEIGHTS, FUNNEL_TH,
+  scoreMochica, scoreIntent, scoreSize, scoreReach, scoreTiming, scoreTrust, scoreFunnel, scoreIndustry,
+  priorityOf, getWeights, parseEmployees, parsePercent, DEFAULT_WEIGHTS, FUNNEL_TH, INDUSTRY_LIFT,
 };

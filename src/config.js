@@ -134,10 +134,13 @@ module.exports = {
   PRODUCT_EXISTING: process.env.PRODUCT_EXISTING || '',
   ICP_INDUSTRIES: (process.env.ICP_INDUSTRIES || '').split(',').map(s => s.trim()).filter(Boolean),
   ICP_PREFECTURES: (process.env.ICP_PREFECTURES || '').split(',').map(s => s.trim()).filter(Boolean),
-  ICP_EMP_MIN: int(process.env.ICP_EMP_MIN, 50),
-  ICP_EMP_MAX: int(process.env.ICP_EMP_MAX, 300),
-  ICP_EMP_SWEET_MIN: int(process.env.ICP_EMP_SWEET_MIN, 100),
-  ICP_EMP_SWEET_MAX: int(process.env.ICP_EMP_SWEET_MAX, 250),
+  // 従業員レンジは既存顧客の“実コンバージョン率”で再定義（2026-07 分析）。
+  //   有効レンジ100〜2000名 / スイート300〜500名（成約率24%＝全体17%の1.4x）。
+  //   旧仮説の50〜150名は実データで成約率<14%と判明したため上方修正。
+  ICP_EMP_MIN: int(process.env.ICP_EMP_MIN, 100),
+  ICP_EMP_MAX: int(process.env.ICP_EMP_MAX, 2000),
+  ICP_EMP_SWEET_MIN: int(process.env.ICP_EMP_SWEET_MIN, 300),
+  ICP_EMP_SWEET_MAX: int(process.env.ICP_EMP_SWEET_MAX, 500),
   ICP_DEPARTMENT: process.env.ICP_DEPARTMENT || '人事部', // 架電呼称の既定部署
 
   // --- 発掘（企業選定）---
