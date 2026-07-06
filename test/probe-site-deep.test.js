@@ -51,4 +51,17 @@ t('stripGbizTitle が肩書きを剥がす', () => {
   assert.strictEqual(stripGbizTitle('山田 太郎'), '山田 太郎'); // 肩書き無しは非破壊
 });
 
+// enrich-crossref: 突合ノイズの品質クリーニング（源データの姓連結/ふりがな/住所断片を落とす）
+const { cleanCrossRefName } = require('../src/enrich-crossref');
+t('cleanCrossRefName が突合ノイズを落とす', () => {
+  assert.strictEqual(cleanCrossRefName('柴田 シバタ'), '柴田');   // ①ふりがな誤取り
+  assert.strictEqual(cleanCrossRefName('加藤 田中'), '加藤');     // ②姓連結（名が完全な姓）
+  assert.strictEqual(cleanCrossRefName('山下 矢沢'), '山下');     // ③姓サフィックス連結(沢)
+  assert.strictEqual(cleanCrossRefName('渡辺 浜野'), '渡辺');     // ③姓サフィックス連結(野)
+  assert.strictEqual(cleanCrossRefName('山口 県内で'), '山口');   // ④住所断片
+  assert.strictEqual(cleanCrossRefName('福原 佳明'), '福原 佳明'); // クリーンなフルネームは非破壊
+  assert.strictEqual(cleanCrossRefName('安部 真理子'), '安部 真理子');
+  assert.strictEqual(cleanCrossRefName('Microsoft Teams'), null); // 非人名ゴミは不採用
+});
+
 console.log(`\nprobe-site-deep / harvest-named-plus: ${pass} 件パス`);

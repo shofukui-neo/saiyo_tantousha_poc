@@ -60,6 +60,7 @@
     "names:gbiz:live": "node src/harvest-named-plus.js --in data/leads-mochica-target.csv --out data/recruiter-gbiz-plus.csv --gbiz-first --live --no-search --concurrency 2",
     "enrich:recruitpage": "node src/enrich-recruitpage.js --in data/leads-mochica-target.csv --out data/recruiter-saiyo-tantou.csv",
     "enrich:shinsotsu": "node src/enrich-shinsotsu-flag.js --file data/leads-mochica-target-enriched.csv",
+    "enrich:crossref": "node src/enrich-crossref.js --file data/leads-mochica-target-enriched.csv",
     "test:fusion": "node test/name-fusion.test.js",
     "test:all": "node test/name-fusion.test.js && node test/probe-social.test.js && node test/probe-site-deep.test.js && node test/selftest.js"
   },

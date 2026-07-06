@@ -33,10 +33,13 @@ node src/harvest-named-plus.js --in <新規リスト.csv> --out <out.csv> --gbiz
 ※この正リストには不要（既存59%がgBiz由来で、空欄はgBizも欠落）。
 
 ### 3) 採用担当者名 — 最優先: 既存リスト突合（~8%・スクレイピング不要）
+```bash
+npm run enrich:crossref   # 既存の採用担当者名つきリストと社名突合＋品質クリーン＋再スコア
+```
 **リポジトリに採用担当者名つき企業が数千社ある**(leads-mochica-named-consolidated 1902/A-names-from-cache 1170/recruiter-scored-all 1112/recruiter-wantedly 1000等)。
-正リストを非マイナビの既存名リストと `normCompanyName` 突合し、`canonName`＋`isPlausiblePersonName`＋姓連結/ふりがな除去で濾過して充填する。
-→ **採用ページregex(2%)より既存資産突合(8%)が効く**。43社を新規スクレイピング無しで充填。
-※源データ品質注意: recruiter-scored-all等の旧harvestに「Microsoft Teams」等ゴミ・ふりがな誤取り(柴田シバタ)・姓連結(佐々木八幡)混入→必ず濾過する。
+`src/enrich-crossref.js` が非マイナビの既存名リストを `normCompanyName` 突合し、`cleanCrossRefName`（canonName＋人名ゲート＋姓連結/ふりがな/住所断片除去）で濾過して充填。
+→ **採用ページregex(2%)より既存資産突合(8%)が効く**。正リストで 0.5%→8%（44社を新規スクレイピング無しで充填）。
+※源データ品質注意: 旧harvestに「Microsoft Teams」等ゴミ・ふりがな誤取り(柴田シバタ)・姓連結(加藤田中/山下矢沢)・住所断片(山口県内で)混入 → `cleanCrossRefName`が全て除去（テスト済 test/probe-site-deep.test.js）。
 
 ### 3b) 採用担当者名 — 採用ページ直接regex（~2%・補完）
 ```bash
