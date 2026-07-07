@@ -118,6 +118,22 @@ const SURNAMES = new Set(
 // 名（given name）として許容する字種（漢字・ひらがな・カタカナ・長音）。異体字は正規化で標準化される。
 const GIVEN_OK = /^[一-龥々぀-ゟ゠-ヿー]{1,3}$/;
 
+// 「姓＋助詞glue」を氏名と誤認しないためのゲート。
+//  実データで「江藤までお問合せ下さい」→ splitName で mei="までお" が given name として通り、
+//  『江藤 までお』という壊れた氏名が出力された（"まで"＝助詞＋"お"＝丁寧接頭）。
+//  名（mei）が助詞・機能語glueで始まる/等しい場合は氏名でないと判定する。
+//  ※先頭アンカーで判定するので「ひより」の"より"等、名の途中に現れる音では誤爆しない。
+const PARTICLE_MEI_PREFIX = /^(?:まで|までに|より|から|など|への|にて|をお|をご|にご|はお|はご|でご|でお|ませ|ください|下さい)/;
+// 単独で現れる助詞（文断片「林は」「田中を」等の mei）。厳密一致のみ（実在の名を巻き込まない）。
+const PARTICLE_MEI_EXACT = new Set(['は', 'が', 'を', 'に', 'へ', 'も', 'と', 'の', 'や', 'か', 'で', 'まで', 'より', 'から', 'など', 'ほか']);
+/** 名（mei）が助詞・機能語glueか（＝氏名でない）。 */
+function isParticleGlueMei(mei) {
+  const m = String(mei || '');
+  if (!m) return false;
+  if (PARTICLE_MEI_EXACT.has(m)) return true;
+  return PARTICLE_MEI_PREFIX.test(m);
+}
+
 /**
  * 氏名候補を「姓＋名」に分解する。先頭から長い姓（3→2→1字）を優先照合。
  * @param {string} raw 例: "山田太郎" / "山田 太郎" / "山田"
@@ -141,7 +157,7 @@ function splitName(raw) {
  */
 function isFullName(raw) {
   const sp = splitName(raw);
-  return !!(sp && sp.mei && GIVEN_OK.test(sp.mei));
+  return !!(sp && sp.mei && GIVEN_OK.test(sp.mei) && !isParticleGlueMei(sp.mei));
 }
 
 /**
@@ -207,11 +223,17 @@ function isPlausiblePersonName(raw) {
   // 一般名詞の二語（氏名でない抽象語。「閲覧手段」「応募方法」等）。surname辞書を通らない語に限り弾く。
   if (!splitName(s) && /閲覧|手段|方法|詳細|内容|情報|条件|応募|登録|検索|一覧|画面|機能|設定|更新|確認|利用|手続|案内|紹介|参照|表示/.test(s)) return false;
   if (/(部|課|室|係|科)$/.test(s)) return false;
-  if (splitName(s)) return true;               // 既知姓で始まる（姓のみ可）
+  const sp = splitName(s);
+  if (sp) {
+    // 「姓＋助詞glue」（江藤+までお 等）は氏名でない。姓のみ(mei='')や通常の名はOK。
+    if (sp.mei && isParticleGlueMei(sp.mei)) return false;
+    return true;                               // 既知姓で始まる（姓のみ可）
+  }
   return /^[一-龥々]{2,4}$/.test(s);           // 辞書外でも全漢字2-4字なら許容
 }
 
 module.exports = {
   SURNAMES, splitName, isFullName, isKnownSurname, normalizeNameKanji,
   ROLE_GLUE_RE, TITLE_RE, GEO_RE, stripNonName, completeSurname, isPlausiblePersonName,
+  isParticleGlueMei,
 };
