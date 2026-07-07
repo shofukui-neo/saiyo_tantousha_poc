@@ -141,6 +141,12 @@ module.exports = {
   ICP_EMP_MAX: int(process.env.ICP_EMP_MAX, 2000),
   ICP_EMP_SWEET_MIN: int(process.env.ICP_EMP_SWEET_MIN, 300),
   ICP_EMP_SWEET_MAX: int(process.env.ICP_EMP_SWEET_MAX, 500),
+  // 採用フロア（ユーザー指定 & 実測）: 年間新卒6名以上。1-2名=3.6%/3-5名=13%/6名+=26%へ急伸。
+  ICP_HIRE_MIN: int(process.env.ICP_HIRE_MIN, 6),
+  // 絶対除外（仮説H4）: IT・ソフトウェアは経路・規模を問わず成約率6%前後＝構造的不適合。既定ON。
+  ICP_EXCLUDE_IT: !/^(0|false|no)$/i.test(process.env.ICP_EXCLUDE_IT || 'true'),
+  // ↑ ICPハードルールの実装は src/icp-rules.js（isExcludedIndustry/passesIcpFloor/proposalTier）に集約。
+  //   リスト作成の最大レバー「経路の温度（第4軸）」は src/channel-temp.js（架電30.1% vs コールド一括7.2%＝4.2x）。
   ICP_DEPARTMENT: process.env.ICP_DEPARTMENT || '人事部', // 架電呼称の既定部署
 
   // --- 発掘（企業選定）---

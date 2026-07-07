@@ -37,6 +37,7 @@
  */
 const { truthy, normCompanyName } = require('./csv');
 const { normalizeJpPhone } = require('./phone');
+const { isExcludedIndustry, proposalTier } = require('./icp-rules');
 
 // ── 既定の重み（合計1.0）。MOCHICA_W_* env で上書き可 ─────────────
 const flt = (v, d) => (v !== undefined && v !== '' && !Number.isNaN(parseFloat(v)) ? parseFloat(v) : d);
@@ -382,7 +383,17 @@ function scoreMochica(rec, opt = {}) {
   const raw = A.score * w.intent + F.score * w.funnel + B.score * w.size +
     C.score * w.reach + D.score * w.timing + E.score * w.trust;
   // 業種補正: 実成約率の高い/低い業種を ±12 で加減点（重み体系は崩さない）
-  const total = Math.max(0, Math.min(100, Math.round(raw + G.adj - P.penalty)));
+  let total = Math.max(0, Math.min(100, Math.round(raw + G.adj - P.penalty)));
+
+  // ── ハード除外（仮説H4）: IT・ソフトウェアは経路・規模を問わず成約率6%前後で構造的に不適合。
+  //    従来の -12 は強intentで打ち消され上位に浮上しうるため、絶対ルールとして強制フロアで沈める。
+  //    ICP_EXCLUDE_IT=false で無効化可（isExcludedIndustry が false を返す）。
+  const industryRaw = String(rec['業種'] || rec['industry'] || '').trim();
+  const hardExclude = isExcludedIndustry(industryRaw);
+  if (hardExclude) { total = Math.min(total, 12); G.reasons.push(`業種[${industryRaw}]=IT/ソフト=絶対除外(H4)`); }
+
+  // 提案プラン/セグメント（仮説H6の tier routing）
+  const tier = proposalTier(B.emp);
 
   // 確信度＝各次元の確信度を「スコアへの寄与（重み×スコア）」で加重平均。
   // “上位の何割が検証済みシグナルで裏打ちされているか”を言い切るための指標。
@@ -429,12 +440,14 @@ function scoreMochica(rec, opt = {}) {
     named: /担当者名あり/.test(C.reasons.join('')), // 担当者名指しできる
     funnelFit: F.hitCount >= 2,                    // エントリー/採用/歩留まりのうち2つ以上が目安内
     bigFunnel: F.entryHit && F.hireHit,            // エントリー100+ × 採用10+ の大型採用
+    hardExclude,                                   // IT・ソフトウェア=絶対除外（母集団から落とすべき）
   };
 
-  return { total, dims, priority, confidence, why, reasons, flags };
+  return { total, dims, priority, confidence, why, reasons, flags, hardExclude, segment: tier.segment, plan: tier.plan };
 }
 
 module.exports = {
   scoreMochica, scoreIntent, scoreSize, scoreReach, scoreTiming, scoreTrust, scoreFunnel, scoreIndustry,
   priorityOf, getWeights, parseEmployees, parsePercent, DEFAULT_WEIGHTS, FUNNEL_TH, INDUSTRY_LIFT,
+  isExcludedIndustry, proposalTier,
 };

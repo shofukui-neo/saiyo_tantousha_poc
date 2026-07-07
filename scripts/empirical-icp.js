@@ -8,6 +8,7 @@
 const fs = require('fs');
 const path = require('path');
 const { parseCsv } = require('../src/csv');
+const { classifyChannel } = require('../src/channel-temp');
 const DATA = path.join(__dirname, '..', 'data');
 const readText = (p) => fs.readFileSync(p, 'utf8');
 
@@ -17,9 +18,12 @@ const hIdx = rows.findIndex((r) => r.some((c) => String(c).includes('リードID
 const H = rows[hIdx].map((c) => String(c).trim());
 const idx = (name) => { let i = H.indexOf(name); if (i >= 0) return i; const w = name.replace(/[（）()]/g, ''); return H.findIndex((h) => h.replace(/[（）()]/g, '') === w); };
 const cName = idx('会社名 / 取引先'), cHire = idx('採用人数(選択リスト)'), cStat = idx('リード 状況'), cEmp = idx('従業員数レンジ(ランスケ）'), cInd = idx('業種');
+// 経路の温度（第4軸）: リスト名＝セミナーアンケート項目10 + 7
+const cS10 = idx('セミナーアンケート項目10'), cS7 = idx('セミナーアンケート項目7');
 const recs = rows.slice(hIdx + 1).map((r) => ({
   name: (r[cName] || '').trim(), hire: (r[cHire] || '').trim(), status: (r[cStat] || '').trim(),
   emp: (r[cEmp] || '').trim(), ind: (r[cInd] || '').trim(),
+  channel: classifyChannel(((cS10 >= 0 ? r[cS10] : '') || '') + ' ' + ((cS7 >= 0 ? r[cS7] : '') || '')),
 })).filter((r) => r.name && !/^(テスト|.*テスト)/.test(r.name));
 const isConv = (r) => /コンバート/.test(r.status);
 
@@ -97,6 +101,8 @@ console.log('全体コンバージョン率:', (100 * overall).toFixed(1) + '%',
 
 report('従業員数バンド別 コンバージョン率', convByBucket(empBand, 'emp'), false);
 report('採用人数バンド別 コンバージョン率', convByBucket(hireBand, 'hire'), false);
+// 第4軸: 経路の温度（獲得チャネル）— 最大レバー
+report('経路の温度別 コンバージョン率（rate順）', convByBucket((v) => v || null, 'channel'), true);
 
 // 業種は生値 → コンバート率順（母数>=40のみ, ノイズ除去）
 const indArr = convByBucket((v) => (v && v.trim()) || null, 'ind').filter((r) => r.total >= 40);
@@ -105,6 +111,7 @@ report('業種別 コンバージョン率（母数≥40, rate順）', indArr, t
 // 保存: バケット別convRateをJSONに（スコアラで使用）
 const save = {
   overall,
+  channel: convByBucket((v) => v || null, 'channel'), // 第4軸（最大レバー）を先頭付近に
   emp: convByBucket(empBand, 'emp'),
   hire: convByBucket(hireBand, 'hire'),
   industry: convByBucket((v) => (v && v.trim()) || null, 'ind').filter((r) => r.total >= 20),
