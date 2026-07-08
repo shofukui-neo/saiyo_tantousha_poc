@@ -98,21 +98,62 @@ SF未コンバートのリードを再ランクした結果、**TOP200の質が�
 
 ---
 
+## 5.5. 呼べる名指しリストの「3絶対条件」と採用数エンリッチ（2026-07 追補）
+
+弾込め（架電）に載せる最終リスト＝`leads-mochica-named-consolidated.csv` は、**3つを絶対条件**にした
+（[`src/build-named-consolidated.js`](../src/build-named-consolidated.js) が `qualifiesForList` で判定）。名指し架電(30.1%)は最良経路なので、
+「名指しで・電話で・本気の採用枠に」架けられる相手だけを載せる。
+
+| 絶対条件 | 判定 |
+|--|--|
+| **① 採用担当者名あり** | 氏名検証OKのみ（従来から） |
+| **② 電話番号あり** | 空は除外 |
+| **③ 年間新卒6名以上** | 判明かつ≥6。**不明は落とさず「採用数エンリッチ待ち」へ退避**（ユーザー指定） |
+| （＋ 非IT・従業員100名以上） | 前掲ハードルールを継承 |
+
+### 採用数が「不明」な企業の埋め方 ── マイナビ 採用データ（各募集コース面）
+採用予定人数はマイナビ「前年度採用データ(employment.html)」から各**募集コース(displayEmployment)**の
+「募集人数 X〜Y名」を辿り、**全コースの下限を合計**して年間新卒採用予定を出す（[`src/scrape-mynavi.js`](../src/scrape-mynavi.js) の
+`scrapeHireByName`／`extractHireOnPage`／`sumHireCourses`）。実測でマイナビは職種ごとにこの数字を持つため、
+未エンリッチの担当者名リードでも採用数を後から確定できる。
+
+```
+出力の3分岐:
+  3絶対条件クリア        → leads-mochica-named-consolidated.csv（呼べる）
+  担当者名+電話あり/採用数不明 → data/leads-mochica-named-need-hire.csv（エンリッチ待ち）
+  電話なし/IT/採用<6/従業員<100 → 除外（内訳をログ）
+
+パイプライン:
+  node src/build-named-consolidated.js                 # 3絶対条件で分岐、エンリッチ待ちを書き出す
+  node scripts/enrich-hire-from-mynavi.js \             # 待ち行列の採用数をマイナビで確定
+       --in data/leads-mochica-named-need-hire.csv --out data/hire-enriched-mynavi.csv
+  node src/build-named-consolidated.js                 # 採用数を反映し、6名以上を呼べるリストへ昇格
+```
+
+`build-named-consolidated.js` は `data/hire-enriched-mynavi.csv` があれば採用数を自動で取り込むため、
+**エンリッチ→再統合**を回すほど「採用数不明」が減り、呼べるリストが太る。
+
+---
+
 ## 6. 改訂したファイル
 
 | ファイル | 変更 |
 |--|--|
-| `src/icp-rules.js` ★新規 | ICPハードルールの単一の真実源（IT除外・規模/採用フロア・提案プラン） |
+| `src/icp-rules.js` ★新規 | ICPハードルールの単一の真実源（IT除外・規模/採用フロア・**3絶対条件 qualifiesForList**・提案プラン） |
 | `src/channel-temp.js` ★新規 | 第4軸「経路の温度」の分類＋実測lift |
+| `scripts/enrich-hire-from-mynavi.js` ★新規 | 採用数不明の担当者名リードを、マイナビ各職種ページの募集人数で埋める（中断再開可） |
 | `scripts/empirical-icp.js` | 経路別コンバージョン率を算出し `empirical-icp-rates.json` に `channel` を追加 |
 | `scripts/build-lookalike-list.js` | 4軸化＋IT除外＋規模/採用フロア＋提案プラン列を出力 |
 | `src/mochica-fit.js` | IT絶対除外（強制フロア）＋提案プランを採点結果に付与 |
+| `src/scrape-mynavi.js` | 採用データ面の募集人数を各募集コース分だけ合計する `scrapeHireByName` 等を追加 |
+| `src/build-named-consolidated.js` | 3絶対条件（担当者名+電話+採用6名）で分岐、採用数エンリッチ待ちを退避、採用予定人数/提案プラン列を出力 |
 | `src/config.js` | `ICP_HIRE_MIN`・`ICP_EXCLUDE_IT` を追加、ハードルール/第4軸の所在を明記 |
 
 再生成コマンド：
 ```bash
-node scripts/empirical-icp.js       # レート(channel含む)を再算出
-node scripts/build-lookalike-list.js # 4軸で類似リストを再ランク
+node scripts/empirical-icp.js        # レート(channel含む)を再算出
+node scripts/build-lookalike-list.js # 4軸で類似リスト(SFリード)を再ランク
+node src/build-named-consolidated.js # 呼べる名指しリストを3絶対条件で生成
 ```
 
 ---

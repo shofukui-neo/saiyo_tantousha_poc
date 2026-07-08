@@ -10,7 +10,7 @@
  * ハード除外(仮説H4): IT・ソフトウェアは経路・規模を問わず不適 → 母集団から落とす。
  * 提案プラン(仮説H6): 規模帯で提案プラン/セグメントを付与（500超=スタンダード提案、1000超=競合ATS警戒）。
  * 母集団: SF未コンバートのリードで、業種+従業員+採用人数+電話が揃うもの。
- * 除外: 既存顧客(勝ち済み)/NG(アプローチ禁止)/アーカイブ(死に筋)/IT・ソフトウェア。
+ * 除外: 既存顧客(勝ち済み)/NG(アプローチ禁止)/BALESCLOUD既存リード(架電運用中の重複)/アーカイブ(死に筋)/IT・ソフトウェア。
  */
 const fs = require('fs');
 const path = require('path');
@@ -111,10 +111,25 @@ for (const r of custRows.slice(1)) { const nm = (r[legalIdx] || '').trim(); if (
 // NG索引
 const ng = buildNgIndex(readText(path.join(DATA, 'アプローチ禁止企業一覧.txt')));
 
+// BALESCLOUD既存リード（既に架電運用中＝重複はじき対象）の社名セット
+function loadDedupeKeys(file, colName) {
+  const p = path.join(DATA, file);
+  if (!fs.existsSync(p)) { console.warn('warn: dedupe list not found:', file); return new Set(); }
+  const rows = parseCsv(readText(p));
+  const head = rows[0].map((c) => String(c).trim());
+  const ci = head.indexOf(colName);
+  if (ci < 0) { console.warn('warn: column not found in', file, ':', colName); return new Set(); }
+  const keys = new Set();
+  for (const r of rows.slice(1)) { const nm = (r[ci] || '').trim(); if (!nm) continue; const k = normCompanyName(nm); if (k) keys.add(k); }
+  return keys;
+}
+const balesKeys = loadDedupeKeys('BALESCLOUDの既存リスト - 202607062007_leadList_utf-8.csv', '会社情報：会社名');
+console.log('BALESCLOUD既存リスト 重複除外キー:', balesKeys.size);
+
 // ---- スコアリング ----
 const EXCLUDE_STATUS = /アーカイブ/; // 死に筋のみ除外
 const scored = [];
-const dropped = { won: 0, ng: 0, archived: 0, incomplete: 0, it: 0, floor: 0, dup: 0 };
+const dropped = { won: 0, ng: 0, bales: 0, archived: 0, incomplete: 0, it: 0, floor: 0, dup: 0 };
 const seen = new Map();
 for (const r of all) {
   if (/コンバート/.test(r.status)) continue; // 未コンバートのみ
@@ -128,6 +143,7 @@ for (const r of all) {
   if (!key) continue;
   if (wonKeys.has(key)) { dropped.won++; continue; }
   if (ngHit(r.name, ng)) { dropped.ng++; continue; }
+  if (balesKeys.has(key)) { dropped.bales++; continue; } // BALESCLOUD既存リード（架電運用中）は重複はじき
 
   const li = indLift.get(ib), le = empLift.get(eb), lh = hireLift.get(hb);
   const liftI = li ? li.lift : 1, liftE = le ? le.lift : 1, liftH = lh ? lh.lift : 1;

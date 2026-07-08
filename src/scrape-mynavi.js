@@ -232,6 +232,27 @@ function extractIntentSignals(text) {
   return sig;
 }
 
+// 1つの募集コース面（displayEmployment 等）から「募集人数 X～Y名」を1件だけ取る。
+// 全角数字を半角化し、レンジは {lo, hi} で返す（"6名"は lo=hi=6）。無ければ null。
+function extractHireOnPage(text) {
+  const t = String(text || '').replace(/[ \t　]+/g, ' ');
+  const z2h = (s) => s.replace(/[０-９]/g, (d) => '０１２３４５６７８９'.indexOf(d));
+  const m = t.match(/(?:募集人数|採用予定人数|採用予定数|採用人数)[^0-9０-９]{0,8}([0-9０-９]{1,4})\s*[～~〜]?\s*([0-9０-９]{0,4})\s*[名人]/);
+  if (!m) return null;
+  const lo = parseInt(z2h(m[1]), 10);
+  const hi = m[2] ? parseInt(z2h(m[2]), 10) : lo;
+  if (!Number.isFinite(lo)) return null;
+  return { lo, hi: Number.isFinite(hi) && hi >= lo ? hi : lo };
+}
+
+// 複数コースの {lo,hi} を合計して 年間新卒採用予定 合計 に畳む（"6名以上"ゲート用の保守的な合計＝下限和）。
+function sumHireCourses(courses) {
+  if (!courses || !courses.length) return null;
+  const lo = courses.reduce((s, c) => s + c.lo, 0);
+  const hi = courses.reduce((s, c) => s + (c.hi || c.lo), 0);
+  return { courses: courses.length, lo, hi, label: lo === hi ? `${lo}名` : `${lo}~${hi}名` };
+}
+
 class MynaviScraper {
   constructor(opts = {}) {
     this.headful = process.env.MYNAVI_HEADFUL === '1' || opts.headful;
@@ -378,6 +399,78 @@ class MynaviScraper {
     return r;
   }
 
+  /**
+   * 採用人数エンリッチ専用：社名から検索→corp特定→採用データを各募集コース分だけ辿って
+   * 「募集人数」を合計し、年間新卒採用予定（合計）を返す。担当者名の巡回は行わない軽量版。
+   * @returns {{企業名, corpID, マイナビ掲載, 採用ページURL, 募集コース数, 採用予定人数, 採用予定人数レンジ, 従業員数, 根拠}}
+   */
+  async scrapeHireByName(name) {
+    const out = {
+      企業名: name, corpID: '', マイナビ掲載: '', 採用ページURL: '',
+      募集コース数: 0, 採用予定人数: '', 採用予定人数レンジ: '', 従業員数: '', 根拠: '',
+    };
+    const page = await this.context.newPage();
+    try {
+      await page.goto(CONFIG.searchUrl(this.gradYear, name), { waitUntil: 'domcontentloaded' }).catch(() => {});
+      await page.waitForLoadState('networkidle', { timeout: 8000 }).catch(() => {});
+      const corp = await this._matchCorp(page, normCompanyName(name));
+      if (!corp) { out.根拠 = 'マイナビ検索ヒット無し'; return out; }
+      out.corpID = corp.id; out.マイナビ掲載 = '○';
+      out.採用ページURL = `https://job.mynavi.jp/${this.gradYear}/pc/search/corp${corp.id}/outline.html`;
+      await this._collectHire(page, corp.id, out);
+    } catch (e) {
+      out.根拠 = out.根拠 || ('error:' + String(e && e.message || e).slice(0, 80));
+    } finally {
+      await page.close().catch(() => {});
+    }
+    return out;
+  }
+
+  // corpID既知のときの採用人数エンリッチ（検索を挟まない）。
+  async scrapeHireByCorp(id, name) {
+    const out = {
+      企業名: name || '', corpID: id, マイナビ掲載: '○',
+      採用ページURL: `https://job.mynavi.jp/${this.gradYear}/pc/search/corp${id}/outline.html`,
+      募集コース数: 0, 採用予定人数: '', 採用予定人数レンジ: '', 従業員数: '', 根拠: '',
+    };
+    const page = await this.context.newPage();
+    try { await this._collectHire(page, id, out); }
+    catch (e) { out.根拠 = out.根拠 || ('error:' + String(e && e.message || e).slice(0, 80)); }
+    finally { await page.close().catch(() => {}); }
+    return out;
+  }
+
+  // employment.html → 各募集コース(displayEmployment)の「募集人数」を集計して out に書き込む。
+  async _collectHire(page, id, out) {
+    const empUrl = `https://job.mynavi.jp/${this.gradYear}/pc/search/corp${id}/employment.html`;
+    const got = await this._fetchPage(page, empUrl, true);
+    if (!got) { out.根拠 = out.根拠 || 'マイナビ採用データ面が取得できず'; return; }
+    const sig = extractIntentSignals(got.text);
+    if (sig.従業員数) out.従業員数 = sig.従業員数;
+    const courses = [];
+    const links = [...new Set(got.empLinks || [])].slice(0, 8); // 募集コース分（displayEmployment）
+    if (links.length) {
+      for (const l of links) {
+        await sleep(500);
+        const g = await this._fetchPage(page, l, false);
+        if (!g) continue;
+        const h = extractHireOnPage(g.text);
+        if (h) courses.push(h);
+      }
+    }
+    // コース面が無い/取れない旧レイアウトは employment.html 自体の1件で代替。
+    if (!courses.length) { const own = extractHireOnPage(got.text); if (own) courses.push(own); }
+    const agg = sumHireCourses(courses);
+    if (agg) {
+      out.募集コース数 = agg.courses;
+      out.採用予定人数 = String(agg.lo); // 下限和＝"6名以上"ゲートに使う保守的な合計
+      out.採用予定人数レンジ = agg.label;
+      out.根拠 = `マイナビ採用データ ${agg.courses}コース合計 ${agg.label}`;
+    } else {
+      out.根拠 = out.根拠 || 'マイナビ採用データに募集人数記載なし';
+    }
+  }
+
   // 検索結果から社名一致する企業の corpID とクリック用ロケータを返す
   async _matchCorp(page, target) {
     if (!target) return null;
@@ -513,4 +606,4 @@ async function main() {
 
 if (require.main === module) main().catch((e) => { console.error('FATAL', e); process.exit(1); });
 
-module.exports = { MynaviScraper, parseContactBlock, extractRecruiterName, extractIntentSignals, validName, CONFIG };
+module.exports = { MynaviScraper, parseContactBlock, extractRecruiterName, extractIntentSignals, extractHireOnPage, sumHireCourses, validName, CONFIG };

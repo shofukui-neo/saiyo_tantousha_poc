@@ -58,6 +58,25 @@ function passesIcpFloor({ emp = null, hire = null } = {}) {
 }
 
 /**
+ * リスト作成の絶対条件（ユーザー指定 2026-07）。呼べる名指しリストに載せる資格を判定する。
+ *   ① 採用担当者名あり  ② 電話番号あり  ③ 年間新卒6名以上  ＋ 非IT ＋ 従業員100名以上
+ * 採用人数が「不明(null)」のときは pass=false・needHire=true を返す（落とすのではなく採用数エンリッチへ回す）。
+ * @param {{contactName?:string, phone?:string, hire?:number|null, emp?:number|null, industry?:string}} v
+ * @returns {{pass:boolean, needHire:boolean, reasons:string[]}}
+ */
+function qualifiesForList({ contactName = '', phone = '', hire = null, emp = null, industry = '' } = {}) {
+  const reasons = [];
+  let pass = true; let needHire = false;
+  if (!String(contactName || '').trim()) { pass = false; reasons.push('担当者名なし'); }
+  if (!String(phone || '').trim()) { pass = false; reasons.push('電話番号なし'); }
+  if (isExcludedIndustry(industry)) { pass = false; reasons.push('IT/ソフト=絶対除外'); }
+  if (emp != null && emp < ICP.EMP_MIN) { pass = false; reasons.push(`従業員${emp}名<${ICP.EMP_MIN}`); }
+  if (hire == null) { pass = false; needHire = true; reasons.push('採用人数不明(要エンリッチ)'); }
+  else if (hire < ICP.HIRE_MIN) { pass = false; reasons.push(`新卒${hire}名<${ICP.HIRE_MIN}`); }
+  return { pass, needHire, reasons };
+}
+
+/**
  * 規模帯 → 提案プラン/セグメント（仮説H6の tier routing）。
  * 単価を規模で当てにいく：スイートはコア、500超はスタンダード提案、1000超は競合ATS警戒。
  * @param {number|null} emp 従業員数
@@ -71,4 +90,4 @@ function proposalTier(emp) {
   return { segment: '要注意(大)', plan: '競合ATS確認', note: `${ICP.EMP_MAX}名超=自前/競合ATS濃厚(成約率<20%)` };
 }
 
-module.exports = { ICP, isExcludedIndustry, passesIcpFloor, proposalTier, EXCLUDE_INDUSTRY_RE };
+module.exports = { ICP, isExcludedIndustry, passesIcpFloor, qualifiesForList, proposalTier, EXCLUDE_INDUSTRY_RE };
