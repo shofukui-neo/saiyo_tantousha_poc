@@ -139,6 +139,11 @@ npm test
 | 取得率の実測 | `src/metrics.js` 公式URL発見率／電話番号取得率／担当者名HIT率・平均確度 |
 | 礼儀正しいクロール | `robots.js` 遵守、`POLITE_DELAY_MS`、説明的User-Agent |
 
+## セキュリティ / データ取扱（重要）
+- 本リポジトリは**個人情報・企業リスト**を扱う。取扱ルール・暗号化・コミット時ガードは **[SECURITY.md](SECURITY.md)** を参照。
+- **clone直後に必ず** `npm install && npm run secure:setup` を実行（pre-commitガードを有効化）。
+- 企業リスト/個人情報は `data/` 等（既定で `.gitignore` 済み）に置き、共有は `npm run encrypt:lists`（暗号化ボールト）経由で。
+
 ## 法令・マナー（重要）
 - robots.txt と各サイト規約を尊重し、**公開ページのみ**を対象にする（認証回避はしない）。
 - 取得した担当者名は**個人情報**。利用目的の特定・適正取得・オプトアウト対応を前提に運用すること。

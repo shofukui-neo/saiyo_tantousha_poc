@@ -1,68 +1,93 @@
+'use strict';
+/**
+ * 機密データの保存時暗号化(ボールト作成)。
+ * リポジトリ内の全機密ファイル(企業リスト/個人情報)を lib-sensitive の判定で自動選定し、
+ * AES-256-GCM + scrypt で secure/vault/ 配下に暗号化して書き出す。
+ *   平文はローカルのみ・暗号文も既定でコミットしない(.gitignore 済み)。
+ *
+ * 使い方:
+ *   set LISTS_PASSPHRASE=... (または LISTS_PASSPHRASE_FILE=<リポ外の鍵ファイル>)
+ *   npm run encrypt:lists
+ *   npm run encrypt:lists -- --dry   (対象一覧のみ表示)
+ */
 const fs = require('fs');
 const path = require('path');
-const crypto = require('crypto');
+const lib = require('./lib-sensitive');
+const { encryptBuffer } = require('./lib-crypto');
 
-const DATA_DIR = path.resolve(__dirname, '..', 'data');
-const OUT_DIR = path.resolve(__dirname, '..', 'secure', 'encrypted');
+const ROOT = path.resolve(__dirname, '..');
+const VAULT = path.join(ROOT, 'secure', 'vault');
+const SCAN_DIRS = ['data', 'sources', 'archive', 'eval'];
+const DRY = process.argv.includes('--dry') || process.argv.includes('--dry-run');
 
-const PATTERNS = [
-  'アプローチ禁止企業一覧.txt',
-  '既存顧客',
-  'existing-bango.json',
-  'セールスフォース',
-  'SF',
-];
-
-function listDataFiles() {
-  if (!fs.existsSync(DATA_DIR)) return [];
-  return fs.readdirSync(DATA_DIR).map(f => path.join(DATA_DIR, f));
+function getPassphrase() {
+  const file = process.env.LISTS_PASSPHRASE_FILE;
+  if (file && fs.existsSync(file)) return fs.readFileSync(file, 'utf8').trim();
+  return process.env.LISTS_PASSPHRASE || '';
 }
 
-function matchesPatterns(filename) {
-  const name = path.basename(filename);
-  return PATTERNS.some(p => name.includes(p));
+function walk(dir, acc) {
+  let entries;
+  try {
+    entries = fs.readdirSync(dir, { withFileTypes: true });
+  } catch (_) {
+    return acc;
+  }
+  for (const e of entries) {
+    const full = path.join(dir, e.name);
+    if (e.isDirectory()) walk(full, acc);
+    else if (e.isFile()) acc.push(full);
+  }
+  return acc;
 }
 
-function ensureDir(dir) {
-  if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
-}
-
-function encryptBuffer(buf, passphrase) {
-  const salt = crypto.randomBytes(16);
-  const key = crypto.pbkdf2Sync(passphrase, salt, 100000, 32, 'sha256');
-  const iv = crypto.randomBytes(12);
-  const cipher = crypto.createCipheriv('aes-256-gcm', key, iv);
-  const ciphertext = Buffer.concat([cipher.update(buf), cipher.final()]);
-  const tag = cipher.getAuthTag();
-  return {
-    salt: salt.toString('base64'),
-    iv: iv.toString('base64'),
-    tag: tag.toString('base64'),
-    ciphertext: ciphertext.toString('base64'),
-  };
+function collectTargets() {
+  const files = [];
+  for (const d of SCAN_DIRS) walk(path.join(ROOT, d), files);
+  // ルート直下の機密生成物(*.csv / *.log / scratch-sme.json)
+  for (const e of fs.readdirSync(ROOT, { withFileTypes: true })) {
+    if (e.isFile()) files.push(path.join(ROOT, e.name));
+  }
+  const seen = new Set();
+  const targets = [];
+  for (const full of files) {
+    const rel = lib.toPosix(path.relative(ROOT, full));
+    if (rel.startsWith('secure/') || rel.startsWith('.git/') || rel.startsWith('node_modules/')) continue;
+    if (!lib.isSensitivePath(rel)) continue; // allowlist・*.enc.json は自動除外
+    if (seen.has(rel)) continue;
+    seen.add(rel);
+    targets.push(rel);
+  }
+  return targets.sort();
 }
 
 function main() {
-  const pass = process.env.LISTS_PASSPHRASE;
+  const pass = getPassphrase();
   if (!pass) {
-    console.error('LISTS_PASSPHRASE environment variable is required');
+    console.error('LISTS_PASSPHRASE(または LISTS_PASSPHRASE_FILE)が必要です。');
     process.exit(2);
   }
-  ensureDir(OUT_DIR);
-  const files = listDataFiles().filter(matchesPatterns);
-  if (files.length === 0) {
-    console.log('No matching files found in data/. Patterns:', PATTERNS);
+  const targets = collectTargets();
+  if (targets.length === 0) {
+    console.log('暗号化対象の機密ファイルは見つかりませんでした。');
     return;
   }
-  files.forEach(f => {
-    const buf = fs.readFileSync(f);
-    const enc = encryptBuffer(buf, pass);
-    const outName = path.basename(f) + '.enc.json';
-    const outPath = path.join(OUT_DIR, outName);
-    const payload = { filename: path.basename(f), encrypted: enc };
+  if (DRY) {
+    console.log(`[dry-run] 暗号化対象 ${targets.length} 件:`);
+    targets.forEach((r) => console.log('  -', r));
+    return;
+  }
+  let n = 0;
+  for (const rel of targets) {
+    const buf = fs.readFileSync(path.join(ROOT, rel));
+    const payload = encryptBuffer(buf, pass, rel);
+    const outPath = path.join(VAULT, rel + '.enc.json');
+    fs.mkdirSync(path.dirname(outPath), { recursive: true });
     fs.writeFileSync(outPath, JSON.stringify(payload));
-    console.log('Encrypted', f, '->', outPath);
-  });
+    n++;
+  }
+  console.log(`✅ ${n} 件を暗号化し secure/vault/ に保存しました(AES-256-GCM / scrypt)。`);
+  console.log('   平文・暗号文とも .gitignore 済み。鍵(パスフレーズ)はリポジトリに保存しないでください。');
 }
 
 main();

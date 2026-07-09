@@ -1,51 +1,79 @@
+'use strict';
+/**
+ * ボールト(secure/vault/)の暗号文を復号する。
+ * 既定では secure/plain/ 配下に元の相対パス構造で書き出す(git-ignore・ローカル限定)。
+ * --restore 指定時のみ元の場所(リポジトリ内の相対パス)へ復元する。
+ *
+ * 使い方:
+ *   set LISTS_PASSPHRASE=...   (または LISTS_PASSPHRASE_FILE=<リポ外の鍵ファイル>)
+ *   npm run decrypt:lists                 -> secure/plain/ へ
+ *   npm run decrypt:lists -- --restore    -> 元の場所へ復元
+ */
 const fs = require('fs');
 const path = require('path');
-const crypto = require('crypto');
+const { decryptPayload } = require('./lib-crypto');
 
-const ENC_DIR = path.resolve(__dirname, '..', 'secure', 'encrypted');
-const OUT_DIR = path.resolve(__dirname, '..', 'secure', 'plain');
+const ROOT = path.resolve(__dirname, '..');
+const VAULT = path.join(ROOT, 'secure', 'vault');
+const PLAIN = path.join(ROOT, 'secure', 'plain');
+const RESTORE = process.argv.includes('--restore');
 
-function ensureDir(dir) {
-  if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+function getPassphrase() {
+  const file = process.env.LISTS_PASSPHRASE_FILE;
+  if (file && fs.existsSync(file)) return fs.readFileSync(file, 'utf8').trim();
+  return process.env.LISTS_PASSPHRASE || '';
 }
 
-function decryptPayload(payload, passphrase) {
-  const enc = payload.encrypted;
-  const salt = Buffer.from(enc.salt, 'base64');
-  const iv = Buffer.from(enc.iv, 'base64');
-  const tag = Buffer.from(enc.tag, 'base64');
-  const ciphertext = Buffer.from(enc.ciphertext, 'base64');
-  const key = crypto.pbkdf2Sync(passphrase, salt, 100000, 32, 'sha256');
-  const decipher = crypto.createDecipheriv('aes-256-gcm', key, iv);
-  decipher.setAuthTag(tag);
-  const out = Buffer.concat([decipher.update(ciphertext), decipher.final()]);
-  return out;
+function walk(dir, acc) {
+  let entries;
+  try {
+    entries = fs.readdirSync(dir, { withFileTypes: true });
+  } catch (_) {
+    return acc;
+  }
+  for (const e of entries) {
+    const full = path.join(dir, e.name);
+    if (e.isDirectory()) walk(full, acc);
+    else if (e.isFile() && e.name.endsWith('.enc.json')) acc.push(full);
+  }
+  return acc;
 }
 
 function main() {
-  const pass = process.env.LISTS_PASSPHRASE;
+  const pass = getPassphrase();
   if (!pass) {
-    console.error('LISTS_PASSPHRASE environment variable is required');
+    console.error('LISTS_PASSPHRASE(または LISTS_PASSPHRASE_FILE)が必要です。');
     process.exit(2);
   }
-  if (!fs.existsSync(ENC_DIR)) {
-    console.error('No encrypted directory found:', ENC_DIR);
+  if (!fs.existsSync(VAULT)) {
+    console.error('ボールトが見つかりません:', VAULT);
     process.exit(3);
   }
-  ensureDir(OUT_DIR);
-  const files = fs.readdirSync(ENC_DIR).filter(f => f.endsWith('.enc.json'));
+  const files = walk(VAULT, []);
   if (files.length === 0) {
-    console.log('No encrypted files found in', ENC_DIR);
+    console.log('secure/vault/ に暗号化ファイルがありません。');
     return;
   }
-  files.forEach(f => {
-    const p = path.join(ENC_DIR, f);
-    const payload = JSON.parse(fs.readFileSync(p, 'utf8'));
-    const outBuf = decryptPayload(payload, pass);
-    const outPath = path.join(OUT_DIR, payload.filename);
-    fs.writeFileSync(outPath, outBuf);
-    console.log('Decrypted', p, '->', outPath);
-  });
+  let n = 0;
+  let failed = 0;
+  for (const encPath of files) {
+    const payload = JSON.parse(fs.readFileSync(encPath, 'utf8'));
+    let out;
+    try {
+      out = decryptPayload(payload, pass);
+    } catch (e) {
+      failed++;
+      console.error('✗ 復号失敗(パスフレーズ不一致/改ざんの可能性):', path.relative(VAULT, encPath));
+      continue;
+    }
+    const rel = payload.relpath || path.relative(VAULT, encPath).replace(/\.enc\.json$/, '');
+    const dest = RESTORE ? path.join(ROOT, rel) : path.join(PLAIN, rel);
+    fs.mkdirSync(path.dirname(dest), { recursive: true });
+    fs.writeFileSync(dest, out);
+    n++;
+  }
+  console.log(`✅ ${n} 件を復号しました -> ${RESTORE ? '元の場所' : 'secure/plain/'}` + (failed ? `（失敗 ${failed} 件）` : ''));
+  if (failed) process.exit(1);
 }
 
 main();

@@ -1,0 +1,5 @@
+#!/bin/sh
+# 機密データ/個人情報/秘密情報の混入を防ぐ pre-commit ガード。
+# 有効化: npm run secure:setup  (git config core.hooksPath .githooks)
+# 詳細:   SECURITY.md
+exec node scripts/check-staged-security.js

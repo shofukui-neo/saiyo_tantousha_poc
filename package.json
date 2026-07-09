@@ -67,7 +67,10 @@
     "test:all": "node test/name-fusion.test.js && node test/probe-social.test.js && node test/probe-site-deep.test.js && node test/selftest.js"
     ,
     "encrypt:lists": "node scripts/encrypt-lists.js",
-    "decrypt:lists": "node scripts/decrypt-lists.js"
+    "decrypt:lists": "node scripts/decrypt-lists.js",
+    "secure:setup": "node scripts/setup-security.js",
+    "secure:check": "node scripts/check-staged-security.js",
+    "secure:scan": "node scripts/check-staged-security.js"
   },
   "dependencies": {
     "cheerio": "^1.0.0",
