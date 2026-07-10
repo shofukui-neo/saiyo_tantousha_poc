@@ -358,8 +358,8 @@ function testPipelineLogic() {
   // 架電呼称
   ok('callScript: 新卒シグナルで敬称調整', callScript({ buyer_persona: { departments: ['人事部'] }, primary_value_prop: '新卒採用SaaS' }) === '人事部 新卒採用ご担当者様');
 
-  // ICPスコア（従業員スイートスポット）
-  ok('discoveryIcpScore: 150名+HP+代表者 → 満点100', discoveryIcpScore({ employees: 150, websiteUrl: 'x', representativeName: 'y' }) === 100);
+  // ICPスコア（従業員スイートスポット＝実データ再定義で300-500名。2026-07更新）
+  ok('discoveryIcpScore: 400名+HP+代表者 → 満点100', discoveryIcpScore({ employees: 400, websiteUrl: 'x', representativeName: 'y' }) === 100);
   ok('discoveryIcpScore: 従業員不明はニュートラル寄り', discoveryIcpScore({ employees: null, websiteUrl: '', representativeName: '' }) === 20);
 
   // ICP 正規化（手動設定の補完）
@@ -837,8 +837,8 @@ function testMochicaFunnel() {
   const { scoreFunnel, scoreMochica, parsePercent, getWeights, FUNNEL_TH } = require('../src/mochica-fit');
   const now = new Date('2026-09-15T00:00:00+09:00'); // 9月＝28卒計画ピーク（両レコードで相殺）
 
-  // 目安の既定値（ユーザー指定: エントリー100 / 採用10 / 歩留まり50）
-  ok('FUNNEL_TH: 既定 エントリー100/採用10/歩留50', FUNNEL_TH.entry === 100 && FUNNEL_TH.hire === 10 && FUNNEL_TH.yieldMax === 50);
+  // 目安の既定値（実データ再定義: エントリー100 / 採用6 / 歩留まり50。2026-07更新: 採用は6名+で成約率急伸）
+  ok('FUNNEL_TH: 既定 エントリー100/採用6/歩留50', FUNNEL_TH.entry === 100 && FUNNEL_TH.hire === 6 && FUNNEL_TH.yieldMax === 50);
 
   // parsePercent: ％表記/比率/裸数字/範囲外
   ok('parsePercent: "45%"→45', parsePercent('45%') === 45);

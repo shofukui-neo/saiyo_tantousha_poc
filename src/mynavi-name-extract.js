@@ -25,7 +25,7 @@
  *
  * 戻り値は共通形: { name, dept, role, confidence, pattern, evidence } または null。
  */
-const { splitName, isPlausiblePersonName } = require('./jp-names');
+const { splitName } = require('./jp-names');
 
 const K = '一-龥々〆ヶ';                        // 氏名に使う漢字レンジ
 const NAME_TOKEN = `[${K}]{1,4}(?:[ 　][${K}]{1,4})?`; // 姓 or 姓+名（間に半/全角スペース1つ許容）
@@ -41,6 +41,8 @@ const BROKEN_HEAD_RE = /^(先|問|御中|様方)/;
 const INDUSTRY_TAIL_RE = /(業|社|店|部|課|係|科|商事|工業|電気|建設|産業|製作|販売|興業|運輸|物産|サービス|印刷|食品|運送)$/;
 // 敬称・助詞（末尾から剥がす）。氏名にはこれらは含まれない。
 const HONORIFIC_TAIL_RE = /(さん|さま|様|氏|くん|君|まで(?:に)?|より|から|宛て?|など|の方|行|各位|御中)$/;
+// 役職語（先頭に貼り付くと氏名を汚す。例「部長 笠井英樹」→「笠井 英樹」）。先頭からのみ剥がす。
+const LEAD_TITLE_RE = /^(?:代表取締役|代表|取締役|専務|常務|執行役員|執行役|本部長|部長|次長|課長|係長|主任|主査|室長|店長|所長|統括|部門長|リーダー|マネージャー|マネジャー|チーフ|担当者?|責任者)[ 　]?/;
 
 /**
  * 構造アンカーで得た生トークンを正規化して人名を返す（緩いゲート・辞書非依存）。
@@ -53,6 +55,8 @@ function normPersonToken(raw, opts = {}) {
   if (!s) return '';
   // 複数担当（川瀬・伊藤）は先頭1名。※氏名内スペースは保持したいので中黒/読点でのみ分割。
   if (opts.list) s = s.split(/[・･／/、,，]/)[0].trim();
+  // 先頭に貼り付いた役職語を剥がす（「部長 笠井英樹」→「笠井英樹」）。
+  for (let i = 0; i < 2; i++) { const t = s.replace(LEAD_TITLE_RE, '').trim(); if (t === s) break; s = t; }
   // 末尾の敬称/助詞を剥がす（繰り返し：「田中さんまで」→「田中」）
   for (let i = 0; i < 3; i++) { const t = s.replace(HONORIFIC_TAIL_RE, '').trim(); if (t === s) break; s = t; }
   s = s.replace(/[　\s]+/g, ' ').trim();
@@ -96,33 +100,31 @@ function extractFromMessageBoard(text) {
 }
 
 // ── ② インタビュー文末の帰属表記 ─────────────────────────────────
-// 完全形: 「＜(株)コロワイド … 人事企画部　山野 誠一郎さん＞」← 姓名フル。最優先。
+// 完全形: 「＜(株)コロワイド … 人事企画部　山野 誠一郎さん＞」← 姓名フル。
+// ※ここで取れるのは「インタビューに登場した人物」。採用担当者とは限らない（一般社員=先輩社員の声が大半）。
+//   よって、角括弧内の帰属に人事/採用/総務/人材 等のHR部署が明示されている場合に限り採用担当者として採る。
+//   HR部署が無い（営業/技術/企画の社員インタビュー）帰属は、担当者名として誤採用しない（精度優先）。
 const IV_FULL_RE = new RegExp(`[＜<]([^＜<＞>]{0,60}?)((?:[${K}]{1,4})[ 　][${K}]{1,4})さん[ 　]*[＞>]`, 'g');
-// 話者注記: 「（山野さん）」「(山野さん)」← 姓のみ。補助。
-const IV_PAREN_RE = new RegExp(`[（(]([${K}]{2,5})さん[）)]`, 'g');
+// HR部署（この語が帰属文脈にある時だけ、インタビュー登場人物を採用担当と見なす）。
+const HR_DEPT_RE = /人事|採用|人材|人財|新卒|中途|タレント|HR|リクルート|総務/;
 
 function extractFromInterview(text) {
   const t = String(text || '');
-  // まず完全形（部署＋姓名）を探す
+  // 完全形（部署＋姓名）を探す。HR部署の帰属がある場合のみ採用担当者として確定する。
   IV_FULL_RE.lastIndex = 0;
   let m;
   while ((m = IV_FULL_RE.exec(t)) !== null) {
     const ctx = m[1] || '';
     const name = normPersonToken(m[2]);
-    if (!name) { IV_FULL_RE.lastIndex = m.index + 1; continue; }
     const dept = (ctx.match(DEPT_RE) || [])[1] || '';
+    // HR部署の明示が無い帰属は、被取材の一般社員である可能性が高いので採らない（三和/いしのまき型の誤爆防止）。
+    if (!name || !HR_DEPT_RE.test(ctx)) { IV_FULL_RE.lastIndex = m.index + 1; continue; }
     return { name, dept, role: dept, confidence: 0.78, pattern: 'インタビュー帰属', evidence: m[0].trim().slice(0, 90) };
   }
-  // 補助：（姓さん）注記。ただし単独では弱いので confidence 低め。
-  IV_PAREN_RE.lastIndex = 0;
-  while ((m = IV_PAREN_RE.exec(t)) !== null) {
-    const name = normPersonToken(m[1]);
-    // 姓辞書に載る or 明確な人名のみ採る（一般語（例:「以上さん」）誤爆防止）
-    if (name && isPlausiblePersonName(name)) {
-      return { name, dept: '', role: '', confidence: 0.6, pattern: 'インタビュー話者注記', evidence: m[0].trim().slice(0, 60) };
-    }
-    IV_PAREN_RE.lastIndex = m.index + 1;
-  }
+  // 旧「（姓さん）」話者注記は撤去。
+  //   （○○さん）は社員インタビューの被取材者・顧客敬称（例:「荷主さん」）を無差別に拾い、
+  //   採用担当者ではない氏名・一般名詞を大量に誤採用していた（実データで69件, 甲方/荷主/日中 等を含む）。
+  //   HR帰属の裏付けが取れない単独注記は担当者名として信頼できないため採らない。
   return null;
 }
 

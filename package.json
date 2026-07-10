@@ -15,6 +15,8 @@
     "target": "node src/build-target-list.js",
     "ng": "node src/exclude-ng.js --ng data/ng-companies.txt --list leads-mochica-target.csv",
     "ng:apply": "node src/exclude-ng.js --ng data/ng-companies.txt --list leads-mochica-target.csv --apply",
+    "dedupe": "node src/dedupe-approach.js",
+    "dedupe:sent-only": "node src/dedupe-approach.js --customers \"data/MOCHICAの既存顧客リスト - mochica-companies-list.csv\"",
     "media": "node src/build-media.js --in leads-daihyou-1000.csv --out sources/A-media.csv",
     "discover": "node src/build-media.js --discover \"新卒 営業 東京;新卒 エンジニア 大阪\" --out sources/E-hiring.csv",
     "backfill": "node src/build-media.js --backfill leads-daihyou-1000.csv --out sources/E-hiring.csv --empty-only",
@@ -63,6 +65,9 @@
     "enrich:crossref": "node src/enrich-crossref.js --file data/leads-mochica-target-enriched.csv",
     "test:fusion": "node test/name-fusion.test.js",
     "test:all": "node test/name-fusion.test.js && node test/probe-social.test.js && node test/probe-site-deep.test.js && node test/selftest.js"
+    ,
+    "encrypt:lists": "node scripts/encrypt-lists.js",
+    "decrypt:lists": "node scripts/decrypt-lists.js"
   },
   "dependencies": {
     "cheerio": "^1.0.0",
