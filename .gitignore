@@ -1,29 +1,45 @@
-node_modules/
+# =============================================================================
+#  セキュリティ方針: 「データは既定で機密」— コード/設定/フィクスチャのみ追跡。
+#  企業リスト・個人情報(氏名/電話/メール/代表者名/法人番号 等)は一切コミットしない。
+#  取り扱い規約は SECURITY.md を参照。
+#  ※ data/ は末尾スラッシュ(data/)ではなく data/** を使う。
+#    前者だとディレクトリ自体が除外され `!` による再包含(allowlist)が効かないため。
+# =============================================================================
+
+# ---- Secrets / 認証情報 ----
 .env
-.env copy
-.env.local
-.env.*.local
-results.csv
-service-account.json
-service-account-*.json
+.env.*
+!.env.example
+service-account*.json
+*.pem
+*.key
+*.p12
+*.pfx
+
+# ---- 全データは既定で機密。非PIIの設定/辞書/フィクスチャのみ allowlist で再包含 ----
+data/**
+!data/media-catalog.json
+sources/**
+!sources/manifest.json
+!sources/SF-leads.sample.csv
+archive/**
+eval/**
+
+# ---- 暗号化ボールト/復号平文はローカル限定(既定でコミットしない) ----
+secure/**
+!secure/README.md
+
+# ---- ルート直下の生成物(リード/ログ/スクラッチ) ----
+/*.csv
+/*.log
+scratch-sme.json
+*.enc.json
+
+# ---- 依存/ツール/OS ----
+node_modules/
+dist/
+coverage/
 .vscode/
+/.idea/
 .DS_Store
 npm-debug.log
-dist/
-/.idea/
-coverage/
-# scraping disk cache (transient, regenerable)
-data/scrape-cache/
-
-# Secure plaintext output (only encrypted artifacts should be checked in)
-secure/plain/
-
-# Reference lists (参照用リスト) — do not commit these data exports
-# アプローチ禁止リスト
-data/アプローチ禁止企業一覧.txt
-# 既存顧客リスト
-data/*既存顧客*.csv
-data/existing-bango.json
-# SFリードリスト
-data/*セールスフォース*.csv
-data/*SF*リード*.csv

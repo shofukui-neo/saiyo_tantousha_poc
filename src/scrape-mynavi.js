@@ -442,19 +442,28 @@ class MynaviScraper {
 
   // employment.html → 各募集コース(displayEmployment)の「募集人数」を集計して out に書き込む。
   async _collectHire(page, id, out) {
+    const dbg = process.env.MYNAVI_HIRE_DEBUG === '1';
     const empUrl = `https://job.mynavi.jp/${this.gradYear}/pc/search/corp${id}/employment.html`;
-    const got = await this._fetchPage(page, empUrl, true);
+    let got = await this._fetchPage(page, empUrl, true);
+    // 堅牢化: 本文が薄い/募集人数もコースリンクも無い＝描画未完/スロットリングの可能性。少し待って1回だけ再取得。
+    if (!got || (!/募集人数|採用予定人数/.test(got.text) && !(got.empLinks || []).length)) {
+      await sleep(1500);
+      const retry = await this._fetchPage(page, empUrl, true);
+      if (retry && (/募集人数|採用予定人数/.test(retry.text) || (retry.empLinks || []).length || !got)) got = retry;
+    }
     if (!got) { out.根拠 = out.根拠 || 'マイナビ採用データ面が取得できず'; return; }
     const sig = extractIntentSignals(got.text);
     if (sig.従業員数) out.従業員数 = sig.従業員数;
     const courses = [];
     const links = [...new Set(got.empLinks || [])].slice(0, 8); // 募集コース分（displayEmployment）
+    if (dbg) console.error(`  [dbg ${id}] employment.html len=${got.text.length} 募集人数含む=${/募集人数|採用予定人数/.test(got.text)} courseLinks=${links.length} own=${JSON.stringify(extractHireOnPage(got.text))}`);
     if (links.length) {
       for (const l of links) {
         await sleep(500);
         const g = await this._fetchPage(page, l, false);
         if (!g) continue;
         const h = extractHireOnPage(g.text);
+        if (dbg) console.error(`  [dbg ${id}] course len=${g.text.length} 募集人数含む=${/募集人数|採用予定人数/.test(g.text)} hire=${JSON.stringify(h)}`);
         if (h) courses.push(h);
       }
     }
