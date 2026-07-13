@@ -56,6 +56,7 @@
     "mynavi:names": "node src/build-mynavi-names.js --in leads-daihyou-1000.csv --out sources/A-mynavi-names.csv",
     "mynavi:1000": "node src/build-mynavi-1000.js --out data/recruiter-mynavi-1000.csv --target 1000",
     "mynavi:mochica": "node src/build-mochica-mynavi.js --in data/recruiter-mynavi-1000.csv --out leads-mochica-mynavi-named.csv",
+    "mochica:max": "node src/build-named-mochica-max.js --out data/leads-named-mochica-max.csv",
     "names:plus": "node src/harvest-named-plus.js --in data/leads-recruiter-acquired-1000.csv --out data/recruiter-fused.csv",
     "names:plus:live": "node src/harvest-named-plus.js --in data/recruiter-wantedly.csv --out data/recruiter-fused-live.csv --live --concurrency 3",
     "names:gbiz": "node src/harvest-named-plus.js --in data/leads-mochica-target.csv --out data/recruiter-gbiz-rep.csv --gbiz-first --concurrency 2",
@@ -64,8 +65,7 @@
     "enrich:shinsotsu": "node src/enrich-shinsotsu-flag.js --file data/leads-mochica-target-enriched.csv",
     "enrich:crossref": "node src/enrich-crossref.js --file data/leads-mochica-target-enriched.csv",
     "test:fusion": "node test/name-fusion.test.js",
-    "test:all": "node test/name-fusion.test.js && node test/probe-social.test.js && node test/probe-site-deep.test.js && node test/selftest.js"
-    ,
+    "test:all": "node test/name-fusion.test.js && node test/probe-social.test.js && node test/probe-site-deep.test.js && node test/selftest.js",
     "encrypt:lists": "node scripts/encrypt-lists.js",
     "decrypt:lists": "node scripts/decrypt-lists.js",
     "secure:setup": "node scripts/setup-security.js",
@@ -73,9 +73,9 @@
     "secure:scan": "node scripts/check-staged-security.js"
   },
   "dependencies": {
-    "cheerio": "^1.0.0",
+    "cheerio": "^1.1.0",
     "dotenv": "^16.4.5",
     "googleapis": "^140.0.0",
-    "playwright": "^1.45.0"
+    "playwright": "^1.61.1"
   }
 }
