@@ -30,6 +30,7 @@ const IN = path.resolve(ROOT, opt('--in', 'data/leads-mochica-named-callable.csv
 const OUT = path.resolve(ROOT, opt('--out', IN.replace(/\.csv$/, '.hire.csv')));
 const LIMIT = opt('--limit', null) ? parseInt(opt('--limit'), 10) : null;
 const ALL = !!opt('--all', false);
+const RETRY_EMPTY = !!opt('--retry-empty', false); // 採用数が埋まらなかった社を再取得（成功のみキャッシュ）
 const JOURNAL = OUT.replace(/\.csv$/, '') + '.journal.json';
 
 const HIRE_COLS = ['採用予定人数', '採用人数', '採用数', '採用予定数'];
@@ -60,6 +61,8 @@ async function main() {
       const name = String(rec['企業名'] || '').trim();
       done++;
       let res = journal[name];
+      // 成功(採用数あり)はキャッシュ利用。失敗は --retry-empty のとき再取得（過渡的失敗の救済）。
+      if (res && !res.採用予定人数 && RETRY_EMPTY) res = null;
       if (!res) {
         process.stdout.write(`[${done}/${pool.length}] ${name} … `);
         res = await sc.scrapeHireByName(name);

@@ -14,22 +14,43 @@ const path = require('path');
 const { readCsv, toCsv, mergeKey, normCompanyName } = require('./csv');
 const { scoreMochica, parseEmployees } = require('./mochica-fit');
 const { qualifiesForList, proposalTier } = require('./icp-rules');
+const { buildBalesIndex, suppress } = require('./suppression');
 const { isFullName, isKnownSurname } = require('./jp-names');
 
 const ROOT = path.resolve(__dirname, '..');
 
+// サプレッション層（N層）: BALES既存架電CRMの負シグナル索引。純損失架電（既存お断り/商談中への重複）を除外。
+function loadBalesIndex() {
+  const p = path.join(ROOT, 'data', 'BALESCLOUDの既存リスト - 202607062007_leadList_utf-8.csv');
+  if (!fs.existsSync(p)) { console.warn('warn: BALESリスト無し→サプレッション層スキップ'); return new Map(); }
+  return buildBalesIndex(fs.readFileSync(p, 'utf8'));
+}
+
 // 採用人数（"6～10名"/"6名"/"8" → 6 の下限。不明は null）
 const HIRE_COLS = ['採用予定人数', '採用人数', '採用数', '採用予定数'];
 function pickHire(rec) { for (const c of HIRE_COLS) { const m = String(rec[c] || '').match(/\d+/); if (m) return parseInt(m[0], 10); } return null; }
-// マイナビ採用データでエンリッチした採用人数の上書きマップ（enrich-hire-from-mynavi.js の出力を任意で取り込む）
+// マイナビ採用データでエンリッチした採用人数の上書きマップ。
+// enrich-hire-from-mynavi.js の journal（全処理を累積・キー=企業名）を優先的に読む。
+// journal は出力CSVと違い「キューから昇格した過去の成功」も保持し続けるため、再統合で取りこぼさない。
 function loadHireOverride() {
-  const p = path.join(ROOT, 'data', 'hire-enriched-mynavi.csv');
   const map = new Map();
-  if (!fs.existsSync(p)) return map;
-  const { records } = readCsv(fs.readFileSync(p, 'utf8'));
-  for (const r of records) {
-    const k = normCompanyName(r['企業名'] || ''); if (!k) continue;
-    const h = String(r['採用予定人数'] || '').trim(); if (h) map.set(k, { 採用予定人数: h, レンジ: r['採用予定人数レンジ'] || '' });
+  const journalP = path.join(ROOT, 'data', 'hire-enriched-mynavi.journal.json');
+  if (fs.existsSync(journalP)) {
+    try {
+      const j = JSON.parse(fs.readFileSync(journalP, 'utf8'));
+      for (const [name, v] of Object.entries(j)) {
+        const k = normCompanyName(name); const h = String((v && v.採用予定人数) || '').trim();
+        if (k && h) map.set(k, { 採用予定人数: h, レンジ: (v && v.レンジ) || '', コース: (v && v.コース) || '' });
+      }
+    } catch (_) { /* 壊れていたらCSVへフォールバック */ }
+  }
+  const csvP = path.join(ROOT, 'data', 'hire-enriched-mynavi.csv');
+  if (fs.existsSync(csvP)) {
+    const { records } = readCsv(fs.readFileSync(csvP, 'utf8'));
+    for (const r of records) {
+      const k = normCompanyName(r['企業名'] || ''); if (!k || map.has(k)) continue;
+      const h = String(r['採用予定人数'] || '').trim(); if (h) map.set(k, { 採用予定人数: h, レンジ: r['採用予定人数レンジ'] || '' });
+    }
   }
   return map;
 }
@@ -45,11 +66,11 @@ const SOURCES = [
   { file: 'leads-mochica-target-namedonly.csv', tag: 'target-namedonly' },
 ];
 
-// 統合後の出力スキーマ（営業がそのまま使える並び）。採用予定人数・提案プランを追加。
+// 統合後の出力スキーマ（営業がそのまま使える並び）。採用予定人数・提案プラン・抑制(N層)を追加。
 const OUT_HEADERS = [
   '企業名', '採用担当者名', '氏名検証', '役職', '部署',
   '電話番号', 'メール', '従業員数', '採用予定人数', '業種', '提案プラン', '都道府県', '設立年', '法人番号', '新卒フラグ',
-  '公式URL', 'アポ期待度', '優先度', 'MOCHICA適合', '確信度', 'なぜ今なぜこの企業',
+  '公式URL', 'アポ期待度', '優先度', '抑制コード', '抑制理由', 'MOCHICA適合', '確信度', 'なぜ今なぜこの企業',
   '取得元', '根拠URL',
 ];
 
@@ -105,14 +126,18 @@ function main() {
   }
 
   const hireOverride = loadHireOverride();
+  const balesIdx = loadBalesIndex();
   const now = new Date();
-  const qualified = [];   // 3絶対条件クリア＝呼べる名指しリスト
+  const nowYm = { y: now.getFullYear(), mo: now.getMonth() + 1 };
+  const qualified = [];   // 3絶対条件クリア＋N層通過＝呼べる名指しリスト（降格は末尾に）
+  const suppressed = [];  // N層で除外（純損失架電回避）
   const needHire = [];    // 担当者名+電話はあるが採用人数不明＝採用数エンリッチ待ち
   const gateDrop = { 電話なし: 0, IT除外: 0, 採用6名未満: 0, 従業員100名未満: 0 };
+  const nStat = { remove: 0, downgrade: 0, keep: 0, codes: {} };
   for (const { rec, srcs } of groups.values()) {
     // 採用人数: ソース値 → マイナビエンリッチ上書き の順で補完
     const ov = hireOverride.get(normCompanyName(rec['企業名'] || ''));
-    if (ov && !pickHire(rec)) { rec['採用予定人数'] = ov.採用予定人数; rec['採用予定人数レンジ'] = ov.レンジ; }
+    if (ov && !pickHire(rec)) { rec['採用予定人数'] = ov.採用予定人数; rec['採用予定人数レンジ'] = ov.レンジ; if (ov.コース) rec['募集コース数'] = ov.コース; }
     const hire = pickHire(rec);
     const emp = parseEmployees(rec['従業員数']);
     const prim = { contactName: rec['採用担当者名'], phone: rec['電話番号'], hire, emp, industry: rec['業種'] };
@@ -139,51 +164,70 @@ function main() {
       '公式URL': rec['公式URL'] || '',
       'アポ期待度': sc.total,
       '優先度': sc.priority,
+      '抑制コード': '', '抑制理由': '',
       'MOCHICA適合': sc.total >= 70 ? '◎' : sc.total >= 50 ? '○' : '△',
       '確信度': rec['確信度'] || sc.confidence,
       'なぜ今なぜこの企業': rec['なぜ今なぜこの企業'] || sc.why,
       '取得元': [...srcs].join('/'),
       '根拠URL': rec['根拠URL'] || '',
     };
-    if (q.pass) { qualified.push(row); continue; }
-    // 採用人数が「不明」だけが理由 → 落とさずエンリッチ待ち行きに退避（ユーザー指定）
-    if (q.needHire && q.reasons.length === 1) { needHire.push(row); continue; }
-    // それ以外は絶対条件を満たさず除外（内訳を集計）
-    if (q.reasons.some((r) => /電話番号なし/.test(r))) gateDrop.電話なし++;
-    if (q.reasons.some((r) => /IT/.test(r))) gateDrop.IT除外++;
-    if (q.reasons.some((r) => /新卒.*</.test(r))) gateDrop.採用6名未満++;
-    if (q.reasons.some((r) => /従業員.*</.test(r))) gateDrop.従業員100名未満++;
+    // ── 3絶対条件（担当者名+電話+採用6名） ──
+    if (!q.pass) {
+      // 採用人数が「不明」だけが理由 → 落とさずエンリッチ待ち行きに退避（ユーザー指定）
+      if (q.needHire && q.reasons.length === 1) { needHire.push(row); continue; }
+      if (q.reasons.some((r) => /電話番号なし/.test(r))) gateDrop.電話なし++;
+      if (q.reasons.some((r) => /IT/.test(r))) gateDrop.IT除外++;
+      if (q.reasons.some((r) => /新卒.*</.test(r))) gateDrop.採用6名未満++;
+      if (q.reasons.some((r) => /従業員.*</.test(r))) gateDrop.従業員100名未満++;
+      continue;
+    }
+    // ── サプレッション層（N層）: 負シグナルで除外/降格 ──
+    const n = suppress({ '企業名': row['企業名'], '業種': row['業種'], '採用予定人数': row['採用予定人数'], '募集コース数': rec['募集コース数'] || '' }, balesIdx, { now: nowYm });
+    row['抑制コード'] = n.codes.join('/'); row['抑制理由'] = n.reasons.join('｜');
+    nStat[n.action]++; for (const c of n.codes) nStat.codes[c] = (nStat.codes[c] || 0) + 1;
+    if (n.action === 'remove') { suppressed.push(row); continue; }
+    row._down = n.action === 'downgrade' ? 1 : 0; // 降格は末尾へ
+    qualified.push(row);
   }
 
-  // アポ期待度 降順 → 企業名 で安定ソート
-  const sorter = (a, b) => (b['アポ期待度'] - a['アポ期待度']) || a['企業名'].localeCompare(b['企業名'], 'ja');
-  qualified.sort(sorter); needHire.sort(sorter);
+  // 降格を末尾に、その中でアポ期待度 降順 → 企業名 で安定ソート
+  const sorter = (a, b) => ((a._down || 0) - (b._down || 0)) || (b['アポ期待度'] - a['アポ期待度']) || a['企業名'].localeCompare(b['企業名'], 'ja');
+  const plainSorter = (a, b) => (b['アポ期待度'] - a['アポ期待度']) || a['企業名'].localeCompare(b['企業名'], 'ja');
+  qualified.sort(sorter); needHire.sort(plainSorter); suppressed.sort(plainSorter);
 
   const outP = path.join(ROOT, 'leads-mochica-named-consolidated.csv');
   const queueP = path.join(ROOT, 'data', 'leads-mochica-named-need-hire.csv');
+  const supP = path.join(ROOT, 'data', 'leads-mochica-named-suppressed.csv');
   fs.writeFileSync(outP, '﻿' + toCsv(OUT_HEADERS, qualified), 'utf8');
   fs.writeFileSync(queueP, '﻿' + toCsv(OUT_HEADERS, needHire), 'utf8');
+  fs.writeFileSync(supP, '﻿' + toCsv(OUT_HEADERS, suppressed), 'utf8');
 
-  const band = (lo, hi) => qualified.filter((r) => r['アポ期待度'] >= lo && (hi == null || r['アポ期待度'] < hi)).length;
+  const clean = qualified.filter((r) => !r._down);
+  const band = (lo, hi) => clean.filter((r) => r['アポ期待度'] >= lo && (hi == null || r['アポ期待度'] < hi)).length;
   const L = '──────────────────────────────────────────────';
   console.log('\n' + L);
-  console.log('  採用担当者名 判明 × MOCHICAターゲット 統合リスト（3絶対条件: 担当者名+電話+採用6名）');
+  console.log('  採用担当者名 判明 × MOCHICAターゲット 統合リスト（3絶対条件 + N層サプレッション）');
   console.log(L);
   console.log('  取得元別（氏名検証OKのみ）:');
   for (const s of srcStats) console.log(`    ${s.file.padEnd(38)} : ${String(s.n).padStart(5)}${s.note ? ' (' + s.note + ')' : ''}`);
   console.log(L);
   console.log(`  投入行(氏名検証OK)          : ${kept}`);
-  console.log(`  重複排除後の企業数          : ${qualified.length + needHire.length + Object.values(gateDrop).reduce((a, b) => a + b, 0)}`);
-  console.log(`  ── 3絶対条件クリア（呼べる）: ${qualified.length}`);
-  console.log(`    ├ ◎ 今週架電(70+)         : ${band(70, null)}`);
-  console.log(`    ├ ○ ナーチャ(50-69)       : ${band(50, 70)}`);
-  console.log(`    └ △ 後回し(-49)           : ${band(0, 50)}`);
+  console.log(`  ── 3絶対条件クリア          : ${qualified.length + suppressed.length}`);
   console.log(`  ── 採用数エンリッチ待ち     : ${needHire.length}  → ${path.relative(ROOT, queueP)}`);
   console.log(`  ── 絶対条件で除外           : ${Object.values(gateDrop).reduce((a, b) => a + b, 0)}  ${JSON.stringify(gateDrop)}`);
   console.log(L);
+  console.log(`  【N層サプレッション】BALES照合 ${balesIdx.size}社`);
+  console.log(`  ── 除外(純損失架電回避)     : ${suppressed.length}  → ${path.relative(ROOT, supP)}`);
+  console.log(`  ── 降格(残すが末尾)         : ${nStat.downgrade}`);
+  console.log(`  ── N別内訳                  : ${JSON.stringify(nStat.codes)}`);
+  console.log(L);
+  console.log(`  ★呼べるリスト(除外後)      : ${qualified.length}（クリーン${clean.length} + 降格${qualified.length - clean.length}）`);
+  console.log(`    ├ ◎ 今週架電(70+)         : ${band(70, null)}`);
+  console.log(`    ├ ○ ナーチャ(50-69)       : ${band(50, 70)}`);
+  console.log(`    └ △ 後回し(-49)           : ${band(0, 50)}`);
+  console.log(L);
   console.log(`  呼べるリスト出力: ${outP}`);
-  console.log(`  次アクション: node scripts/enrich-hire-from-mynavi.js --in ${path.relative(ROOT, queueP)} --out data/hire-enriched-mynavi.csv`);
-  console.log(`               → 再度 node src/build-named-consolidated.js で採用数を反映`);
+  console.log(`  次アクション: node scripts/enrich-hire-from-mynavi.js --in ${path.relative(ROOT, queueP)} --out data/hire-enriched-mynavi.csv → 再統合`);
   console.log('');
 }
 
