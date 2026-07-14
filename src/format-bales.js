@@ -1,0 +1,131 @@
+'use strict';
+/**
+ * 統合リスト → BALESCLOUD 既存リスト構造への整形
+ * =====================================================================
+ * data/leads-consolidated-all.csv を BALESCLOUD のリードリストCSVと同一の
+ * カラム構造（266列）に変換して出力する。取込用途を想定し、既定では
+ * 「既存被りなし（SF/BALES/MOCHICA顧客と被らない完全新規）」のみを出力する。
+ *
+ * - ヘッダはBALES実ファイルの1行目をそのまま採用（列順・列名を完全一致）
+ * - 統合リストの値を該当BALES列にマッピング、それ以外は空
+ * - 住所は都道府県/市区郡/町名・番地に分解、従業員数はBALES規模ブラケットへ丸め
+ * - 採用担当者名は姓・名に分割（スペース区切り、無ければ全体を姓へ）
+ *
+ * 使い方:
+ *   node src/format-bales.js
+ *   node src/format-bales.js --scope all           # 全30,290社（被り含む）
+ *   node src/format-bales.js --scope named         # 既存被りなし かつ 担当者名あり
+ *   node src/format-bales.js --out data/xxx.csv
+ */
+const fs = require('fs');
+const path = require('path');
+const { readCsv, toCsv, parseCsv } = require('./csv');
+
+const ROOT = path.resolve(__dirname, '..');
+const args = process.argv.slice(2);
+const getArg = (k, d) => { const i = args.indexOf(k); return i >= 0 && args[i + 1] ? args[i + 1] : d; };
+
+const IN = path.resolve(getArg('--in', path.join(ROOT, 'data', 'leads-consolidated-all.csv')));
+const BALES = path.resolve(getArg('--bales', path.join(ROOT, 'data', 'BALESCLOUDの既存リスト - 202607062007_leadList_utf-8.csv')));
+const OUT = path.resolve(getArg('--out', path.join(ROOT, 'data', 'leads-bales-format.csv')));
+const SCOPE = getArg('--scope', 'fresh'); // fresh | all | named
+
+// ── 都道府県分解 ──────────────────────────────────────────────
+const PREFS = [
+  '北海道', '青森県', '岩手県', '宮城県', '秋田県', '山形県', '福島県',
+  '茨城県', '栃木県', '群馬県', '埼玉県', '千葉県', '東京都', '神奈川県',
+  '新潟県', '富山県', '石川県', '福井県', '山梨県', '長野県', '岐阜県',
+  '静岡県', '愛知県', '三重県', '滋賀県', '京都府', '大阪府', '兵庫県',
+  '奈良県', '和歌山県', '鳥取県', '島根県', '岡山県', '広島県', '山口県',
+  '徳島県', '香川県', '愛媛県', '高知県', '福岡県', '佐賀県', '長崎県',
+  '熊本県', '大分県', '宮崎県', '鹿児島県', '沖縄県',
+];
+// 市区郡の切れ目: 最初の 郡/市/区 まで（政令市の「市＋区」は市までを市区郡にまとめる簡易処理）
+function splitAddress(full) {
+  let addr = String(full || '').trim();
+  if (!addr) return { pref: '', city: '', town: '' };
+  // 先頭に句読点等のゴミが付くケースがあるため、県名を文字列内から検出し
+  // その位置から住所を切り出す（最も早く出現する県名を採用）
+  let pref = '';
+  let at = Infinity;
+  for (const p of PREFS) {
+    const i = addr.indexOf(p);
+    if (i >= 0 && i < at) { at = i; pref = p; }
+  }
+  if (pref) addr = addr.slice(at);
+  let rest = pref ? addr.slice(pref.length) : addr;
+  // 郡→町村, 市→（区）まで を市区郡に。最初の区切り記号までを拾う。
+  const m = rest.match(/^(.+?[郡])(.+?[町村])|^(.+?市.+?区)|^(.+?[市区町村])/);
+  let city = '';
+  if (m) {
+    city = m[1] ? m[1] + m[2] : (m[3] || m[4] || '');
+    rest = rest.slice(city.length);
+  }
+  return { pref, city, town: rest };
+}
+
+// ── 従業員数 → BALES規模ブラケット ───────────────────────────
+const BRACKETS = [10, 30, 50, 100, 150, 200, 300, 500, 1000, 3000, 5000, 10000];
+function toSizeBracket(n) {
+  const v = parseInt(String(n).replace(/[^0-9]/g, ''), 10);
+  if (!v) return '';
+  let b = '';
+  for (const t of BRACKETS) { if (v >= t) b = String(t); }
+  return b || String(BRACKETS[0]);
+}
+
+// ── 氏名分割 ─────────────────────────────────────────────────
+function splitName(name) {
+  const n = String(name || '').trim().replace(/　/g, ' ');
+  if (!n) return { sei: '', mei: '' };
+  const parts = n.split(/\s+/).filter(Boolean);
+  if (parts.length >= 2) return { sei: parts[0], mei: parts.slice(1).join('') };
+  return { sei: n, mei: '' };
+}
+
+// ── メイン ───────────────────────────────────────────────────
+const balesHeaderLine = fs.readFileSync(BALES, 'utf8').split(/\r?\n/)[0];
+const HEADERS = parseCsv(balesHeaderLine)[0]; // 266列の正準ヘッダ
+
+const { records: src } = readCsv(fs.readFileSync(IN, 'utf8'));
+const g = (row, k) => (row[k] == null ? '' : String(row[k]).trim());
+
+function want(row) {
+  const overlap = g(row, '既存被り');
+  if (SCOPE === 'all') return true;
+  if (SCOPE === 'named') return overlap === '' && g(row, '採用担当者名') !== '';
+  return overlap === ''; // fresh: 既存被りなしのみ
+}
+
+const out = [];
+let seq = 0;
+for (const row of src) {
+  if (!want(row)) continue;
+  seq += 1;
+  const { pref, city, town } = splitAddress(g(row, '都道府県'));
+  const { sei, mei } = splitName(g(row, '採用担当者名'));
+  const rec = {};
+  for (const h of HEADERS) rec[h] = ''; // 全列空で初期化 → 構造完全一致
+  rec['システム管理情報：No'] = String(seq);
+  rec['会社情報：会社名'] = g(row, '企業名');
+  rec['会社情報：電話'] = g(row, '電話番号');
+  rec['会社情報：Webサイト'] = g(row, '公式URL');
+  rec['会社情報：業種'] = g(row, '業種');
+  rec['会社情報：従業員規模'] = toSizeBracket(g(row, '従業員数'));
+  rec['会社情報：住所：国'] = pref ? '日本' : '';
+  rec['会社情報：住所：都道府県'] = pref;
+  rec['会社情報：住所：市区郡'] = city;
+  rec['会社情報：住所：町名・番地'] = town;
+  rec['担当者情報：部署'] = g(row, '部署');
+  rec['担当者情報：役職'] = g(row, '役職');
+  rec['担当者情報：姓'] = sei;
+  rec['担当者情報：名'] = mei;
+  rec['担当者情報：敬称'] = sei ? '様' : '';
+  rec['担当者情報：メール'] = g(row, 'メール');
+  out.push(rec);
+}
+
+fs.writeFileSync(OUT, '﻿' + toCsv(HEADERS, out), 'utf8');
+console.log(`[format-bales] scope=${SCOPE}  入力 ${src.length}件 → 出力 ${out.length}件`);
+console.log(`[format-bales] 列数 ${HEADERS.length}（BALES構造一致）`);
+console.log(`[format-bales] out: ${path.relative(ROOT, OUT)}`);
