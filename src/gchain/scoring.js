@@ -1,4 +1,5 @@
 'use strict';
+/* @deprecated v2.0(MiiTel非依存)で廃止: Q採点は発話観測前提。設計 docs/g-chain-os-v2.0-structured-only.md §9。参照用に保持(barrel除外)。 */
 /**
  * G-Chain OS v1.5 — Q評価合成（詳細設計書 §8.2, baseline §7.2）。
  *

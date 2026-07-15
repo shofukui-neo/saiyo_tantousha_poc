@@ -1,4 +1,5 @@
 'use strict';
+/* @deprecated v2.0(MiiTel非依存)で廃止: transcript抽出そのもの。設計 docs/g-chain-os-v2.0-structured-only.md §9。参照用に保持(barrel除外)。 */
 /**
  * G-Chain OS v1.5 — LLM I/O契約（詳細設計書 §7, baseline §8）。
  *

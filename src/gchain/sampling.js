@@ -1,4 +1,5 @@
 'use strict';
+/* @deprecated v2.0(MiiTel非依存)で廃止: 二枠サンプリングはtranscript前提。設計 docs/g-chain-os-v2.0-structured-only.md §9。参照用に保持(barrel除外)。 */
 /**
  * G-Chain OS v1.5 — 文字起こし二枠サンプリング（詳細設計書 §6, baseline §1.2）。
  *

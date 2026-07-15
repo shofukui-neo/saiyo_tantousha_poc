@@ -10,8 +10,9 @@
   "scripts": {
     "start": "node src/app.js",
     "app": "node src/app.js",
-    "gchain:test": "node test/gchain-core.test.js && node test/gchain-eval.test.js && node test/gchain-llm-meta.test.js",
+    "gchain:test": "node test/gchain-core.test.js && node test/gchain-eval.test.js && node test/gchain-llm-meta.test.js && node test/gchain-v2.test.js",
     "gchain:build": "node src/gchain/build-gas.js",
+    "gchain:analyze": "node src/gchain/ingest-structured.js",
     "leads": "node src/app.js",
     "score": "node src/score-list.js",
     "target": "node src/build-target-list.js",
