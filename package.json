@@ -10,6 +10,8 @@
   "scripts": {
     "start": "node src/app.js",
     "app": "node src/app.js",
+    "gchain:test": "node test/gchain-core.test.js && node test/gchain-eval.test.js && node test/gchain-llm-meta.test.js",
+    "gchain:build": "node src/gchain/build-gas.js",
     "leads": "node src/app.js",
     "score": "node src/score-list.js",
     "target": "node src/build-target-list.js",
@@ -69,7 +71,7 @@
     "enrich:shinsotsu": "node src/enrich-shinsotsu-flag.js --file data/leads-mochica-target-enriched.csv",
     "enrich:crossref": "node src/enrich-crossref.js --file data/leads-mochica-target-enriched.csv",
     "test:fusion": "node test/name-fusion.test.js",
-    "test:all": "node test/name-fusion.test.js && node test/probe-social.test.js && node test/probe-site-deep.test.js && node test/selftest.js",
+    "test:all": "node test/name-fusion.test.js && node test/probe-social.test.js && node test/probe-site-deep.test.js && node test/selftest.js && npm run gchain:test",
     "encrypt:lists": "node scripts/encrypt-lists.js",
     "decrypt:lists": "node scripts/decrypt-lists.js",
     "secure:setup": "node scripts/setup-security.js",
