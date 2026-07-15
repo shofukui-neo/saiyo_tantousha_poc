@@ -15,6 +15,7 @@
  *   node src/format-bales.js
  *   node src/format-bales.js --scope all           # 全30,290社（被り含む）
  *   node src/format-bales.js --scope named         # 既存被りなし かつ 担当者名あり
+ *   node src/format-bales.js --scope callable      # 既存被りなし かつ 担当者名あり かつ 電話番号あり（★架電可能）
  *   node src/format-bales.js --out data/xxx.csv
  */
 const fs = require('fs');
@@ -94,6 +95,7 @@ function want(row) {
   const overlap = g(row, '既存被り');
   if (SCOPE === 'all') return true;
   if (SCOPE === 'named') return overlap === '' && g(row, '採用担当者名') !== '';
+  if (SCOPE === 'callable') return overlap === '' && g(row, '採用担当者名') !== '' && g(row, '電話番号') !== '';
   return overlap === ''; // fresh: 既存被りなしのみ
 }
 
