@@ -16,6 +16,7 @@
     "leads": "node src/app.js",
     "score": "node src/score-list.js",
     "target": "node src/build-target-list.js",
+    "deliver": "node src/deliver.js",
     "bales:format": "node src/format-bales.js",
     "bales:format:all": "node src/format-bales.js --scope all",
     "bales:format:named": "node src/format-bales.js --scope named",
