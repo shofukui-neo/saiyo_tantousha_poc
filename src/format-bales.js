@@ -29,7 +29,39 @@ const getArg = (k, d) => { const i = args.indexOf(k); return i >= 0 && args[i + 
 const IN = path.resolve(getArg('--in', path.join(ROOT, 'data', 'leads-consolidated-all.csv')));
 const BALES = path.resolve(getArg('--bales', path.join(ROOT, 'data', 'BALESCLOUDの既存リスト - 202607062007_leadList_utf-8.csv')));
 const OUT = path.resolve(getArg('--out', path.join(ROOT, 'data', 'leads-bales-format.csv')));
-const SCOPE = getArg('--scope', 'fresh'); // fresh | all | named
+const SCOPE = getArg('--scope', 'fresh'); // fresh | all | named | callable
+const EXCLUDE_REP = args.includes('--exclude-rep'); // 代表者名の流用を除外し「本物の採用担当者名」だけに絞る
+const ICP_ONLY = args.includes('--icp-only');       // ICPハード条件合致(呼べる条件=OK)のみに絞る
+                                                    // = 担当者名+電話+新卒6名以上+従業員100名以上+非IT（icp-rules.js準拠）
+const CLEAN_NAMES = args.includes('--clean-names'); // 採用担当者名のスクレイプ断片を除去、非氏名語の行は落とす
+
+// 氏名として使えない語（丸ごと一致で行を落とす）
+const NON_NAME_WHOLE_RE = /^(窓口|ご担当|担当者|採用担当|人事担当|総務担当|人事|総務|受付|不明|なし|未定|未記入|御中|担当)$/;
+// 氏名に紛れ込むスクレイプ断片トークン（助詞＋動詞など。トークン単位で除去）
+const NAME_JUNK_TOKEN_RE = /^(が|を|は|に|へ|と|の|も|で)?(聞く|聞き|問い合わせ|問合せ|について|に関する|宛|より|御中|窓口|係|様|さん|氏|殿)$/;
+// スクレイプ断片を落とし、本物の氏名だけ返す（使えなければ ''）
+function cleanRecruiterName(name) {
+  let n = String(name || '').replace(/　/g, ' ').trim();
+  if (!n) return '';
+  if (NON_NAME_WHOLE_RE.test(n)) return '';
+  const toks = n.split(/\s+/).filter(Boolean).filter((t) => !NAME_JUNK_TOKEN_RE.test(t));
+  n = toks.join(' ').trim();
+  if (!n || NON_NAME_WHOLE_RE.test(n)) return '';
+  return n;
+}
+
+// 採用担当者名が実は代表者名（＝担当者ではない）と判定できる行か。
+//   ① 採用担当者名 == 代表者名（代表を担当欄に流用） ② 役職が代表/社長/取締役系
+const REP_TITLE_RE = /代表|社長|会長|取締役|理事長|監査役|オーナー|創業|CEO|COO|CFO|President|Founder/i;
+function isRepName(row) {
+  const name = g(row, '採用担当者名');
+  const rep = g(row, '代表者名');
+  const title = g(row, '役職');
+  if (!name) return false;
+  if (rep && name === rep) return true;      // 代表者名をそのまま担当欄にコピー
+  if (REP_TITLE_RE.test(title)) return true; // 役職が代表・社長・取締役系
+  return false;
+}
 
 // ── 都道府県分解 ──────────────────────────────────────────────
 const PREFS = [
@@ -92,6 +124,8 @@ const { records: src } = readCsv(fs.readFileSync(IN, 'utf8'));
 const g = (row, k) => (row[k] == null ? '' : String(row[k]).trim());
 
 function want(row) {
+  if (EXCLUDE_REP && isRepName(row)) return false;      // 代表者名の流用は除外（本物の採用担当者名のみ）
+  if (ICP_ONLY && g(row, '呼べる条件') !== 'OK') return false; // ICPハード条件合致のみ
   const overlap = g(row, '既存被り');
   if (SCOPE === 'all') return true;
   if (SCOPE === 'named') return overlap === '' && g(row, '採用担当者名') !== '';
@@ -103,9 +137,11 @@ const out = [];
 let seq = 0;
 for (const row of src) {
   if (!want(row)) continue;
+  let recruiter = g(row, '採用担当者名');
+  if (CLEAN_NAMES) { recruiter = cleanRecruiterName(recruiter); if (!recruiter) continue; } // 非氏名語は行ごと除外
   seq += 1;
   const { pref, city, town } = splitAddress(g(row, '都道府県'));
-  const { sei, mei } = splitName(g(row, '採用担当者名'));
+  const { sei, mei } = splitName(recruiter);
   const rec = {};
   for (const h of HEADERS) rec[h] = ''; // 全列空で初期化 → 構造完全一致
   rec['システム管理情報：No'] = String(seq);
