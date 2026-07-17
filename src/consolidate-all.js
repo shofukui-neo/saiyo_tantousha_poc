@@ -18,6 +18,7 @@ const { readCsv, toCsv, normCompanyName, normCorpNumber, mergeKey } = require('.
 const { scoreMochica, parseEmployees } = require('./mochica-fit');
 const { qualifiesForList, proposalTier } = require('./icp-rules');
 const { buildBalesIndex, suppress } = require('./suppression');
+const { createMatchIndex } = require('./company-match');
 
 const ROOT = path.resolve(__dirname, '..');
 const args = process.argv.slice(2);
@@ -104,23 +105,24 @@ function canonicalize(raw) {
 const firstNonEmpty = (a, b) => (String(a || '').trim() ? a : b);
 
 // ── 既存被りマスタ索引の構築（除外はしない＝フラグのみ） ──────────────
+// company-match の MatchIndex を使用（法人番号/正規化社名/農協コアの3系統で突合）。
 function buildExclusionIndex() {
-  const idx = { name: new Map(), bango: new Map() }; // key -> ラベル
-  const add = (label, name, bango) => {
-    const n = normCompanyName(name); if (n) idx.name.set(n, label);
-    const b = normCorpNumber(bango); if (b) idx.bango.set(b, label);
-  };
-  // MOCHICA既存顧客（法人名）
+  const idx = createMatchIndex();
+  // MOCHICA既存顧客：法人名 と LINE登録名 の“両方”を索引（別称登録の取りこぼしを防ぐ）
   const mc = path.join(ROOT, 'data', 'MOCHICAの既存顧客リスト - mochica-companies-list.csv');
-  if (fs.existsSync(mc)) { const { records } = readCsv(fs.readFileSync(mc, 'utf8')); for (const r of records) add('MOCHICA顧客', r['法人名'] || r['LINEアカウント登録企業名'], ''); console.log(`  既存索引 MOCHICA顧客: ${records.length}`); }
+  if (fs.existsSync(mc)) {
+    const { records } = readCsv(fs.readFileSync(mc, 'utf8'));
+    for (const r of records) { idx.addName(r['法人名'], 'MOCHICA顧客'); idx.addName(r['LINEアカウント登録企業名'], 'MOCHICA顧客'); }
+    console.log(`  既存索引 MOCHICA顧客: ${records.length}`);
+  }
   // BALES既存CRM（会社情報：会社名）
   const bl = path.join(ROOT, 'data', 'BALESCLOUDの既存リスト - 202607062007_leadList_utf-8.csv');
-  if (fs.existsSync(bl)) { const { records } = readCsv(fs.readFileSync(bl, 'utf8')); for (const r of records) add('BALES', r['会社情報：会社名'], ''); console.log(`  既存索引 BALES: ${records.length}`); }
+  if (fs.existsSync(bl)) { const { records } = readCsv(fs.readFileSync(bl, 'utf8')); for (const r of records) idx.addName(r['会社情報：会社名'], 'BALES'); console.log(`  既存索引 BALES: ${records.length}`); }
   // SF全リード（Salesforceレポート：プリアンブル後の「会社名 / 取引先」列）
   const sf = path.join(ROOT, 'data', 'セールスフォースMOCHICA参照 - 全てのリードSitoke突合用.csv');
   if (fs.existsSync(sf)) {
     const { records, n } = parseSfReport(fs.readFileSync(sf, 'utf8'));
-    for (const r of records) add('SF', r.company, '');
+    for (const r of records) idx.addName(r.company, 'SF');
     console.log(`  既存索引 SF全リード: ${n}`);
   }
   return idx;
@@ -191,11 +193,8 @@ function main() {
     const sc = scoreMochica(rec, { now });
     const tier = proposalTier(emp);
     const q = qualifiesForList({ contactName: rec['採用担当者名'], phone: rec['電話番号'], hire, emp, industry: rec['業種'] });
-    // 既存被り（法人番号→社名の順で判定）
-    const nkey = normCompanyName(rec['企業名']);
-    const hitB = rec['法人番号'] && excl.bango.get(rec['法人番号']);
-    const hitN = nkey && excl.name.get(nkey);
-    const overlap = hitB || hitN || '';
+    // 既存被り（法人番号→正規化社名→農協コアの順で判定。company-match に集約）
+    const overlap = excl.matchLabel(rec);
     // BALESサプレッション（負シグナル）
     const sup = suppress({ '企業名': rec['企業名'], '業種': rec['業種'], '採用予定人数': rec['採用予定人数'] }, balesIdx, { now: nowYm });
     rows.push({

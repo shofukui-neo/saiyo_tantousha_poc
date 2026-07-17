@@ -320,15 +320,12 @@ class MynaviScraper {
       // 3) 問合せ先/採用データのタブをカーソルで巡回して担当者名を取得
       await this._chaseContact(page, corp.id, r);
 
-      // 4) 個人名フォールバック: 問合せ先に氏名が無くても、採用メールのローカル部が人名なら姓を推定する
-      //    （中堅大手は氏名非公開が大半だが、ksato@/Tsagara@ 等のメールが数少ない個人名レバー）。
+      // 4) メール推定は「参考のみ」（担当者名には出さない）。ユーザー方針 2026-07。
+      //    採用メールのローカル部（k-nakamura等）は採用担当と別人のことが多く（例: メグリア=中村と推定したが
+      //    実際の担当は後藤・塚本）、誤名率が高い。氏名欄には載せず、根拠に参考記録だけ残す。
       if (!r.採用担当者名 && r.メール) {
         const em = nameFromEmail(r.メール);
-        if (em) {
-          r.採用担当者名 = em.surname;
-          r.担当者確度 = em.confidence;
-          r.根拠 = (r.根拠 ? r.根拠 + ' / ' : '') + `メール推定(${em.romaji}→${em.surname})`;
-        }
+        if (em) r.根拠 = (r.根拠 ? r.根拠 + ' / ' : '') + `メール推定参考(${em.romaji}→${em.surname}※氏名欄には非採用)`;
       }
     } catch (e) {
       r.根拠 = r.根拠 || ('error:' + String(e && e.message || e).slice(0, 80));
@@ -386,10 +383,10 @@ class MynaviScraper {
       if (pm) r.パターン = pm[1];
       else if (/問合せ先から氏名抽出/.test(r.根拠 || '')) r.パターン = '問合せ先(旧)';
       else if (/採用担当者メッセージ/.test(r.根拠 || '')) r.パターン = '担当者メッセージ';
+      // メール推定は「参考のみ」（担当者名には出さない）。ユーザー方針 2026-07（誤名率が高い）。
       if (!r.採用担当者名 && r.メール) {
         const em = nameFromEmail(r.メール);
-        if (em) { r.採用担当者名 = em.surname; r.担当者確度 = em.confidence; r.パターン = 'メール推定';
-          r.根拠 = (r.根拠 ? r.根拠 + ' / ' : '') + `メール推定(${em.romaji}→${em.surname})`; }
+        if (em) r.根拠 = (r.根拠 ? r.根拠 + ' / ' : '') + `メール推定参考(${em.romaji}→${em.surname}※氏名欄には非採用)`;
       }
     } catch (e) {
       r.根拠 = r.根拠 || ('error:' + String(e && e.message || e).slice(0, 80));

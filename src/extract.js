@@ -2,7 +2,7 @@
 // 採用・人事担当者の「氏名」抽出。
 // ※ 外部AI API（Anthropic等）は一切使用しない。ページ本文に対する正規表現＋人名らしさ判定のみで動作する。
 const cfg = require('./config');
-const { stripNonName, isFullName, completeSurname } = require('./jp-names');
+const { stripNonName, isFullName, completeSurname, isNonPersonWord } = require('./jp-names');
 
 // 氏名候補の語尾に貪欲一致で付く敬称・助詞（「山田太郎さん」「鈴木一郎より」「中村課長 まで」等）。
 // これらを剥がさないと役職/敬称/助詞を含む氏名が下流(validateHit等)を素通りして誤検出になる。
@@ -38,6 +38,8 @@ function looksLikePersonName(name) {
   const n = String(name || '').trim();
   if (n.length < 2) return false;
   if (NON_NAME_WORDS.some((w) => n.includes(w))) return false;
+  // 採用/選考プロセス語・書類語・庶務語・役職語（面接/任用/験申込書/次長…）は人名でない。
+  if (isNonPersonWord(n)) return false;
   if (cfg.ROLE_KEYWORDS.some((k) => n.toLowerCase().includes(String(k).toLowerCase()))) return false;
   // 数字・記号・URLっぽいもの、中黒で連結された複数名（例:「佐々木・粟津」）を除外
   if (/[0-9０-９@.\/:：、。（）()\[\]・･／]/.test(n)) return false;

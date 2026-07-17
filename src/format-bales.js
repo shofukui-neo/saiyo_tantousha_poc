@@ -21,6 +21,8 @@
 const fs = require('fs');
 const path = require('path');
 const { readCsv, toCsv, parseCsv } = require('./csv');
+const { loadLedger, isDelivered, appendRecords, DEFAULT_LEDGER } = require('./delivered-ledger');
+const { createMatchIndex } = require('./company-match');
 
 const ROOT = path.resolve(__dirname, '..');
 const args = process.argv.slice(2);
@@ -34,6 +36,11 @@ const EXCLUDE_REP = args.includes('--exclude-rep'); // 代表者名の流用を�
 const ICP_ONLY = args.includes('--icp-only');       // ICPハード条件合致(呼べる条件=OK)のみに絞る
                                                     // = 担当者名+電話+新卒6名以上+従業員100名以上+非IT（icp-rules.js準拠）
 const CLEAN_NAMES = args.includes('--clean-names'); // 採用担当者名のスクレイプ断片を除去、非氏名語の行は落とす
+// ── 過去作成企業（納品済み台帳）との重複防止 ────────────────────────
+const LEDGER = path.resolve(getArg('--ledger', DEFAULT_LEDGER));
+const DEDUPE_HISTORY = !args.includes('--no-dedupe-history'); // 既定ON：台帳に載る過去作成企業を除外
+const RECORD = !args.includes('--no-record');                 // 既定ON：今回の出力企業を台帳へ追記
+const BATCH = getArg('--batch', '');                          // 台帳に残すバッチ名（既定は出力ファイル名）
 
 // 氏名として使えない語（丸ごと一致で行を落とす）
 const NON_NAME_WHOLE_RE = /^(窓口|ご担当|担当者|採用担当|人事担当|総務担当|人事|総務|受付|不明|なし|未定|未記入|御中|担当)$/;
@@ -133,12 +140,19 @@ function want(row) {
   return overlap === ''; // fresh: 既存被りなしのみ
 }
 
+// 台帳（過去作成企業）をロード。DEDUPE_HISTORY=OFF なら空インデックス扱い。
+const ledgerIdx = DEDUPE_HISTORY ? loadLedger(LEDGER) : createMatchIndex();
+
 const out = [];
+const emitted = []; // 台帳追記用の元レコード（企業名/法人番号を保持）
 let seq = 0;
+let histDupe = 0;
 for (const row of src) {
   if (!want(row)) continue;
+  if (DEDUPE_HISTORY && isDelivered(ledgerIdx, row)) { histDupe += 1; continue; } // 過去作成済み＝再出力しない
   let recruiter = g(row, '採用担当者名');
   if (CLEAN_NAMES) { recruiter = cleanRecruiterName(recruiter); if (!recruiter) continue; } // 非氏名語は行ごと除外
+  emitted.push({ 企業名: g(row, '企業名'), 法人番号: g(row, '法人番号') });
   seq += 1;
   const { pref, city, town } = splitAddress(g(row, '都道府県'));
   const { sei, mei } = splitName(recruiter);
@@ -166,4 +180,13 @@ for (const row of src) {
 fs.writeFileSync(OUT, '﻿' + toCsv(HEADERS, out), 'utf8');
 console.log(`[format-bales] scope=${SCOPE}  入力 ${src.length}件 → 出力 ${out.length}件`);
 console.log(`[format-bales] 列数 ${HEADERS.length}（BALES構造一致）`);
+if (DEDUPE_HISTORY) console.log(`[format-bales] 過去作成企業を除外: ${histDupe}件（台帳 ${ledgerIdx.size}社と突合）`);
+
+// 今回の出力企業を台帳へ追記（次回作成時の重複防止）。--no-record で無効化。
+if (RECORD && emitted.length) {
+  const r = appendRecords(LEDGER, emitted, { batch: BATCH || path.basename(OUT, '.csv'), source: path.basename(OUT) });
+  console.log(`[format-bales] 台帳へ追記: 新規 ${r.added}社 / 既出 ${r.skipped}社 → 累計 ${r.total}社（${path.relative(ROOT, LEDGER)}）`);
+} else if (!RECORD) {
+  console.log('[format-bales] 台帳追記: スキップ（--no-record）');
+}
 console.log(`[format-bales] out: ${path.relative(ROOT, OUT)}`);

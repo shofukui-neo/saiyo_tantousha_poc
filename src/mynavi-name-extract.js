@@ -25,7 +25,7 @@
  *
  * 戻り値は共通形: { name, dept, role, confidence, pattern, evidence } または null。
  */
-const { splitName } = require('./jp-names');
+const { splitName, isNonPersonWord } = require('./jp-names');
 
 const K = '一-龥々〆ヶ';                        // 氏名に使う漢字レンジ
 const NAME_TOKEN = `[${K}]{1,4}(?:[ 　][${K}]{1,4})?`; // 姓 or 姓+名（間に半/全角スペース1つ許容）
@@ -64,6 +64,9 @@ function normPersonToken(raw, opts = {}) {
   // 字種・長さ（2〜6字の漢字のみ）
   if (!new RegExp(`^[${K}]{2,6}$`).test(compact)) return '';
   if (STOP_RE.test(compact)) return '';
+  // 採用/選考プロセス語・書類語・庶務語・役職語（面接/任用/験申込書/次長…）を人名化しない。
+  // 構造アンカー（問合せ先の部署直後・伝言板の名乗り）が非人名テキストに当たった誤爆を塞ぐ。
+  if (isNonPersonWord(compact)) return '';
   if (GEO_RE.test(compact)) return '';
   if (GEO_TAIL_RE.test(compact)) return '';       // 「東京都」「○○県」等の住所語尾
   if (BROKEN_HEAD_RE.test(compact)) return '';     // 「先住所」「先日精」等の壊れ断片
