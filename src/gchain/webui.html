@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>G-Chain OS — 営業リアルタイム分析</title>
+<style>
+  :root{
+    --bg:#0f1420; --panel:#171e2e; --panel2:#1e2739; --line:#2a3550; --ink:#e8edf7; --sub:#93a1bd;
+    --brand:#4c8dff; --good:#39d98a; --warn:#ffb648; --bad:#ff6b6b; --chip:#243149;
+  }
+  @media (prefers-color-scheme: light){
+    :root{ --bg:#f4f6fb; --panel:#ffffff; --panel2:#f0f3fa; --line:#dde3ef; --ink:#131a2b; --sub:#5c6b86; --chip:#eef2fb; }
+  }
+  *{box-sizing:border-box}
+  body{margin:0;font-family:"Segoe UI",system-ui,"Hiragino Kaku Gothic ProN",Meiryo,sans-serif;background:var(--bg);color:var(--ink);font-size:14px}
+  header{position:sticky;top:0;z-index:10;background:var(--panel);border-bottom:1px solid var(--line);padding:10px 18px;display:flex;align-items:center;gap:16px;flex-wrap:wrap}
+  header h1{font-size:16px;margin:0;font-weight:700;letter-spacing:.02em}
+  header h1 .v{color:var(--brand)}
+  .meta{color:var(--sub);font-size:12px;display:flex;gap:14px;flex-wrap:wrap}
+  .meta b{color:var(--ink)}
+  .spacer{flex:1}
+  button{cursor:pointer;border:1px solid var(--line);background:var(--panel2);color:var(--ink);border-radius:8px;padding:7px 12px;font-size:13px}
+  button:hover{border-color:var(--brand)}
+  button.primary{background:var(--brand);color:#fff;border-color:var(--brand)}
+  .tabs{display:flex;gap:6px;padding:12px 18px 0}
+  .tab{padding:8px 16px;border-radius:9px 9px 0 0;background:transparent;border:1px solid transparent;color:var(--sub);font-weight:600}
+  .tab.active{background:var(--panel);color:var(--ink);border-color:var(--line);border-bottom-color:var(--panel)}
+  main{padding:16px 18px 60px}
+  .toolbar{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:12px}
+  input[type=text],select{background:var(--panel);border:1px solid var(--line);color:var(--ink);border-radius:8px;padding:8px 11px;font-size:13px}
+  input[type=text]{min-width:240px}
+  .seg{display:flex;border:1px solid var(--line);border-radius:8px;overflow:hidden}
+  .seg button{border:0;border-radius:0;background:var(--panel)}
+  .seg button.on{background:var(--brand);color:#fff}
+  table{width:100%;border-collapse:collapse;background:var(--panel);border:1px solid var(--line);border-radius:10px;overflow:hidden}
+  th,td{padding:9px 11px;text-align:left;border-bottom:1px solid var(--line);font-size:13px;vertical-align:middle}
+  th{color:var(--sub);font-weight:600;font-size:12px;background:var(--panel2);position:sticky;top:0}
+  tr:hover td{background:var(--panel2)}
+  tr.clickable{cursor:pointer}
+  .badge{display:inline-block;padding:2px 8px;border-radius:20px;font-size:11px;font-weight:700}
+  .badge.NEW{background:rgba(76,141,255,.16);color:var(--brand)}
+  .badge.REACTIVATE{background:rgba(255,182,72,.16);color:var(--warn)}
+  .bar{position:relative;height:16px;background:var(--chip);border-radius:8px;min-width:90px;overflow:hidden}
+  .bar>span{position:absolute;left:0;top:0;bottom:0;background:linear-gradient(90deg,var(--brand),var(--good));border-radius:8px}
+  .bar>i{position:absolute;left:8px;top:0;line-height:16px;font-size:11px;font-style:normal;color:var(--ink);mix-blend-mode:difference}
+  .mono{font-variant-numeric:tabular-nums}
+  .sub{color:var(--sub)}
+  .num{width:34px;text-align:right;color:var(--sub)}
+  .drawer{position:fixed;top:0;right:0;height:100%;width:min(440px,92vw);background:var(--panel);border-left:1px solid var(--line);box-shadow:-8px 0 30px rgba(0,0,0,.3);transform:translateX(100%);transition:transform .18s ease;z-index:20;overflow:auto;padding:18px}
+  .drawer.open{transform:translateX(0)}
+  .drawer .x{position:absolute;top:12px;right:14px}
+  .card{background:var(--panel2);border:1px solid var(--line);border-radius:12px;padding:14px 16px;margin-bottom:12px}
+  .gauge{display:flex;align-items:baseline;gap:10px}
+  .gauge .big{font-size:34px;font-weight:800;color:var(--brand)}
+  .gauge .lift{font-size:14px;font-weight:700}
+  .kv{display:grid;grid-template-columns:auto 1fr;gap:4px 12px;margin-top:8px;font-size:13px}
+  .kv .k{color:var(--sub)}
+  .factor{display:flex;justify-content:space-between;padding:3px 0;border-bottom:1px dashed var(--line);font-size:13px}
+  .up{color:var(--good)} .down{color:var(--bad)}
+  .pill{display:inline-block;background:var(--chip);border-radius:6px;padding:1px 7px;margin:2px 4px 2px 0;font-size:12px}
+  .alert{border-radius:8px;padding:8px 11px;margin:6px 0;font-size:13px;font-weight:600}
+  .alert.block{background:rgba(255,107,107,.14);color:var(--bad)}
+  .alert.warn{background:rgba(255,182,72,.14);color:var(--warn)}
+  .alert.ats{background:rgba(57,217,138,.14);color:var(--good)}
+  .rec{background:var(--brand);color:#fff;border-radius:8px;padding:9px 12px;font-weight:700;margin-top:10px}
+  .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:14px}
+  h3{font-size:13px;color:var(--sub);margin:2px 0 8px;text-transform:none;font-weight:700}
+  .funnel .row{display:flex;align-items:center;gap:10px;margin:6px 0}
+  .funnel .lbl{width:150px;font-size:13px}
+  .funnel .track{flex:1;height:22px;background:var(--chip);border-radius:6px;overflow:hidden;display:flex}
+  .funnel .t{background:var(--good)} .funnel .f{background:var(--bad);opacity:.5} .funnel .u{background:var(--sub);opacity:.3}
+  .liftpos{color:var(--good);font-weight:700} .liftneg{color:var(--bad);font-weight:700}
+  .empty{color:var(--sub);padding:30px;text-align:center}
+  .toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:var(--panel);border:1px solid var(--brand);border-radius:10px;padding:10px 18px;box-shadow:0 6px 24px rgba(0,0,0,.3);z-index:30;display:none}
+</style>
+</head>
+<body>
+<header>
+  <h1>G-Chain <span class="v">OS</span> <span class="sub" style="font-weight:400">v2.0 リアルタイム営業分析</span></h1>
+  <div class="meta" id="meta"></div>
+  <div class="spacer"></div>
+  <button class="primary" id="trainBtn">↻ 再学習</button>
+</header>
+<div class="tabs">
+  <button class="tab active" data-tab="queue">🎯 コールキュー</button>
+  <button class="tab" data-tab="brief">🔍 企業検索</button>
+  <button class="tab" data-tab="analytics">📊 分析</button>
+</div>
+<main>
+  <section id="tab-queue">
+    <div class="toolbar">
+      <div class="seg" id="typeSeg">
+        <button class="on" data-type="ALL">全て</button>
+        <button data-type="NEW">新規</button>
+        <button data-type="REACTIVATE">再活性化</button>
+      </div>
+      <input type="text" id="qSearch" placeholder="会社名で絞り込み…">
+      <select id="qLimit"><option>50</option><option>100</option><option>200</option><option>500</option></select>
+      <span class="sub" id="qCount"></span>
+    </div>
+    <table id="queueTbl"><thead><tr>
+      <th class="num">#</th><th>種別</th><th>会社</th><th>アポ期待</th><th>再活性</th><th>時間帯</th><th>電話</th><th>理由</th>
+    </tr></thead><tbody></tbody></table>
+  </section>
+
+  <section id="tab-brief" style="display:none">
+    <div class="toolbar">
+      <input type="text" id="bSearch" placeholder="会社名を入力してEnter（例: 東光高岳）">
+      <button id="bGo" class="primary">検索</button>
+    </div>
+    <div id="briefResults" class="grid"></div>
+  </section>
+
+  <section id="tab-analytics" style="display:none">
+    <div id="analyticsBody"></div>
+  </section>
+</main>
+<div class="drawer" id="drawer"><button class="x" onclick="closeDrawer()">✕</button><div id="drawerBody"></div></div>
+<div class="toast" id="toast"></div>
+
+<script>
+const $ = s => document.querySelector(s);
+const pct = x => x==null? '—' : (x*100).toFixed(1)+'%';
+const bandJp = {am:'午前',noon:'昼',pm:'午後',eve:'夕方'};
+let state = {tab:'queue', type:'ALL'};
+
+async function jget(u){ const r=await fetch(u); return r.json(); }
+function toast(m){ const t=$('#toast'); t.textContent=m; t.style.display='block'; setTimeout(()=>t.style.display='none',2200); }
+
+// ---- tabs ----
+document.querySelectorAll('.tab').forEach(b=>b.onclick=()=>{
+  document.querySelectorAll('.tab').forEach(x=>x.classList.remove('active'));
+  b.classList.add('active'); state.tab=b.dataset.tab;
+  for(const t of ['queue','brief','analytics']) $('#tab-'+t).style.display = t===state.tab?'':'none';
+  if(state.tab==='analytics') loadAnalytics();
+});
+
+// ---- header meta ----
+async function loadMeta(){
+  const a = await jget('/api/analytics');
+  $('#meta').innerHTML =
+    `総リード <b>${a.quality.total.toLocaleString()}</b>`+
+    ` · 架電済 <b>${a.quality.called.toLocaleString()}</b>`+
+    ` · ベースアポ率 <b>${pct(a.base.appointment)}</b>`+
+    ` · 学習 <b>${(a.quality.trainedAt||'').slice(0,16).replace('T',' ')}</b>`;
+}
+
+// ---- queue ----
+async function loadQueue(){
+  const type=state.type, q=$('#qSearch').value.trim(), limit=$('#qLimit').value;
+  const d = await jget(`/api/queue?type=${type}&q=${encodeURIComponent(q)}&limit=${limit}`);
+  $('#qCount').textContent = `対象 ${d.total.toLocaleString()} 件中 上位 ${d.rows.length} 件`;
+  const base = window.__base||0.039;
+  const tb=$('#queueTbl tbody'); tb.innerHTML='';
+  d.rows.forEach((r,i)=>{
+    const lift = base? r.appointment_score/base : 1;
+    const w = Math.min(100, r.appointment_score*100*2.2);
+    const tr=document.createElement('tr'); tr.className='clickable';
+    tr.onclick=()=>openBrief(r.company);
+    tr.innerHTML =
+      `<td class="num">${i+1}</td>`+
+      `<td><span class="badge ${r.type}">${r.type==='NEW'?'新規':'再活性'}</span></td>`+
+      `<td>${esc(r.company)}<div class="sub" style="font-size:11px">${esc(r.industry||'')} · ${esc(r.recruit_size||'')} · ${esc(r.source||'')}</div></td>`+
+      `<td><div class="bar" style="max-width:120px"><span style="width:${w}%"></span><i>${pct(r.appointment_score)} · ${lift.toFixed(2)}x</i></div></td>`+
+      `<td class="mono">${r.reactivation_priority||''}</td>`+
+      `<td>${bandJp[r.best_band]||''}</td>`+
+      `<td class="mono sub">${esc(r.phone||'')}</td>`+
+      `<td class="sub" style="font-size:12px">${esc(r.reason||'')}</td>`;
+    tb.appendChild(tr);
+  });
+  if(!d.rows.length) tb.innerHTML='<tr><td colspan="8" class="empty">該当なし</td></tr>';
+}
+$('#typeSeg').querySelectorAll('button').forEach(b=>b.onclick=()=>{
+  $('#typeSeg').querySelectorAll('button').forEach(x=>x.classList.remove('on'));
+  b.classList.add('on'); state.type=b.dataset.type; loadQueue();
+});
+let qt; $('#qSearch').oninput=()=>{clearTimeout(qt);qt=setTimeout(loadQueue,250)};
+$('#qLimit').onchange=loadQueue;
+
+// ---- brief drawer / cards ----
+function esc(s){return String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]))}
+function briefHTML(b){
+  const lift=b.appointment_lift;
+  const liftCls = lift>=1.5?'liftpos':(lift<1?'liftneg':'');
+  let h = `<div class="card"><div style="font-weight:800;font-size:16px;margin-bottom:2px">${esc(b.company)}</div>`+
+          `<div class="sub" style="font-size:12px;margin-bottom:8px">[${esc(b.stage||'—')}] · ${esc(b.person||'')} · ${esc(b.phone||'')}</div>`;
+  if(b.ng_blocked) h+=`<div class="alert block">⛔ アプローチ禁止（${esc(b.ng_type)}）— 架電しない</div>`;
+  if(b.existing_customer) h+=`<div class="alert warn">⚠ 既存顧客の可能性 — 要確認</div>`;
+  h+=`<div class="gauge"><span class="big">${pct(b.appointment_score)}</span>`+
+     `<span class="lift ${liftCls}">ベース比 ${lift}x</span>`+
+     `<span class="sub">／ 接続 ${pct(b.connection_score)}</span></div>`;
+  h+=`<div class="kv">`+
+     `<span class="k">属性</span><span>${esc(b.icp_band)} · 採用${esc(b.recruit_size||'?')} · ${esc(b.industry||'?')}</span>`+
+     `<span class="k">ソース</span><span>${esc(b.source||'?')}</span>`+
+     `<span class="k">ATS</span><span>${esc(b.current_ats||'—')}</span></div>`;
+  if(b.ats_signal) h+=`<div class="alert ats">★ ATS=${esc(b.ats_signal.ats)}：アポ率${pct(b.ats_signal.rate)}（${b.ats_signal.lift}x）— 強い訴求余地</div>`;
+  if(b.factors&&b.factors.length){ h+='<h3>スコア寄与</h3>'; for(const f of b.factors){ const up=f.delta>0; h+=`<div class="factor"><span class="${up?'up':'down'}">${up?'▲':'▼'} ${esc(f.key)}=${esc(f.value)}</span><span class="sub">率 ${pct(f.rate)}</span></div>`; } }
+  if(b.best_bands&&b.best_bands.length){ h+='<h3>推奨時間帯（接続率順）</h3><div>'; b.best_bands.forEach(x=>h+=`<span class="pill">${bandJp[x.band]||x.band} ${pct(x.rate)}</span>`); h+='</div>'; }
+  if(b.reactivation_priority>0) h+=`<h3>再活性化 優先度 ${b.reactivation_priority}</h3><div class="sub" style="font-size:12px">${esc(b.reactivation_reasons.join('; '))}</div>`;
+  if(b.overdue_followups>0) h+=`<div class="alert warn" style="margin-top:8px">⏰ 未消化フォロー ${b.overdue_followups}件（期限超過）</div>`;
+  h+=`<div class="rec">→ ${esc(b.recommendation)}</div></div>`;
+  return h;
+}
+async function openBrief(company){
+  const list = await jget('/api/brief?q='+encodeURIComponent(company));
+  $('#drawerBody').innerHTML = list.length? list.map(briefHTML).join('') : '<div class="empty">該当なし</div>';
+  $('#drawer').classList.add('open');
+}
+function closeDrawer(){ $('#drawer').classList.remove('open'); }
+document.addEventListener('keydown',e=>{if(e.key==='Escape')closeDrawer()});
+
+async function doBriefSearch(){
+  const q=$('#bSearch').value.trim(); if(!q)return;
+  const list = await jget('/api/brief?q='+encodeURIComponent(q));
+  $('#briefResults').innerHTML = list.length? list.map(briefHTML).join('') : '<div class="empty">該当なし</div>';
+}
+$('#bGo').onclick=doBriefSearch;
+$('#bSearch').onkeydown=e=>{if(e.key==='Enter')doBriefSearch()};
+
+// ---- analytics ----
+function liftRows(rows){ const base=window.__base||1; return rows.map(r=>{
+  const cls = r.lift>=1.2?'liftpos':(r.lift<0.9?'liftneg':'');
+  return `<tr><td>${esc(r.value)}</td><td class="mono">${r.n}</td><td class="mono">${pct(r.rate)}</td><td class="mono ${cls}">${r.lift}x</td></tr>`;
+}).join(''); }
+function liftCard(title,rows){ return `<div class="card"><h3>${title}</h3><table><thead><tr><th>値</th><th>n</th><th>アポ率</th><th>リフト</th></tr></thead><tbody>${liftRows(rows)}</tbody></table></div>`; }
+async function loadAnalytics(){
+  const a = await jget('/api/analytics'); window.__base=a.base.appointment;
+  let h='';
+  // funnel
+  h+='<div class="card funnel"><h3>接続ファネル（架電済）</h3>';
+  for(const e of ['E0','E1','E2']){ const f=a.funnel[e]; const tot=f.TRUE+f.FALSE+f.UNKNOWN||1;
+    h+=`<div class="row"><div class="lbl">${e} ${({E0:'発信',E1:'人接触',E2:'担当接続'})[e]}</div>`+
+       `<div class="track"><div class="t" style="width:${f.TRUE/tot*100}%"></div><div class="f" style="width:${f.FALSE/tot*100}%"></div><div class="u" style="width:${f.UNKNOWN/tot*100}%"></div></div>`+
+       `<div class="mono" style="width:150px">TRUE ${f.TRUE} / ${pct(f.TRUE/tot)}</div></div>`;
+  }
+  h+='</div>';
+  h+='<div class="grid">';
+  h+=liftCard('リードソース別アポ利回り', a.lift.source);
+  h+=liftCard('利用中ATS別（乗換好機）', a.lift.current_ats);
+  h+=liftCard('採用人数帯別', a.lift.recruit_size);
+  h+=liftCard('架電時間帯別', a.lift.call_band);
+  h+='</div>';
+  // loss
+  h+='<div class="grid">';
+  h+=`<div class="card"><h3>失注インテリジェンス（actionable ${pct(a.loss.actionable_share)}）</h3><table><thead><tr><th>帰属</th><th>件数</th></tr></thead><tbody>`+
+     a.loss.by_attribution.map(x=>`<tr><td>${esc(x.key)}</td><td class="mono">${x.count}</td></tr>`).join('')+`</tbody></table></div>`;
+  h+=`<div class="card"><h3>失注 改善アクション</h3><table><thead><tr><th>理由</th><th>件</th><th>アクション</th></tr></thead><tbody>`+
+     a.loss.actions.slice(0,8).map(x=>`<tr><td>${esc(x.reason)}</td><td class="mono">${x.count}</td><td class="sub" style="font-size:12px">${esc(x.action)}</td></tr>`).join('')+`</tbody></table></div>`;
+  h+='</div>';
+  // discipline
+  h+=`<div class="card"><h3>行動規律（所有者別フォロー）</h3><table><thead><tr><th>所有者</th><th>予定</th><th>完了</th><th>実行率</th><th>overdue率</th><th>平均間隔</th></tr></thead><tbody>`+
+     a.discipline.map(d=>`<tr><td>${esc(d.owner||'(不明)')}</td><td class="mono">${d.planned}</td><td class="mono">${d.completed}</td><td class="mono">${pct(d.follow_execution_rate)}</td><td class="mono ${d.overdue_rate>0.4?'liftneg':''}">${pct(d.overdue_rate)}</td><td class="mono">${d.avg_interval_days??'—'}日</td></tr>`).join('')+`</tbody></table></div>`;
+  $('#analyticsBody').innerHTML=h;
+}
+
+// ---- train ----
+$('#trainBtn').onclick=async()=>{
+  $('#trainBtn').disabled=true; $('#trainBtn').textContent='学習中…';
+  const r = await jget('/api/train');
+  toast(`再学習完了：${r.n.toLocaleString()}件 / ベースアポ率 ${pct(r.base.appointment)}`);
+  $('#trainBtn').disabled=false; $('#trainBtn').textContent='↻ 再学習';
+  await loadMeta(); loadQueue();
+};
+
+// ---- boot ----
+(async()=>{ await loadMeta(); const a=await jget('/api/analytics'); window.__base=a.base.appointment; loadQueue(); })();
+</script>
+</body>
+</html>

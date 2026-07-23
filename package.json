@@ -17,6 +17,7 @@
     "gchain:brief": "node src/gchain/ops.js brief",
     "gchain:queue": "node src/gchain/ops.js queue",
     "gchain:watch": "node src/gchain/ops.js watch",
+    "gchain:web": "node src/gchain/server.js",
     "leads": "node src/app.js",
     "score": "node src/score-list.js",
     "target": "node src/build-target-list.js",
