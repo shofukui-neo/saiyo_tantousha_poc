@@ -21,6 +21,7 @@
     "score": "node src/score-list.js",
     "target": "node src/build-target-list.js",
     "deliver": "node src/deliver.js",
+    "icp:perfect": "node src/build-icp-perfect-1000.js",
     "dashboard": "node src/dashboard.js",
     "bales:format": "node src/format-bales.js",
     "bales:format:all": "node src/format-bales.js --scope all",
