@@ -125,5 +125,33 @@ t('disciplineByOwner: 所有者別ロールアップ', () => {
   assert.strictEqual(out[0].follow_execution_rate, 0.5);
 });
 
+// ---------------- model (train/score) ----------------
+console.log('model:');
+const model = require('../src/gchain/model');
+function mkCalled(seg, hitRate, n) {
+  const arr = [];
+  for (let i = 0; i < n; i++) arr.push({
+    features: { icp_band: seg, recruit_size: seg, source: 'src', industry: 'ind', current_ats: 'ats', consider_timing: '', call_band: 'am', call_weekday: '月' },
+    labels: { appointment: i < n * hitRate, connected: true },
+  });
+  return arr;
+}
+t('trainModel: base率とリフトモデルを持つ', () => {
+  const called = [...mkCalled('good', 0.3, 200), ...mkCalled('bad', 0.05, 200)];
+  const m = model.trainModel(called, '2026-07-16T00:00:00Z');
+  assert.ok(m.base.appointment > 0 && m.appointment && m.connection);
+  assert.strictEqual(m.n, 400);
+  assert.ok(Array.isArray(m.connection_by_band));
+});
+t('scoreRecord: 高セグは高スコア', () => {
+  const called = [...mkCalled('good', 0.3, 200), ...mkCalled('bad', 0.05, 200)];
+  const m = model.trainModel(called, 't');
+  // BALES風レコードを最小構成で（extractFeatures が読む列）
+  const recGood = { 'カスタム情報：採用人数(選択リスト)': '51～100名', 'コール結果1：開始日時': '2026-07-16 10:00' };
+  const s = model.scoreRecord(recGood, m);
+  assert.ok(s.appointment_score >= 0 && s.appointment_score <= 1);
+  assert.ok(s.best_bands.length >= 1);
+});
+
 console.log(`\ngchain-v2: ${pass} passed, ${fail} failed`);
 if (fail) process.exit(1);
