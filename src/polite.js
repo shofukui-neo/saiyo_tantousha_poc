@@ -108,4 +108,4 @@ async function politeGet(url, opts = {}) {
   return null;
 }
 
-module.exports = { politeGet, allowedByRobots, DELAY_MS };
+module.exports = { politeGet, allowedByRobots, DELAY_MS, setScrapeDelay, getScrapeDelay };

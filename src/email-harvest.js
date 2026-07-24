@@ -164,8 +164,10 @@ async function crawlSite(officialUrl, opt = {}) {
   if (!/^https?:\/\//i.test(url)) url = 'https://' + url;
 
   // 1) トップページ（フッターに info@ が載ることが多い）
+  //    render: 'static' なら Playwright を使わず高速（大量処理向け）。既定は 'auto'（SPAはレンダリング）。
+  const render = opt.render || 'auto';
   let top;
-  try { top = await fetchPagePolite(url); } catch (e) { return { pages, error: e.blocked ? 'robots-disallow' : String(e.message || e) }; }
+  try { top = await fetchPagePolite(url, { render }); } catch (e) { return { pages, error: e.blocked ? 'robots-disallow' : String(e.message || e) }; }
   pages.push({ url: top.finalUrl, html: top.html });
 
   const base = top.finalUrl || url;
@@ -184,7 +186,8 @@ async function crawlSite(officialUrl, opt = {}) {
     if (seen.has(key)) continue;
     seen.add(key);
     try {
-      const p = await fetchPagePolite(c, { render: 'static' });
+      // 下層ページは既定で静的取得（速い）。opt.render='auto' 指定時のみレンダリングも許容。
+      const p = await fetchPagePolite(c, { render: render === 'auto' ? 'auto' : 'static' });
       pages.push({ url: p.finalUrl, html: p.html });
     } catch (_) { /* 次の候補へ */ }
   }
@@ -203,7 +206,10 @@ function priorityScore(rec) {
 /**
  * 企業名（または既知URL/ドメイン）から公開メールを収集する。
  * @param {string} companyName 企業名
- * @param {object} opt { url|websiteUrl, domain, addressHint, maxPages, guess:boolean }
+ * @param {object} opt { url|websiteUrl, domain, addressHint, maxPages, guess:boolean,
+ *                       render:'auto'|'static', verify:boolean }
+ *   render='static': Playwright を使わず高速取得（大量処理向け・SPAは取りこぼす可能性）
+ *   verify=false:    URL発見時にページ検証を省いて最有力候補を即採用（高速・精度は僅かに低下）
  * @returns {Promise<{company,url,domain,source,emails:Array,best:string,note:string}>}
  */
 async function collectEmailsForCompany(companyName, opt = {}) {
@@ -215,7 +221,9 @@ async function collectEmailsForCompany(companyName, opt = {}) {
   if (!url && domain) url = 'https://' + domain;
   if (!url) {
     try {
-      const d = await discoverUrl(companyName, { fetchPage: (u) => fetchPagePolite(u), extractText }, { addressHint: opt.addressHint });
+      // verify=false なら fetch deps を渡さず、検証フェッチを省いて最有力候補を即採用（大量処理向け）。
+      const deps = opt.verify === false ? {} : { fetchPage: (u) => fetchPagePolite(u, { render: opt.render || 'auto' }), extractText };
+      const d = await discoverUrl(companyName, deps, { addressHint: opt.addressHint });
       if (d && d.url) { url = d.url; out.source = d.source || 'search'; }
       else { out.note = (d && d.error) ? ('URL不明: ' + d.error) : '公式URL不明'; }
     } catch (e) { out.note = 'URL発見失敗: ' + String(e && e.message || e); }
@@ -227,7 +235,7 @@ async function collectEmailsForCompany(companyName, opt = {}) {
   out.url = url; out.domain = domain;
 
   // 2) サイトを少数クロールして実在メールを抽出
-  const { pages, error } = await crawlSite(url, { maxPages: opt.maxPages });
+  const { pages, error } = await crawlSite(url, { maxPages: opt.maxPages, render: opt.render });
   if (error && !pages.length) out.note = error;
   const collected = new Map();
   for (const pg of pages) {
@@ -243,7 +251,11 @@ async function collectEmailsForCompany(companyName, opt = {}) {
     const siteHasContactEvidence = hasContactEvidence(pages);
     if (siteHasContactEvidence) {
       try {
-        const g = await enrichEmail({ domain, websiteUrl: url }, cfg);
+        // 推測は登録可能ドメイン（例 corp.example.co.jp → example.co.jp）で行う。
+        // メールはコーポレートサブドメインでなくルートに置かれることが多く、MXもそちらに載る。
+        let guessDomain = domain;
+        try { guessDomain = registrableDomain(domain) || domain; } catch (_) {}
+        const g = await enrichEmail({ domain: guessDomain, websiteUrl: url }, cfg);
         if (g && g.email) {
           const role = classifyRole(g.email);
           emails.push({
@@ -282,8 +294,64 @@ async function collectEmailsForCompany(companyName, opt = {}) {
   return out;
 }
 
+/**
+ * 複数企業を並列に収集する（企業ごとに別ホスト＝polite.js のホスト別レート制限は保ったまま
+ * 企業をまたいだ並列度でスループットを出す設計）。5000件規模の一括処理の中核。
+ * @param {Array<{company?:string,name?:string,url?:string}>} items 企業一覧
+ * @param {object} opt { concurrency, maxPages, guess, render, verify, onResult, isAborted }
+ *   onResult(index, item, result, done) を各社完了時に呼ぶ（逐次進捗表示用）
+ *   isAborted() が true を返すと以降の投入を停止する（UIのクライアント切断対応）
+ * @returns {Promise<Array>} 各社の収集結果（items と同じ順序。中断分は undefined）
+ */
+async function harvestMany(items, opt = {}) {
+  const list = Array.isArray(items) ? items : [];
+  const concurrency = Math.max(1, Math.min(128, parseInt(opt.concurrency, 10) || 8));
+  const results = new Array(list.length);
+  const perOpt = { maxPages: opt.maxPages, guess: opt.guess, render: opt.render, verify: opt.verify };
+  let idx = 0, done = 0;
+  async function worker() {
+    while (true) {
+      if (opt.isAborted && opt.isAborted()) return;
+      const my = idx++;
+      if (my >= list.length) return;
+      const it = list[my] || {};
+      const name = String(it.company || it.name || '').trim();
+      let res;
+      try {
+        res = await collectEmailsForCompany(name, Object.assign({}, perOpt, { url: it.url || it.websiteUrl || '' }));
+      } catch (e) {
+        res = { company: name, url: it.url || '', domain: '', source: '', emails: [], best: '', note: 'ERROR: ' + String(e && e.message || e) };
+      }
+      results[my] = res;
+      done++;
+      if (opt.onResult) { try { opt.onResult(my, it, res, done); } catch (_) {} }
+    }
+  }
+  await Promise.all(Array.from({ length: concurrency }, () => worker()));
+  return results;
+}
+
+/**
+ * スループット概算（事前見積り／UIの推定時間表示用）。ネットワーク不要の純計算。
+ * @param {object} p { count, concurrency, maxPages, delayMs, discovery:boolean, static:boolean }
+ * @returns {{perCompanySec:number, totalSec:number, perMin:number}}
+ */
+function estimateThroughput(p = {}) {
+  const count = Math.max(0, parseInt(p.count, 10) || 0);
+  const concurrency = Math.max(1, parseInt(p.concurrency, 10) || 8);
+  const maxPages = Math.max(1, parseInt(p.maxPages, 10) || 3);
+  const delaySec = Math.max(0, (parseInt(p.delayMs, 10) || 1200) / 1000);
+  const avgFetch = p.static === false ? 3.2 : 1.6;         // レンダリング有無で1ページの実測時間が変わる
+  const gaps = (maxPages - 1) * delaySec;                   // 自社内ページ間のホスト間隔
+  const discovery = p.discovery ? 2.5 : 0;                  // 検索発見の追加コスト（verify省略時の概算）
+  const perCompanySec = maxPages * avgFetch + gaps + discovery + 0.3; // +robots初回
+  const totalSec = count * perCompanySec / concurrency;
+  const perMin = 60 * concurrency / perCompanySec;
+  return { perCompanySec: Math.round(perCompanySec * 10) / 10, totalSec: Math.round(totalSec), perMin: Math.round(perMin) };
+}
+
 module.exports = {
-  collectEmailsForCompany, crawlSite, extractEmailsFromPage,
+  collectEmailsForCompany, harvestMany, estimateThroughput, crawlSite, extractEmailsFromPage,
   isValidEmail, classifyRole, roleLabel, isOwnDomain, isFreemail,
   parseMailto, deobfuscate, priorityScore, fetchPagePolite,
 };
