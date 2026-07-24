@@ -14,8 +14,10 @@ const { createMatchIndex } = R('src/company-match');
 const { loadLedger, isDelivered } = R('src/delivered-ledger');
 const { qualifiesForList, proposalTier, isExcludedIndustry } = R('src/icp-rules');
 
-const IN = P.join(__dirname, 'data', 'recruiter-mynavi-new28.csv');
-const OUT = P.join(__dirname, 'data', 'leads-new28-mapped.csv');
+// 複数のマイナビ収集ファイルを統合（gy=27 + gy=28）。存在するものだけ読む。
+const IN_FILES = (process.env.HARVEST_INS || 'recruiter-mynavi-probe27.csv,recruiter-mynavi-new28.csv')
+  .split(',').map((s) => s.trim()).filter(Boolean).map((f) => P.join(__dirname, 'data', f));
+const OUT = P.join(__dirname, 'data', 'leads-new-mynavi-mapped.csv');
 const g = (r, k) => (r[k] == null ? '' : String(r[k]).trim());
 const intOf = (s) => { const m = String(s || '').replace(/[^0-9]/g, ''); return m ? parseInt(m, 10) : null; };
 const REP = /代表|社長|会長|取締役|理事長|監査役|オーナー|創業|CEO|COO|CFO|President|Founder/i;
@@ -36,13 +38,19 @@ function cleanRecruiterName(name) {
 const HEADERS = ['企業名', '法人番号', '採用担当者名', '氏名検証', '担当者確度', '役職', '部署', '代表者名', '架電宛名', '電話番号', 'メール', 'メール確度', '公式URL', '業種', '都道府県', '従業員数', '設立年', '補助金', '上場', '新卒フラグ', '採用予定人数', '採用職種', '掲載媒体', '求人件数', '採用ページURL', 'アポ期待度', '優先度', 'MOCHICA適合', '確信度', '提案プラン', 'セグメント区分', 'ICPランク', '既存被り', '呼べる条件', '根拠URL', '取得日', '統合ソース数', '統合元ファイル'];
 
 function main() {
-  if (!fs.existsSync(IN)) { console.error('入力なし:', IN); process.exit(1); }
   const idx = createMatchIndex();
   for (const r of readCsv(fs.readFileSync(P.join(__dirname, 'data/leads-consolidated-all.csv'), 'utf8')).records) idx.addRecord(r, 'pool');
   const ledger = loadLedger();
   const inPool = (name) => idx.has(name) || isDelivered(ledger, { 企業名: name });
 
-  const { records } = readCsv(fs.readFileSync(IN, 'utf8'));
+  const records = [];
+  for (const f of IN_FILES) {
+    if (!fs.existsSync(f)) { console.log('  (入力なし・スキップ)', P.relative(__dirname, f)); continue; }
+    const rs = readCsv(fs.readFileSync(f, 'utf8')).records;
+    console.log('  入力', P.relative(__dirname, f), rs.length, '件');
+    for (const r of rs) records.push(r);
+  }
+  if (!records.length) { console.error('入力レコードなし'); process.exit(1); }
   const out = [];
   const seenName = new Set();
   let dropQual = 0, dropPool = 0, dropDup = 0, dropName = 0;
