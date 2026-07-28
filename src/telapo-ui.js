@@ -230,8 +230,12 @@ const PAGE = `<!doctype html>
   .pick.on::before{ content:""; }
   .pick.res.on{ background:#0f766e; border-color:#0f766e; }
   .pick.rz.on{ background:var(--bad); border-color:var(--bad); }
-  .sug{ font-size:12.5px; color:#0369a1; margin-bottom:9px; }
+  .sug{ font-size:12.5px; color:#0369a1; margin-bottom:9px; display:flex; align-items:center; gap:10px; flex-wrap:wrap; }
   .sug b{ color:#0f172a; }
+  .rbanner{ font-size:15px; font-weight:800; padding:6px 15px; border-radius:8px; }
+  .rbanner.appo{ background:#dcfce7; color:#166534; } .rbanner.refuse{ background:#fee2e2; color:#991b1b; }
+  .rbanner.follow{ background:#fef3c7; color:#92400e; } .rbanner.pre{ background:#e2e8f0; color:#475569; }
+  .sugmini{ font-size:11.5px; color:#64748b; }
   .picklab{ font-size:12px; color:#64748b; margin:8px 0 5px; font-weight:600; }
   .switch{ display:inline-flex; align-items:center; gap:7px; font-size:13px; font-weight:600; color:#334155; cursor:pointer; }
   .switch input{ width:16px; height:16px; }
@@ -304,7 +308,7 @@ const PAGE = `<!doctype html>
       </div>
       <div class="hint">マイク録音（要許可）または既存音声（mp3/wav/m4a/webm 等）をアップロード。保存先は data/recordings/。</div>
       <div class="row" style="margin-top:12px; gap:10px; align-items:center">
-        <label class="switch"><input type="checkbox" id="sttToggle" onchange="onSttToggle()"> 🎙 音声認識で文字起こしを自動入力</label>
+        <label class="switch"><input type="checkbox" id="sttToggle" onchange="onSttToggle()"> 🎙 音声認識ON（録音を自動で文字起こし→即分析）</label>
         <span id="sttState" class="badge">—</span>
       </div>
       <div class="hint" id="sttNote">録音開始と同時にブラウザの音声認識（日本語）が文字起こしを自動入力します。<b>※ブラウザ内蔵のクラウド認識を使うため通信が発生します（完全ローカルではありません）。Chrome / Edge 推奨。</b></div>
@@ -499,10 +503,14 @@ function applyAnalysis(a){
 }
 function renderPicks(){
   const a=lastAnalysis||{}; $('analysisBox').style.display='';
-  const sug = a.suggestedResult
-    ? ('<b>'+esc(labelOf(a.suggestedResult))+'</b> と自動判定（違う場合は下のチップをクリック）')
-    : '結果を自動判定できませんでした。下のチップから選択してください。';
-  $('sugLine').innerHTML='◎ '+sug;
+  // 大きな結果バナー（自動判定が効いていることをひと目で分かるように）
+  const rcCur=classifyLocal(curResult);
+  const bcls = rcCur.appo?'appo':rcCur.refused?'refuse':rcCur.follow?'follow':(rcCur.reached?'appo':'pre');
+  const banner = curResult ? '<span class="rbanner '+bcls+'">'+esc(labelOf(curResult))+'</span>'
+                           : '<span class="rbanner pre">結果 未判定</span>';
+  const mini = a.suggestedResult ? '◎ 自動判定: '+esc(labelOf(a.suggestedResult))+'（違えば下でクリック修正）'
+                                 : '自動判定できず — 下のチップから結果をクリック';
+  $('sugLine').innerHTML = banner + '<span class="sugmini">'+mini+'</span>';
   // コール結果チップ（自動判定に◎、選択中は塗り）
   $('pickResult').innerHTML = RESULTS.map((o,i)=>{
     const on=o.value===curResult, auto=(o.value===a.suggestedResult);

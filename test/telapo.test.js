@@ -46,12 +46,25 @@ t('classifyTalk：アポ獲得トーク要素を複数抽出', () => {
   assert.ok(r.elements[0].sample && r.elements[0].sample.length > 0);
 });
 
-t('suggestResult：文字起こしからコール結果を自動推定', () => {
-  assert.strictEqual(TA.suggestResult('来週火曜14時で訪問のアポをいただけました'), '担当者接触：アポ獲得');
-  assert.strictEqual(TA.suggestResult('予算がないので今回は見送りたいとのこと'), '担当者接触：お断り');
-  assert.strictEqual(TA.suggestResult('興味はあるので資料を送ってほしいと言われた'), '担当者接触：営業フォロー');
-  assert.strictEqual(TA.suggestResult('担当者が不在で折り返しをお願いした'), '担当者不在');
-  assert.strictEqual(TA.suggestResult('受付で取次いただけませんでした'), '受付ブロック');
+t('suggestResult：実際の話し言葉からコール結果を自動判定（会話文に強い）', () => {
+  // アポ獲得＝会う/日時の約束（自然な言い回し。要約メモ語彙でなくても拾う）
+  assert.strictEqual(TA.suggestResult('一度詳しくお話させてください。じゃあ来週の水曜14時とかいかがですか。大丈夫ですよ'), '担当者接触：アポ獲得');
+  assert.strictEqual(TA.suggestResult('じゃあ一回話聞いてみようかな。再来週あたりで。伺わせていただきます'), '担当者接触：アポ獲得');
+  assert.strictEqual(TA.suggestResult('ちょうど探してたんですよ。今週金曜お邪魔してもいいですか。ぜひお願いします'), '担当者接触：アポ獲得');
+  // 営業フォロー＝資料/再連絡/検討（会う約束は未確定）
+  assert.strictEqual(TA.suggestResult('ちょっと興味あるんで、資料だけ先にもらえますか。メールで送っておきます'), '担当者接触：営業フォロー');
+  assert.strictEqual(TA.suggestResult('今バタバタしてて。また改めて連絡もらえますか'), '担当者接触：営業フォロー');
+  // お断り（各理由・話し言葉）
+  assert.strictEqual(TA.suggestResult('今のところ特に考えてないですね。うち間に合ってるので'), '担当者接触：お断り');
+  assert.strictEqual(TA.suggestResult('新卒はやってないんですよ。中途ばっかりで'), '担当者接触：お断り');
+  assert.strictEqual(TA.suggestResult('LINEはちょっと会社的に使えないんですよ、セキュリティの関係で'), '担当者接触：お断り');
+  assert.strictEqual(TA.suggestResult('新規のお電話は全部お断りしてるんです。すみません'), '担当者接触：お断り');
+  // 逆張り：日付が出るが断り／フォロー（アポに誤爆しない）
+  assert.strictEqual(TA.suggestResult('来月はちょっと忙しいので今はいいです。また今度お願いします'), '担当者接触：お断り');
+  // 接続前
+  assert.strictEqual(TA.suggestResult('採用担当の田中はただいま席を外しております'), '担当者不在');
+  assert.strictEqual(TA.suggestResult('そういったお電話はお取次ぎできないことになっておりまして'), '受付ブロック');
+  assert.strictEqual(TA.suggestResult('プープー…話し中'), '不通・番号違い');
   assert.strictEqual(TA.suggestResult(''), '');
 });
 

@@ -237,7 +237,7 @@ const PAGE = `<!doctype html>
 <body>
 <header>
   <h1>企業メール収集</h1>
-  <p>企業名から公式サイトを特定し、公開されているメールアドレス（mailto:／お問い合わせ・採用ページ本文）を収集します。</p>
+  <p>企業名から公式サイトを特定し、公開メール（mailto:／問い合わせ・採用ページ本文）を収集。確度しきい値以上のみを「企業名,メールアドレス」の採用リスト（スプレッドシート）として書き出します。</p>
 </header>
 <main>
   <div class="card">
@@ -250,6 +250,7 @@ freee, https://corp.freee.co.jp"></textarea>
       <span class="opt">同時実行数 <input type="number" id="concurrency" value="24" min="1" max="64"></span>
       <span class="opt">最大取得ページ数 <input type="number" id="maxPages" value="3" min="1" max="10"></span>
       <span class="opt">ホスト間隔ms <input type="number" id="delayMs" value="1200" min="300" max="8000" step="100"></span>
+      <span class="opt">採用確度しきい値 <input type="number" id="minConf" value="0.7" min="0" max="1" step="0.05"></span>
       <span class="opt"><input type="checkbox" id="staticOnly" checked> 静的取得のみ（高速）</span>
       <span class="opt"><input type="checkbox" id="guess" checked> 役割アドレス推測(info@等)</span>
     </div>
@@ -257,7 +258,8 @@ freee, https://corp.freee.co.jp"></textarea>
     <div class="btns">
       <button class="primary" id="run">収集開始</button>
       <button class="ghost" id="stop" disabled>停止</button>
-      <button class="ghost" id="csv" disabled>CSVダウンロード</button>
+      <button class="ghost" id="csv" disabled>採用リストDL（企業名,メール）</button>
+      <button class="ghost" id="csvFull" disabled>詳細CSV</button>
       <button class="ghost" id="clear" disabled>クリア</button>
     </div>
     <div class="progress" id="progressWrap" style="display:none">
@@ -317,6 +319,10 @@ function opts(){
     guess:$('#guess').checked,
   };
 }
+function minConf(){ const v=parseFloat($('#minConf').value); return Number.isFinite(v)?Math.max(0,Math.min(1,v)):0.7; }
+// 確度しきい値以上の採用1件（emailsはサーバ側で優先度降順済み）。無ければ ''。
+function bestQualified(r, thr){ const q=(r.emails||[]).filter(e=>(+e.confidence||0)>=thr); return q.length?q[0].email:''; }
+function adoptedCount(){ const thr=minConf(); return results.reduce((n,r)=>n+(bestQualified(r,thr)?1:0),0); }
 function estimate(){
   const items=readItems(); const o=opts();
   const discovery=items.some(i=>!i.url);
@@ -360,8 +366,9 @@ function updateProgress(force){
   const c=counters, pct=c.total?Math.round(100*c.done/c.total):0;
   $('#bar').style.width=pct+'%';
   const elapsed=(now-c.t0)/1000, rate=c.done/Math.max(0.001,elapsed), eta=(c.total-c.done)/Math.max(0.0001,rate);
-  $('#pmeta').innerHTML='完了 <b>'+c.done+'</b>/'+c.total+' ('+pct+'%) ｜ メール取得 <b>'+c.hit+'</b>社 ｜ 実測 <b>'+Math.round(rate*60)+'</b>社/分 ｜ 経過 '+fmtDur(elapsed)+' ｜ 残り '+(c.done?fmtDur(eta):'—');
-  $('#stats').innerHTML='対象 <b>'+c.total+'</b> 社 ｜ 完了 <b>'+c.done+'</b> ｜ メール取得 <b>'+c.hit+'</b> 社';
+  const adopted=adoptedCount();
+  $('#pmeta').innerHTML='完了 <b>'+c.done+'</b>/'+c.total+' ('+pct+'%) ｜ 採用(確度'+minConf()+'+) <b>'+adopted+'</b>社 ｜ メール検出 <b>'+c.hit+'</b>社 ｜ 実測 <b>'+Math.round(rate*60)+'</b>社/分 ｜ 経過 '+fmtDur(elapsed)+' ｜ 残り '+(c.done?fmtDur(eta):'—');
+  $('#stats').innerHTML='対象 <b>'+c.total+'</b> 社 ｜ 完了 <b>'+c.done+'</b> ｜ 採用 <b>'+adopted+'</b> 社 ｜ メール検出 <b>'+c.hit+'</b> 社';
 }
 
 async function runBatch(){
@@ -392,7 +399,7 @@ async function runBatch(){
   }finally{
     flushRows(); updateProgress(true);
     running=false; $('#run').disabled=false; $('#stop').disabled=true;
-    $('#csv').disabled=!results.length; $('#clear').disabled=false;
+    $('#csv').disabled=!results.length; $('#csvFull').disabled=!results.length; $('#clear').disabled=false;
   }
 }
 function handleMsg(msg){
@@ -409,19 +416,29 @@ $('#run').addEventListener('click',()=>{ if(!running) runBatch(); });
 $('#stop').addEventListener('click',()=>{ if(abortCtl) abortCtl.abort(); });
 $('#clear').addEventListener('click',()=>{ if(running)return; results=[]; counters={total:0,done:0,hit:0,t0:0};
   $('#tbody').innerHTML='<tr><td colspan="6" class="empty">未実行</td></tr>'; $('#progressWrap').style.display='none';
-  $('#stats').textContent='結果はここに表示されます。'; $('#csv').disabled=true; $('#clear').disabled=true; estimate(); });
+  $('#stats').textContent='結果はここに表示されます。'; $('#csv').disabled=true; $('#csvFull').disabled=true; $('#clear').disabled=true; estimate(); });
 
+function downloadCsv(rows, name){
+  const csv='\\ufeff'+rows.map(r=>r.map(c=>{ const s=String(c==null?'':c); return /[",\\n]/.test(s)?('"'+s.replace(/"/g,'""')+'"'):s; }).join(',')).join('\\n');
+  const blob=new Blob([csv],{type:'text/csv;charset=utf-8'}); const a=document.createElement('a');
+  a.href=URL.createObjectURL(blob); a.download=name; a.click();
+}
+// 採用リスト: 企業名,メールアドレス（確度しきい値以上・企業ごと最上位1件）
 $('#csv').addEventListener('click',()=>{
-  const head=['企業名','公式URL','メール','種別','確度','取得方法','取得元','備考'];
-  const rows=[head];
+  const thr=minConf(); const rows=[['企業名','メールアドレス']];
+  for(const r of results){ const e=bestQualified(r,thr); if(e) rows.push([r.company, e]); }
+  if(rows.length<=1){ alert('確度'+thr+'以上のメールがありません。'); return; }
+  downloadCsv(rows, 'company-emails-採用リスト-'+new Date().toISOString().slice(0,10)+'.csv');
+});
+// 詳細CSV: 全メール・全項目（QA用）
+$('#csvFull').addEventListener('click',()=>{
+  const rows=[['企業名','公式URL','メール','種別','確度','取得方法','取得元','備考']];
   for(const r of results){
     const emails=(r.emails||[]);
     if(emails.length){ emails.forEach((e,i)=> rows.push([ i===0?r.company:'', i===0?(r.url||''):'', e.email, e.role, e.confidence, e.source, e.foundOn||'', i===0?(r.note||''):'' ])); }
     else{ rows.push([ r.company, r.url||'', '', '', '', '', '', r.note||'検出なし' ]); }
   }
-  const csv='\\ufeff'+rows.map(r=>r.map(c=>{ const s=String(c==null?'':c); return /[",\\n]/.test(s)?('"'+s.replace(/"/g,'""')+'"'):s; }).join(',')).join('\\n');
-  const blob=new Blob([csv],{type:'text/csv;charset=utf-8'}); const a=document.createElement('a');
-  a.href=URL.createObjectURL(blob); a.download='company-emails-'+new Date().toISOString().slice(0,10)+'.csv'; a.click();
+  downloadCsv(rows, 'company-emails-詳細-'+new Date().toISOString().slice(0,10)+'.csv');
 });
 estimate();
 </script>

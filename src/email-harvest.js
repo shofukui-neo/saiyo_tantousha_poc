@@ -203,6 +203,18 @@ function priorityScore(rec) {
   return roleW + realW + ownW + (rec.confidence || 0);
 }
 
+// 採用の既定しきい値（確度）。実在かつ高信頼のメールのみを残す（フリーメール/MX推測は概ね除外）。
+const MIN_CONFIDENCE = 0.7;
+// 確度しきい値以上のメールのみを返す（emails は既に priorityScore 降順）。
+function qualifyingEmails(res, minConf = MIN_CONFIDENCE) {
+  return (res && res.emails ? res.emails : []).filter((e) => (e.confidence || 0) >= minConf);
+}
+// 採用する1件（確度しきい値以上の最上位）。無ければ ''。
+function bestQualifiedEmail(res, minConf = MIN_CONFIDENCE) {
+  const q = qualifyingEmails(res, minConf);
+  return q.length ? q[0].email : '';
+}
+
 /**
  * 企業名（または既知URL/ドメイン）から公開メールを収集する。
  * @param {string} companyName 企業名
@@ -354,4 +366,5 @@ module.exports = {
   collectEmailsForCompany, harvestMany, estimateThroughput, crawlSite, extractEmailsFromPage,
   isValidEmail, classifyRole, roleLabel, isOwnDomain, isFreemail,
   parseMailto, deobfuscate, priorityScore, fetchPagePolite,
+  MIN_CONFIDENCE, qualifyingEmails, bestQualifiedEmail,
 };

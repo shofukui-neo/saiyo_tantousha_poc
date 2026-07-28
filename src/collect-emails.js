@@ -6,6 +6,11 @@
 //  URL指定: node src/collect-emails.js --company "X社" --url https://example.co.jp
 //  一括:   node src/collect-emails.js --in data/leads-mochica-target.csv --out data/leads-emails.csv
 //
+//  採用リスト出力（スプレッドシート用・企業名,メールアドレスの2列）:
+//    --simple          確度しきい値以上のメールのみ・企業ごと最上位1件を「企業名,メールアドレス」で出力
+//                      （--out 未指定ならダウンロードフォルダへ保存）
+//    --min-conf 0.7    採用する確度の下限（既定0.7）
+//
 //  一括の高速化フラグ（既定は 5000件/1時間 を狙う設定）:
 //    --conc 24        企業をまたいだ並列度（別ホストなので各サイトへの負荷は増えない）
 //    --max-pages 3    1社あたりの最大取得ページ数
@@ -14,9 +19,10 @@
 //    --verify          URL発見時にページ検証を行う（既定 off＝高速）
 //    --no-guess        役割アドレス推測を無効化（実在メールのみ）
 const fs = require('fs');
+const os = require('os');
 const path = require('path');
 const { readCsv, toCsv } = require('./csv');
-const { collectEmailsForCompany, harvestMany, estimateThroughput } = require('./email-harvest');
+const { collectEmailsForCompany, harvestMany, estimateThroughput, bestQualifiedEmail, MIN_CONFIDENCE } = require('./email-harvest');
 const { setScrapeDelay } = require('./polite');
 
 function getArg(name, def) {
@@ -35,6 +41,8 @@ const NO_GUESS = process.argv.includes('--no-guess');
 const COMPANY_COL = getArg('company-col', '');
 const RENDER_ARG = getArg('render', '');          // 'auto' | 'static' | ''(=モード既定)
 const VERIFY_FLAG = process.argv.includes('--verify');
+const SIMPLE = process.argv.includes('--simple'); // 2列（企業名,メールアドレス）の採用リストを出力
+const MIN_CONF = (() => { const v = parseFloat(getArg('min-conf', String(MIN_CONFIDENCE))); return Number.isFinite(v) ? v : MIN_CONFIDENCE; })();
 function log(m) { console.log(`[${new Date().toISOString()}] ${m}`); }
 function fmtDur(sec) { sec = Math.max(0, Math.round(sec)); const h = Math.floor(sec / 3600), m = Math.floor((sec % 3600) / 60), s = sec % 60; return (h ? h + '時間' : '') + (h || m ? m + '分' : '') + s + '秒'; }
 
@@ -118,30 +126,47 @@ async function runBatch() {
   if (needDiscovery > 0) log(`※ URL未指定の${needDiscovery}社は検索エンジン経由の発見が必要で、レート制限により大量時は遅く/失敗しやすくなります（URL列付きの入力を推奨）。`);
   if (est.perMin < 83 && items.length >= 1000) log(`※ 現設定では 5000件/1時間(83社/分) に届きません。--conc を上げる/--max-pages を下げる/URL付き入力 を検討してください。`);
 
-  const OUTABS = path.resolve(OUT);
+  // 出力先: --simple かつ --out 未指定なら成果物としてダウンロードフォルダへ（[[deliverables-to-downloads]]）
+  let outPath = OUT;
+  if (SIMPLE && !getArg('out', '')) {
+    const dl = path.join(os.homedir(), 'Downloads');
+    outPath = path.join(fs.existsSync(dl) ? dl : process.cwd(), `company-emails-採用リスト-${new Date().toISOString().slice(0, 10)}.csv`);
+  }
+  const OUTABS = path.resolve(outPath);
   fs.mkdirSync(path.dirname(OUTABS), { recursive: true });
-  const out = new Array(items.length);
-  const flush = () => { const t = OUTABS + '.tmp'; fs.writeFileSync(t, toCsv(HEADERS, out.filter(Boolean))); fs.renameSync(t, OUTABS); };
+
+  // simple: 2列（企業名,メールアドレス）確度しきい値以上・企業ごとに最上位1件。それ以外は詳細列。
+  const raw = new Array(items.length);
+  const buildRows = () => {
+    if (!SIMPLE) return { headers: HEADERS, records: raw.filter(Boolean).map((r) => r.row) };
+    const recs = [];
+    for (const r of raw) { if (r && r.email) recs.push({ 企業名: r.company, メールアドレス: r.email }); }
+    return { headers: ['企業名', 'メールアドレス'], records: recs };
+  };
+  const flush = () => { const { headers, records } = buildRows(); const t = OUTABS + '.tmp'; fs.writeFileSync(t, '﻿' + toCsv(headers, records)); fs.renameSync(t, OUTABS); };
 
   const t0 = Date.now();
-  let hit = 0;
+  let hit = 0, adopted = 0;
   await harvestMany(items, {
     concurrency: CONC, maxPages: MAX_PAGES, guess: !NO_GUESS, render: RENDER, verify: VERIFY,
     onResult(i, item, res, done) {
       if (res && res.best) hit++;
-      out[i] = toRow(item.company, res);
+      const email = bestQualifiedEmail(res, MIN_CONF); // 確度しきい値以上の採用1件
+      if (email) adopted++;
+      raw[i] = { company: item.company, email, row: toRow(item.company, res) };
       if (done % 25 === 0 || done === items.length) {
         flush();
         const elapsed = (Date.now() - t0) / 1000;
         const rate = done / Math.max(0.001, elapsed);         // 社/秒
         const eta = (items.length - done) / Math.max(0.0001, rate);
-        log(`  ${done}/${items.length}（メール ${hit}社 ${(100 * hit / done).toFixed(0)}%）｜ ${(rate * 60).toFixed(0)}社/分 ｜ 残り ${fmtDur(eta)}`);
+        log(`  ${done}/${items.length}（採用 ${adopted}社 / メール検出 ${hit}社）｜ ${(rate * 60).toFixed(0)}社/分 ｜ 残り ${fmtDur(eta)}`);
       }
     },
   });
   flush();
   const total = (Date.now() - t0) / 1000;
-  log(`完了: ${items.length}社処理 ｜ メール取得 ${hit}社（${(100 * hit / Math.max(1, items.length)).toFixed(0)}%）｜ 所要 ${fmtDur(total)}（${(items.length / Math.max(0.001, total) * 60).toFixed(0)}社/分）｜出力 ${OUTABS}`);
+  log(`完了: ${items.length}社処理 ｜ 採用(確度${MIN_CONF}以上) ${adopted}社（${(100 * adopted / Math.max(1, items.length)).toFixed(0)}%）｜ メール検出 ${hit}社 ｜ 所要 ${fmtDur(total)}（${(items.length / Math.max(0.001, total) * 60).toFixed(0)}社/分）`);
+  log(`出力: ${OUTABS}${SIMPLE ? '（企業名,メールアドレス・確度' + MIN_CONF + '以上）' : ''}`);
 }
 
 async function run() {
