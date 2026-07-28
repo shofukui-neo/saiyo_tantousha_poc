@@ -11,6 +11,14 @@ const G = require('./index');
 const model = require('./model');
 const balesMap = require('./bales-map');
 const { buildExistingCustomerSet, NG_TYPES_BLOCK } = require('./ingest-wave0');
+// v2.1 音声レイヤ
+const voiceStore = require('./voice/store');
+const voiceAnalyze = require('./voice/analyze');
+const voiceWeakness = require('./voice/weakness');
+const voiceStt = require('./voice/stt');
+const voiceLlm = require('./voice/llm');
+const recorder = require('./voice/recorder');
+const { DEMO_CALLS } = require('./voice/fixtures');
 
 const DATA = path.join(__dirname, '..', '..', 'data');
 const F_BALES = path.join(DATA, 'BALESCLOUDの既存リスト - 202607062007_leadList_utf-8.csv');
@@ -212,4 +220,76 @@ function analytics() {
 
 function round2(n) { return n == null ? null : Math.round(n * 100) / 100; }
 
-module.exports = { context, retrain, briefOf, search, queue, analytics };
+/* ======================= v2.1 音声レイヤ API ======================= */
+let _recording = null; // { rec, meta }（同時1件）
+
+function voiceStatus() {
+  return {
+    stt_backend: voiceStt.detectBackend(),
+    ffmpeg: recorder.ffmpegAvailable(),
+    llm: voiceLlm.available(),
+    recording: !!_recording,
+  };
+}
+
+function voiceReport(recentN) {
+  const calls = voiceStore.loadCalls();
+  return voiceWeakness.aggregateWeakness(calls, recentN ? { recentN: Number(recentN) } : {});
+}
+
+/** 直近通話の要約（フロント一覧用）。segments は重いので除外。 */
+function voiceCalls(limit) {
+  return voiceStore.loadCalls({ limit: Number(limit) || 30 }).map((c) => ({
+    call_id: c.call_id, started_at: c.started_at, company: c.company, connected: c.connected,
+    execution_score: c.feedback && c.feedback.execution_score,
+    metrics: c.metrics, feedback: c.feedback,
+  }));
+}
+
+/** デモ通話を投入（ffmpeg/STT不要でUIを即体験）。 */
+function voiceDemo() {
+  const base = Date.UTC(2026, 6, 24, 9, 0, 0);
+  for (const c of DEMO_CALLS) {
+    const started = new Date(base + c.offsetMin * 60000).toISOString();
+    voiceStore.saveCall(voiceAnalyze.analyzeCall({ company: c.company, started_at: started, segments: c.segments, useLLM: false }));
+  }
+  return { ok: true, report: voiceReport() };
+}
+
+function voiceRecordStart(company) {
+  if (_recording) return { ok: false, error: '既に録音中です' };
+  if (!recorder.ffmpegAvailable()) return { ok: false, error: 'ffmpeg未検出', hint: 'FFmpegをインストールし GCHAIN_FFMPEG を設定してください。' };
+  const path = require('path'); const fs = require('fs');
+  const audioDir = path.join(voiceStore.CALLS_DIR, '..', 'audio');
+  fs.mkdirSync(audioDir, { recursive: true });
+  const started = new Date().toISOString();
+  const id = voiceStore.newCallId(started, company);
+  const wav = path.join(audioDir, id + '.wav');
+  try {
+    const rec = recorder.startRecording(wav, {});
+    _recording = { rec, meta: { call_id: id, company, started_at: started, audio_path: wav } };
+    return { ok: true, call_id: id };
+  } catch (e) {
+    return { ok: false, error: String(e.message), hint: 'デバイス設定（GCHAIN_MIC/GCHAIN_SYS）を確認してください。voice devices で一覧。' };
+  }
+}
+
+async function voiceRecordStop() {
+  if (!_recording) return { ok: false, error: '録音していません' };
+  const { rec, meta } = _recording;
+  _recording = null;
+  try {
+    await rec.stop();
+    const { segments, backend } = voiceStt.transcribeStereo(meta.audio_path, {});
+    const record = voiceAnalyze.analyzeCall({ ...meta, segments });
+    voiceStore.saveCall(record);
+    return { ok: true, backend, record: { company: record.company, metrics: record.metrics, feedback: record.feedback, connected: record.connected } };
+  } catch (e) {
+    return { ok: false, error: String(e.message), hint: voiceStt.hint() };
+  }
+}
+
+module.exports = {
+  context, retrain, briefOf, search, queue, analytics,
+  voiceStatus, voiceReport, voiceCalls, voiceDemo, voiceRecordStart, voiceRecordStop,
+};

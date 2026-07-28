@@ -49,6 +49,16 @@ const server = http.createServer((req, res) => {
     if (u.pathname === '/api/train') {
       return json(res, api.retrain());
     }
+    // v2.1 音声レイヤ
+    if (u.pathname === '/api/voice/status') return json(res, api.voiceStatus());
+    if (u.pathname === '/api/voice/report') return json(res, api.voiceReport(q.recent));
+    if (u.pathname === '/api/voice/calls') return json(res, api.voiceCalls(q.limit));
+    if (u.pathname === '/api/voice/demo') return json(res, api.voiceDemo());
+    if (u.pathname === '/api/voice/record') {
+      if (q.action === 'start') return json(res, api.voiceRecordStart(q.company || null));
+      if (q.action === 'stop') return api.voiceRecordStop().then((r) => json(res, r));
+      return json(res, { ok: false, error: 'action=start|stop' }, 400);
+    }
     res.writeHead(404, { 'Content-Type': 'text/plain' });
     res.end('not found');
   } catch (e) {

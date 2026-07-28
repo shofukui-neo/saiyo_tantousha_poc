@@ -86,6 +86,7 @@
   <button class="tab active" data-tab="queue">🎯 コールキュー</button>
   <button class="tab" data-tab="brief">🔍 企業検索</button>
   <button class="tab" data-tab="analytics">📊 分析</button>
+  <button class="tab" data-tab="voice">🎙 架電分析</button>
 </div>
 <main>
   <section id="tab-queue">
@@ -115,6 +116,21 @@
   <section id="tab-analytics" style="display:none">
     <div id="analyticsBody"></div>
   </section>
+
+  <section id="tab-voice" style="display:none">
+    <div class="card">
+      <h3>録音 → 文字起こし → 即フィードバック</h3>
+      <div class="toolbar">
+        <input type="text" id="vCompany" placeholder="相手の会社名（任意）">
+        <button id="vRec" class="primary">● 録音開始</button>
+        <span class="sub" id="vStatus"></span>
+        <div class="spacer"></div>
+        <button id="vDemo">デモ通話を投入</button>
+      </div>
+      <div id="vResult"></div>
+    </div>
+    <div id="voiceBody"></div>
+  </section>
 </main>
 <div class="drawer" id="drawer"><button class="x" onclick="closeDrawer()">✕</button><div id="drawerBody"></div></div>
 <div class="toast" id="toast"></div>
@@ -132,8 +148,9 @@ function toast(m){ const t=$('#toast'); t.textContent=m; t.style.display='block'
 document.querySelectorAll('.tab').forEach(b=>b.onclick=()=>{
   document.querySelectorAll('.tab').forEach(x=>x.classList.remove('active'));
   b.classList.add('active'); state.tab=b.dataset.tab;
-  for(const t of ['queue','brief','analytics']) $('#tab-'+t).style.display = t===state.tab?'':'none';
+  for(const t of ['queue','brief','analytics','voice']) $('#tab-'+t).style.display = t===state.tab?'':'none';
   if(state.tab==='analytics') loadAnalytics();
+  if(state.tab==='voice') loadVoice();
 });
 
 // ---- header meta ----
@@ -253,6 +270,72 @@ async function loadAnalytics(){
      a.discipline.map(d=>`<tr><td>${esc(d.owner||'(不明)')}</td><td class="mono">${d.planned}</td><td class="mono">${d.completed}</td><td class="mono">${pct(d.follow_execution_rate)}</td><td class="mono ${d.overdue_rate>0.4?'liftneg':''}">${pct(d.overdue_rate)}</td><td class="mono">${d.avg_interval_days??'—'}日</td></tr>`).join('')+`</tbody></table></div>`;
   $('#analyticsBody').innerHTML=h;
 }
+
+// ---- voice (架電分析) ----
+let vRecording=false;
+async function loadVoice(){
+  const st = await jget('/api/voice/status');
+  $('#vStatus').innerHTML = `STT: <b>${st.stt_backend}</b> · LLM: <b>${st.llm?'Claude':'ルールベース'}</b> · ffmpeg: ${st.ffmpeg?'✓':'✗'}`;
+  const rep = await jget('/api/voice/report');
+  const calls = await jget('/api/voice/calls?limit=30');
+  let h='';
+  if(!rep.n){
+    h += '<div class="card empty">まだ通話データがありません。右上「デモ通話を投入」で体験、または「録音開始」で実際の通話を分析できます。</div>';
+  } else {
+    // 自己分析
+    h += `<div class="card"><h3>自己分析（直近${rep.n}件） 平均 ${rep.avg_score??'—'}点`+
+         (rep.score_trend!=null?` <span class="${rep.score_trend>=0?'liftpos':'liftneg'}">トレンド ${rep.score_trend>0?'+':''}${rep.score_trend}</span>`:'')+`</h3>`;
+    const dimJp={balance:'傾聴バランス',questions:'ヒアリング量',proposal:'打診',opening:'冒頭の掴み',monologue:'一方通行の抑制'};
+    for(const d of rep.dims){ const w=Math.round((d.avg||0)*100); const col=d.avg<0.5?'var(--bad)':(d.avg>=0.7?'var(--good)':'var(--warn)');
+      h += `<div style="display:flex;align-items:center;gap:10px;margin:5px 0"><div style="width:140px;font-size:13px">${dimJp[d.key]||d.key}</div>`+
+           `<div class="bar" style="flex:1"><span style="width:${w}%;background:${col}"></span><i>${w}点 · 不足${d.weak_count}/${d.sample}件</i></div></div>`;
+    }
+    h += `<div class="kv" style="margin-top:10px"><span class="k">発話比(自分)</span><span>${pct(rep.metrics.avg_talk_ratio_self)}</span>`+
+         `<span class="k">平均質問</span><span>${rep.metrics.avg_question_count}件</span>`+
+         `<span class="k">打診率</span><span>${pct(rep.metrics.proposal_rate)}</span>`+
+         `<span class="k">平均最長独白</span><span>${rep.metrics.avg_longest_monologue_sec}秒</span></div>`;
+    if(rep.weaknesses.length) h+='<h3 style="margin-top:10px">▼ 直すべき弱み</h3>'+rep.weaknesses.map(x=>`<div class="factor down">▼ ${esc(x.message)}</div>`).join('');
+    if(rep.strengths.length) h+='<h3 style="margin-top:10px">▲ 強み</h3>'+rep.strengths.map(x=>`<div class="factor up">▲ ${esc(x.message)}</div>`).join('');
+    h += '</div>';
+    // 直近通話
+    h += '<div class="card"><h3>直近の通話</h3><table><thead><tr><th>日時</th><th>会社</th><th>スコア</th><th>発話比</th><th>質問</th><th>打診</th><th>MORE</th></tr></thead><tbody>';
+    for(const c of calls){ const m=c.metrics||{},f=c.feedback||{};
+      h += `<tr class="clickable" onclick='showCall(${JSON.stringify(c).replace(/'/g,"&#39;")})'>`+
+           `<td class="sub">${(c.started_at||'').slice(5,16).replace('T',' ')}</td><td>${esc(c.company||'—')}</td>`+
+           `<td><b>${f.execution_score??'—'}</b></td><td class="mono">${pct(m.talk_ratio_self)}</td><td class="mono">${m.question_count??'—'}</td>`+
+           `<td>${m.proposal_made?'○':'×'}</td><td class="sub" style="font-size:12px">${esc(f.more?f.more.point:'')}</td></tr>`;
+    }
+    h += '</tbody></table></div>';
+  }
+  $('#voiceBody').innerHTML=h;
+}
+function showCall(c){
+  const m=c.metrics||{},f=c.feedback||{};
+  let h=`<div class="card"><div style="font-weight:800">${esc(c.company||'(社名なし)')} <span class="sub">${(c.started_at||'').slice(0,16).replace('T',' ')}</span></div>`+
+    `<div class="gauge" style="margin:6px 0"><span class="big">${f.execution_score??'—'}</span><span class="sub">実行スコア ${c.connected?'· 担当接続':'· 未接続'}</span></div>`+
+    `<div class="kv"><span class="k">発話比(自分)</span><span>${pct(m.talk_ratio_self)}</span><span class="k">質問</span><span>${m.question_count}件</span>`+
+    `<span class="k">打診</span><span>${m.proposal_made?'○':'×'}</span><span class="k">最長独白</span><span>${m.longest_monologue_sec}秒</span>`+
+    `<span class="k">冒頭</span><span>${m.opening_customer_first_sec??'—'}秒</span></div>`;
+  if(f.good) h+=`<div class="alert ats" style="margin-top:8px">▲ GOOD: ${esc(f.good.point)}</div>`;
+  if(f.more) h+=`<div class="alert warn">▼ MORE: ${esc(f.more.point)}<br><span class="sub">→ ${esc(f.more.next_action||'')}</span></div>`;
+  if(f.next_ng) h+=`<div class="alert block">⛔ 次NG: ${esc(f.next_ng.stop_condition)}</div>`;
+  h+='</div>';
+  $('#drawerBody').innerHTML=h; $('#drawer').classList.add('open');
+}
+$('#vRec').onclick=async()=>{
+  if(!vRecording){
+    const r=await jget('/api/voice/record?action=start&company='+encodeURIComponent($('#vCompany').value.trim()));
+    if(!r.ok){ $('#vResult').innerHTML=`<div class="alert warn">${esc(r.error)}${r.hint?'<br><span class="sub">'+esc(r.hint)+'</span>':''}</div>`; return; }
+    vRecording=true; $('#vRec').textContent='■ 停止して分析'; $('#vRec').style.background='var(--bad)'; $('#vResult').innerHTML='<div class="sub">● 録音中…（通話が終わったら停止）</div>';
+  } else {
+    $('#vRec').textContent='分析中…'; $('#vRec').disabled=true;
+    const r=await jget('/api/voice/record?action=stop');
+    vRecording=false; $('#vRec').textContent='● 録音開始'; $('#vRec').style.background=''; $('#vRec').disabled=false;
+    if(!r.ok){ $('#vResult').innerHTML=`<div class="alert warn">${esc(r.error)}${r.hint?'<br><span class="sub">'+esc(r.hint)+'</span>':''}</div>`; }
+    else { $('#vResult').innerHTML=''; showCall({company:r.record.company,started_at:new Date().toISOString(),connected:r.record.connected,metrics:r.record.metrics,feedback:r.record.feedback}); loadVoice(); }
+  }
+};
+$('#vDemo').onclick=async()=>{ await jget('/api/voice/demo'); toast('デモ通話3件を投入しました'); loadVoice(); };
 
 // ---- train ----
 $('#trainBtn').onclick=async()=>{

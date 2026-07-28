@@ -10,7 +10,7 @@
   "scripts": {
     "start": "node src/app.js",
     "app": "node src/app.js",
-    "gchain:test": "node test/gchain-core.test.js && node test/gchain-eval.test.js && node test/gchain-llm-meta.test.js && node test/gchain-v2.test.js",
+    "gchain:test": "node test/gchain-core.test.js && node test/gchain-eval.test.js && node test/gchain-llm-meta.test.js && node test/gchain-v2.test.js && node test/gchain-voice.test.js",
     "gchain:build": "node src/gchain/build-gas.js",
     "gchain:analyze": "node src/gchain/ingest-structured.js",
     "gchain:train": "node src/gchain/ops.js train",
@@ -86,7 +86,10 @@
     "decrypt:lists": "node scripts/decrypt-lists.js",
     "secure:setup": "node scripts/setup-security.js",
     "secure:check": "node scripts/check-staged-security.js",
-    "secure:scan": "node scripts/check-staged-security.js"
+    "secure:scan": "node scripts/check-staged-security.js",
+    "gchain:voice": "node src/gchain/voice.js",
+    "gchain:voice:demo": "node src/gchain/voice.js demo",
+    "gchain:voice:report": "node src/gchain/voice.js report"
   },
   "dependencies": {
     "cheerio": "^1.1.0",
