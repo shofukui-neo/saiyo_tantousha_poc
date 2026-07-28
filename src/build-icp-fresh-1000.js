@@ -40,6 +40,15 @@ const PER_COMPANY_MS = 75000;
 const EMP_MIN = 100, EMP_MAX = 2000;
 
 const has = (v) => v && String(v).trim() && String(v).trim() !== '-';
+// マイナビ表示名のノイズ（末尾NEWバッジ・【親会社/グループ】等の注記）を落とす。
+// これを剥がさずに正規化すると、注記付き社名が除外索引に当たらず「偽の完全新規」になる（実測46%混入）。
+function stripAnn(name) {
+  return String(name || '').replace(/\s*(NEW|new)\s*$/, '').replace(/[【（(［\[].*?[】）)］\]]/g, '').trim();
+}
+// 突合キー（注記除去 → 法人格除去の正規化）。除外索引・候補・出力の全てで統一して使う。
+const mkey = (name) => normCompanyName(stripAnn(name));
+// 表示用クリーニング（末尾NEWと【…】グループ注記だけ落とし、（…）通称は残す）
+const cleanDisplay = (name) => String(name || '').replace(/\s*(NEW|new)\s*$/, '').replace(/[【\[].*?[】\]]/g, '').trim();
 const log = (m) => console.log(`[${new Date().toISOString()}] ${m}`);
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 function withTimeout(p, ms, onT) {
@@ -55,7 +64,7 @@ function safeWrite(abs, content) {
 // ── 既存(マスタ＋CRM)の社名インデックス。ここに当たる社は「新規でない」→スキップ ──
 function buildExclusion() {
   const names = new Set(), bangos = new Set();
-  const addName = (n) => { const k = normCompanyName(n); if (k) names.add(k); };
+  const addName = (n) => { const k = mkey(n); if (k) names.add(k); };
   const addBango = (b) => { const k = normCorpNumber(b); if (k) bangos.add(k); };
   // 統合マスタ（過去に発掘した全社）
   const master = path.join(ROOT, 'data', 'leads-consolidated-all.csv');
@@ -81,18 +90,25 @@ function buildExclusion() {
 }
 
 // 発掘した1社の資格判定
+// ICP完全適合（担当者名は必須でない＝優先度）: 新卒媒体掲載 + 規模100-2000 + 非IT + 電話妥当
+// 連絡先ティア: 1=採用担当者名アリ / 2=代表者名 / 3=名前なし（ユーザー指定の優先順位）
 function evaluate(rec) {
   const clean = cleanCrossRefName(rec['採用担当者名']);
   const nameOk = clean && String(clean).replace(/\s/g, '').length >= 2;
+  const rep = cleanCrossRefName(rec['代表者名']);
+  const repOk = rep && String(rep).replace(/\s/g, '').length >= 2;
   const m = scoreMochica(rec);
   const emp = parseEmployees(rec['従業員数']);
   const inBand = emp != null && emp >= EMP_MIN && emp <= EMP_MAX;
   const notIT = !isExcludedIndustry(String(rec['業種'] || rec['募集職種'] || ''));
-  const qualifies = nameOk && m.flags.verifiedIntent && inBand && m.flags.callable && notIT;
-  return { clean, m, emp, inBand, notIT, qualifies };
+  const qualifies = m.flags.verifiedIntent && inBand && m.flags.callable && notIT;
+  const tier = nameOk ? 1 : repOk ? 2 : 3;
+  const contact = nameOk ? clean : repOk ? rep : '';
+  return { clean, nameOk, rep, repOk, m, emp, inBand, notIT, qualifies, tier, contact };
 }
 
-const OUT_COLS = ['企業名', '法人番号', '採用担当者名', '役職', '部署', '架電宛名', '電話番号', 'メール',
+const TIER_LABEL = { 1: '採用担当者名', 2: '代表者名', 3: '名前なし' };
+const OUT_COLS = ['連絡先区分', '企業名', '法人番号', '採用担当者名', '代表者名', '役職', '部署', '架電宛名', '電話番号', 'メール',
   '業種', '従業員数', '新卒フラグ', '採用予定人数', '募集職種', '掲載媒体', '卒年', '採用ページURL',
   'アポ期待度', '優先度', '確信度', 'MOCHICA適合', 'フィットティア', '完全適合根拠', 'corpID', '担当者確度', 'パターン', '取得日'];
 
@@ -128,7 +144,9 @@ async function run() {
   const outRows = [];
   const rawRows = [];
   const seen = new Set();
-  if (fs.existsSync(OUT)) { try { for (const r of readCsv(fs.readFileSync(OUT, 'utf8')).records) { outRows.push(r); if (r.corpID) seen.add(String(r.corpID)); } } catch (_) {} }
+  const tierOf = (label) => (label === '採用担当者名' ? 1 : label === '代表者名' ? 2 : 3);
+  const collected = new Set(); // 出力済み社名（複数卒年/媒体をまたいだ社の二重計上を防ぐ）
+  if (fs.existsSync(OUT)) { try { for (const r of readCsv(fs.readFileSync(OUT, 'utf8')).records) { r._tier = tierOf(r['連絡先区分']); outRows.push(r); if (r.corpID) seen.add(String(r.corpID)); const k = mkey(r['企業名']); if (k) collected.add(k); } } catch (_) {} }
   if (fs.existsSync(RAW)) { try { for (const r of readCsv(fs.readFileSync(RAW, 'utf8')).records) { rawRows.push(r); if (r.corpID) seen.add(String(r.corpID)); } } catch (_) {} }
   if (fs.existsSync(SEEN)) { try { for (const l of fs.readFileSync(SEEN, 'utf8').split(/\r?\n/)) { const s = l.trim(); if (s) seen.add(s); } } catch (_) {} }
   log(`再開: 資格クリア ${outRows.length}社 ｜ 新規×担当者名(生) ${rawRows.length}社 ｜ seen ${seen.size}社`);
@@ -137,7 +155,17 @@ async function run() {
     ? fs.readFileSync(process.env.ICP_FRESH_KEYWORDS, 'utf8').split(/\r?\n/).map((s) => s.trim()).filter(Boolean)
     : DEFAULT_KEYWORDS;
 
-  const flush = () => { safeWrite(OUT, toCsv(OUT_COLS, outRows)); safeWrite(RAW, toCsv(RAW_COLS, rawRows)); safeWrite(SEEN, [...seen].join('\n')); };
+  const flush = () => {
+    // ユーザー指定の優先順位: 採用担当者名(1) → 代表者名(2) → 名前なし(3)、各ティア内はアポ期待度降順
+    outRows.sort((a, b) => {
+      const ta = a._tier || 3, tb = b._tier || 3;
+      if (ta !== tb) return ta - tb;
+      return (parseInt(b['アポ期待度']) || 0) - (parseInt(a['アポ期待度']) || 0);
+    });
+    safeWrite(OUT, toCsv(OUT_COLS, outRows));
+    safeWrite(RAW, toCsv(RAW_COLS, rawRows));
+    safeWrite(SEEN, [...seen].join('\n'));
+  };
 
   const sc = new MynaviScraper({ gradYear: GRAD_YEAR });
   await sc.launch();
@@ -152,7 +180,7 @@ async function run() {
       const cand = found.filter((f) => !seen.has(String(f.id)));
       // 先に社名で既存(マスタ/CRM)を除外＝スクレイプ節約
       const fresh = [], skipped = [];
-      for (const f of cand) { const k = normCompanyName(f.name); if (k && excl.names.has(k)) skipped.push(f); else fresh.push(f); }
+      for (const f of cand) { const k = mkey(f.name); if (k && (excl.names.has(k) || collected.has(k))) skipped.push(f); else fresh.push(f); }
       skippedExisting += skipped.length;
       for (const f of skipped) seen.add(String(f.id)); // 既存は二度と見ない
       log(`🔍 "${kw}": 掲載${found.length} 新規候補${cand.length} → 既存除外${skipped.length} 探索対象${fresh.length} ｜ 資格${outRows.length}/${TARGET}`);
@@ -170,29 +198,36 @@ async function run() {
           掲載媒体: 'マイナビ', 新卒フラグ: '新', 取得日: new Date().toISOString().slice(0, 10),
         };
         // 二重チェック: 実社名の正規化でも既存に当たれば新規でない
-        const k2 = normCompanyName(rec.企業名);
-        if (k2 && excl.names.has(k2)) { if (++processed % 20 === 0) flush(); continue; }
+        rec.企業名 = cleanDisplay(rec.企業名);
+        const k2 = mkey(rec.企業名);
+        if (k2 && (excl.names.has(k2) || collected.has(k2))) { if (++processed % 20 === 0) flush(); continue; }
         if (has(rec.採用担当者名)) { rawRows.push({ ...rec }); stats.netNewNamed++; }
         const ev = evaluate(rec);
         if (ev.qualifies) {
-          rec.採用担当者名 = ev.clean;
-          rec.架電宛名 = (rec.部署 ? rec.部署 + ' ' : '') + ev.clean + ' 様';
+          rec.採用担当者名 = ev.nameOk ? ev.clean : '';
+          rec.代表者名 = ev.repOk ? ev.rep : (rec.代表者名 || '');
+          rec.連絡先区分 = TIER_LABEL[ev.tier];
+          rec.架電宛名 = ev.contact ? ((rec.部署 ? rec.部署 + ' ' : '') + ev.contact + ' 様') : (rec.部署 ? rec.部署 + ' ご採用ご担当者様' : 'ご採用ご担当者様');
           rec.業種 = rec.業種 || '';
           rec.アポ期待度 = ev.m.total; rec.優先度 = ev.m.priority; rec.確信度 = ev.m.confidence;
           rec.MOCHICA適合 = ev.m.total >= 80 ? '◎' : ev.m.total >= 65 ? '○' : '△';
-          rec.フィットティア = 'S:完全適合(検証済/新規発掘)';
-          rec.完全適合根拠 = `完全新規｜担当者名判明(${ev.clean})｜新卒媒体掲載｜従業員${ev.emp}名(100-2000)｜非IT｜電話妥当`;
+          rec._tier = ev.tier; // 並べ替え用
+          rec.フィットティア = 'S:完全適合(新規発掘)';
+          rec.完全適合根拠 = `完全新規｜${TIER_LABEL[ev.tier]}${ev.contact ? '(' + ev.contact + ')' : ''}｜新卒媒体掲載｜従業員${ev.emp}名(100-2000)｜非IT｜電話妥当`;
           const o = {}; for (const c of OUT_COLS) o[c] = rec[c] != null ? rec[c] : '';
+          o._tier = ev.tier;
           outRows.push(o);
-          log(`  ✅ ${rec.企業名} / ${ev.clean} / 従${ev.emp} / ${rec.電話番号} / apo${ev.m.total} → ${outRows.length}/${TARGET}`);
+          if (k2) collected.add(k2);
+          if (ev.tier <= 2) log(`  ✅[${TIER_LABEL[ev.tier]}] ${rec.企業名} / ${ev.contact} / 従${ev.emp} / apo${ev.m.total} → ${outRows.length}/${TARGET}`);
         }
-        if (++processed % 10 === 0) { flush(); log(`  …処理${processed} 探索${scraped} 既存除外${skippedExisting} 新規名(生)${stats.netNewNamed} 資格${outRows.length}`); }
+        if (++processed % 10 === 0) { flush(); log(`  …処理${processed} 探索${scraped} 既存除外${skippedExisting} 新規名(生)${stats.netNewNamed} 資格${outRows.length}（担当者名${outRows.filter(r=>r._tier===1).length}/代表${outRows.filter(r=>r._tier===2).length}/名なし${outRows.filter(r=>r._tier===3).length}）`); }
         await sleep(DELAY);
       }
       flush();
     }
   } finally { flush(); await sc.close().catch(() => {}); }
-  log(`完了: 探索${scraped}社 既存除外${skippedExisting} 新規×担当者名(生)${rawRows.length} 資格クリア${outRows.length}/${TARGET}`);
+  const t1 = outRows.filter((r) => r._tier === 1).length, t2 = outRows.filter((r) => r._tier === 2).length, t3 = outRows.filter((r) => r._tier === 3).length;
+  log(`完了: 探索${scraped}社 既存除外${skippedExisting} 資格クリア${outRows.length}/${TARGET}（採用担当者名${t1}/代表者名${t2}/名前なし${t3}）`);
   log(`出力: ${OUT}`);
 }
 
@@ -200,4 +235,4 @@ const RAW_COLS = ['企業名', 'corpID', '法人番号', '採用担当者名', '
   'メール', '電話番号', '従業員数', '募集職種', '採用予定人数', '卒年', '採用ページURL', '掲載媒体', '新卒フラグ', '取得日'];
 
 if (require.main === module) run().catch((e) => { console.error('FATAL', e && e.stack ? e.stack : e); process.exitCode = 1; });
-module.exports = { buildExclusion, evaluate, EMP_MIN, EMP_MAX };
+module.exports = { buildExclusion, evaluate, EMP_MIN, EMP_MAX, stripAnn, mkey, cleanDisplay };
