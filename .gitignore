@@ -12,3 +12,5 @@ npm-debug.log
 dist/
 /.idea/
 coverage/
+# 精度評価の一時出力（baseline.json/history.jsonl/dashboard.html は追跡する）
+eval/latest.json
