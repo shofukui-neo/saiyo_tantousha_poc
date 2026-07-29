@@ -358,8 +358,8 @@ function testPipelineLogic() {
   // 架電呼称
   ok('callScript: 新卒シグナルで敬称調整', callScript({ buyer_persona: { departments: ['人事部'] }, primary_value_prop: '新卒採用SaaS' }) === '人事部 新卒採用ご担当者様');
 
-  // ICPスコア（従業員スイートスポット）
-  ok('discoveryIcpScore: 150名+HP+代表者 → 満点100', discoveryIcpScore({ employees: 150, websiteUrl: 'x', representativeName: 'y' }) === 100);
+  // ICPスコア（従業員スイートスポット＝実データ再定義で300-500名。2026-07更新）
+  ok('discoveryIcpScore: 400名+HP+代表者 → 満点100', discoveryIcpScore({ employees: 400, websiteUrl: 'x', representativeName: 'y' }) === 100);
   ok('discoveryIcpScore: 従業員不明はニュートラル寄り', discoveryIcpScore({ employees: null, websiteUrl: '', representativeName: '' }) === 20);
 
   // ICP 正規化（手動設定の補完）
@@ -670,6 +670,226 @@ function testMynaviContact() {
   return fail;
 }
 
+// ---- 採用SNS／LinkedIn 検索結果タイトルからの氏名抽出（純ロジック・ネットワーク不要）----
+// 「氏名 - 所属 - 役職 | 媒体」形式の公開タイトルを分解し、会社一致＋役割語＋姓辞書で氏名を確定する。
+function testSocialScraping() {
+  let fail = 0;
+  const ok = (label, cond) => { if (cond) console.log('✓ ' + label); else { console.log('✗ ' + label); fail++; } };
+  const { splitTitleSegments, extractNameFromResult, roleHit } = require('../src/scrape-social');
+  const nameOf = (r, t, o) => { const g = extractNameFromResult(r, t, o); return g ? g.name : ''; };
+
+  // セグメント分割（各種区切り・媒体ブランド語の分離）
+  const segs = splitTitleSegments('山田 太郎 - 株式会社サンプル 採用担当 | LinkedIn');
+  ok('SNS: タイトルを氏名/所属/媒体に分割', segs[0] === '山田 太郎' && segs.includes('LinkedIn'));
+
+  // 役割語の検出（config.ROLE_KEYWORDS 再利用）
+  ok('SNS: 役割語「採用担当」を検出', roleHit('新卒採用担当をしています') !== '');
+  ok('SNS: 役割語が無ければ空', roleHit('プロダクトデザイナー') === '');
+
+  // LinkedIn 形式: 氏名＋会社一致＋役割 → 抽出
+  const li = { title: '山田 太郎 - 株式会社サンプル 採用担当 | LinkedIn', snippet: '株式会社サンプルの採用担当です', url: 'https://jp.linkedin.com/in/taro-yamada', domain: 'linkedin.com' };
+  ok('LinkedIn: 会社一致＋役割で「山田太郎」を抽出', nameOf(li, '株式会社サンプル') === '山田太郎');
+
+  // 会社が一致しない結果は氏名を出さない（誤帰属の排除）
+  ok('LinkedIn: 別会社のプロフィールは抽出しない', nameOf(li, '株式会社まったく別') === '');
+
+  // 役割語が無く requireRole の既定（true）では出さない／false なら出す
+  const noRole = { title: '佐藤 花子 - 株式会社サンプル | Wantedly', snippet: '株式会社サンプルのメンバー', url: 'https://www.wantedly.com/id/x', domain: 'wantedly.com' };
+  ok('SNS: 役割語なし＋requireRole(既定)で抽出しない', nameOf(noRole, '株式会社サンプル') === '');
+  ok('SNS: 役割語なしでも requireRole:false なら抽出（広報投稿想定）', nameOf(noRole, '株式会社サンプル', { requireRole: false }) === '佐藤花子');
+
+  // 媒体ブランド語そのものは氏名にしない／姓辞書で検証できないトークンも出さない
+  const brandOnly = { title: 'LinkedIn', snippet: '', url: 'https://linkedin.com', domain: 'linkedin.com' };
+  ok('SNS: ブランド語のみのタイトルは抽出しない', nameOf(brandOnly, '株式会社サンプル', { requireRole: false }) === '');
+  const noName = { title: '採用情報 - 株式会社サンプル 採用担当 | LinkedIn', snippet: '採用担当', url: 'https://linkedin.com/x', domain: 'linkedin.com' };
+  ok('SNS: 氏名トークンが無い（役割語のみ）タイトルは抽出しない', nameOf(noName, '株式会社サンプル') === '');
+  return fail;
+}
+
+// ---- 半自動リサーチ補助（ワークシート生成／結果取込）の純ロジック検証 ----
+// 自動アクセスはせず、人が集めた結果を姓辞書＋会社一致で検証して名寄せする経路を固定する。
+function testResearchAssist() {
+  let fail = 0;
+  const ok = (label, cond) => { if (cond) console.log('✓ ' + label); else { console.log('✗ ' + label); fail++; } };
+  const { buildRow, CHANNELS } = require('../src/research-queue');
+  const { fromWorksheet, fromLines, dedup } = require('../src/ingest-research');
+
+  // ワークシート: 各媒体の人手検索URLを社名入りで生成
+  const row = buildRow('株式会社サンプル', '1234567890123');
+  ok('queue: LinkedIn/X/Facebook の検索URLを生成', /linkedin\.com\/search/.test(row['LinkedIn']) &&
+    /x\.com\/search/.test(row['X(Twitter)']) && /facebook\.com\/search/.test(row['Facebook']));
+  ok('queue: 社名がURLエンコードで埋まる', decodeURIComponent(row['LinkedIn']).includes('株式会社サンプル'));
+
+  // ワークシート取込: 姓辞書で検証（役割語だけの記入は弾く）
+  const ws = fromWorksheet([
+    { '企業名': '株式会社サンプル', '採用担当者名': '山田太郎', '役職': '人事部長', '根拠URL': 'u1', '見つかった媒体': 'LinkedIn' },
+    { '企業名': '株式会社別', '採用担当者名': '採用担当' }, // 役割語のみ→却下
+    { '企業名': '株式会社空', '採用担当者名': '' },         // 空→却下
+  ]);
+  ok('ingest(worksheet): 有効1件のみ採用（役割語/空を却下）', ws.length === 1 && ws[0]['採用担当者名'] === '山田太郎');
+  ok('ingest(worksheet): 役職・根拠URL・媒体を保持', ws[0]['役職'] === '人事部長' && ws[0]['根拠URL'] === 'u1' && ws[0]['取得元媒体'] === 'LinkedIn');
+
+  // 行テキスト取込: タイトル文を会社一致＋姓辞書ゲートに通す
+  const fl = fromLines([
+    '株式会社サンプル\t山田 太郎 - 株式会社サンプル 採用担当 | LinkedIn https://linkedin.com/in/x',
+    '株式会社サンプル\t採用情報 - 株式会社サンプル 採用担当',   // 氏名なし→却下
+    '株式会社別\t佐藤 花子 - 全然ちがう会社',                  // 会社不一致→却下
+  ].join('\n'));
+  ok('ingest(lines): 会社一致＋氏名ありの1件のみ採用', fl.length === 1 && fl[0]['採用担当者名'] === '山田太郎');
+  ok('ingest(lines): URLを根拠として保持', fl[0]['根拠URL'] === 'https://linkedin.com/in/x');
+
+  // 重複排除（同一社×氏名は確度の高い方を残す）
+  const dd = dedup([
+    { '企業名': '株式会社サンプル', '採用担当者名': '山田太郎', '担当者確度': 0.5 },
+    { '企業名': '株式会社サンプル', '採用担当者名': '山田太郎', '担当者確度': 0.65 },
+  ]);
+  ok('ingest: 同一社×氏名は確度の高い方に集約', dd.length === 1 && Number(dd[0]['担当者確度']) === 0.65);
+  return fail;
+}
+
+// ---- Google Workspace（社内資産）抽出の純ロジック検証（ネットワーク・認証不要部分）----
+function testGoogleContacts() {
+  let fail = 0;
+  const ok = (label, cond) => { if (cond) console.log('✓ ' + label); else { console.log('✗ ' + label); fail++; } };
+  const { parseFrom, contactFromMessage, collectPlainText } = require('../src/google-contacts');
+  const { configured } = require('../src/google-auth');
+
+  ok('parseFrom: 「氏名 <addr>」を分解', (() => { const p = parseFrom('山田太郎 <Taro@x.co.jp>'); return p.display === '山田太郎' && p.email === 'taro@x.co.jp'; })());
+  ok('parseFrom: アドレスのみ', parseFrom('info@x.co.jp').email === 'info@x.co.jp');
+
+  // Gmailのmultipart payloadから text/plain を集約
+  const payload = { mimeType: 'multipart/alternative', parts: [
+    { mimeType: 'text/plain', body: { data: Buffer.from('本文テキスト', 'utf8').toString('base64') } },
+    { mimeType: 'text/html', body: { data: Buffer.from('<p>無視</p>', 'utf8').toString('base64') } },
+  ] };
+  ok('collectPlainText: text/plainのみ集約', collectPlainText(payload).join('') === '本文テキスト');
+
+  // From表示名が日本語フルネーム → 抽出（会社はドメイン手がかりで担保）
+  const c1 = contactFromMessage([{ name: 'From', value: '田中花子 <hanako@sample.co.jp>' }], '株式会社サンプルの採用担当です', '株式会社サンプル');
+  ok('contact: From表示名「田中花子」を抽出', c1 && c1.name === '田中花子' && c1.where === 'from-display');
+  // 表示名なし → メールのローカル部から姓推定（romaji-name）
+  const c2 = contactFromMessage([{ name: 'From', value: 'ksato@sample.co.jp' }], '株式会社サンプル', '株式会社サンプル');
+  ok('contact: 表示名なしはローカル部から姓推定（ksato→佐藤）', c2 && c2.name === '佐藤' && c2.where === 'email-localpart');
+  // ロール系アドレスは姓にしない
+  const c3 = contactFromMessage([{ name: 'From', value: 'recruit@sample.co.jp' }], 'テキスト', '株式会社サンプル');
+  ok('contact: recruit@ 等ロール系は氏名にしない', !c3 || !c3.name);
+
+  ok('google-auth: 未設定なら configured()=false（安全スキップ）', typeof configured() === 'boolean');
+  return fail;
+}
+
+// ---- プレスリリース「お問い合わせ先」担当者抽出（精度優先・断片排除）検証 ----
+// 実測歩留まりは低い（PR TIMESは問合せボタン化）が、取れた時の精度＝断片/役割語/組織語を出さないことを固定。
+function testPressContact() {
+  let fail = 0;
+  const ok = (label, cond) => { if (cond) console.log('✓ ' + label); else { console.log('✗ ' + label); fail++; } };
+  const { extractPressContact } = require('../src/press-contact');
+  const nameOf = (t) => { const r = extractPressContact(t); return r ? r.name : ''; };
+
+  ok('press: 「人事部 採用担当：山田太郎」→山田太郎＋メール', (() => {
+    const r = extractPressContact('本件に関するお問い合わせ先 株式会社サンプル 人事部 採用担当：山田太郎 TEL: 03-1234-5678 E-mail: saiyo@sample.co.jp');
+    return r && r.name === '山田太郎' && r.email === 'saiyo@sample.co.jp' && /人事|採用/.test(r.role + r.dept);
+  })());
+  ok('press: 「広報部 担当 佐藤花子」→佐藤花子', nameOf('【お問い合わせ先】 広報部 担当 佐藤花子 Tel 06-1111-2222') === '佐藤花子');
+  ok('press: 「コーポレート本部 田中一郎」(ラベルなし部署+氏名)→田中一郎', nameOf('報道関係者からのお問い合わせ ○○株式会社 コーポレート本部 田中一郎 mail@x.co.jp') === '田中一郎');
+  // 精度: 役割語のみ・氏名なし・断片連結は出さない
+  ok('press: 役割語のみ「採用担当 まで」は氏名にしない', nameOf('お問い合わせ先 採用担当 までご連絡ください') === '');
+  ok('press: 氏名なし「経営企画室 新規事業」は出さない', nameOf('本リリースに関するお問い合わせ 経営企画室 新規事業 03-0000-0000') === '');
+  ok('press: 断片連結「小沢 お問」「関連リンク」を氏名にしない', nameOf('お問い合わせ先 広報 お問い合わせはこちら 関連リンク 詳細') === '');
+  ok('press: マーカーが無ければ抽出しない', nameOf('本日新サービスを発表しました。詳細はサイトをご覧ください。') === '');
+  return fail;
+}
+
+// ---- テック源（GitHub技術者／connpassイベント）氏名抽出の純ロジック検証 ----
+// IT/Web企業に限り公開APIで実名が構造的に取れる。ハンドルでなく実名のみ採用、社名一致で誤帰属排除。
+function testTechSources() {
+  let fail = 0;
+  const ok = (label, cond) => { if (cond) console.log('✓ ' + label); else { console.log('✗ ' + label); fail++; } };
+  const { looksLikeRealName, orgCandidatesFromUrl } = require('../src/scrape-github');
+  const { presentersFromDescription, configured } = require('../src/scrape-connpass');
+
+  // 実名らしさ: 英字フルネーム/漢字フルネームは採用、ハンドルは却下
+  ok('github: 「Taro Yamada」は実名', looksLikeRealName('Taro Yamada'));
+  ok('github: 「柏木大輔」は実名', looksLikeRealName('柏木大輔'));
+  ok('github: ハンドル「xy_01」「dqneo」は却下', !looksLikeRealName('xy_01') && !looksLikeRealName('dqneo'));
+  ok('github: 単一英単語「mercari」は却下', !looksLikeRealName('mercari'));
+
+  // connpass description から登壇者/主催の氏名を姓辞書ゲートで抽出
+  const pres = presentersFromDescription('<p>登壇者：山田太郎（人事）、スピーカー 佐藤花子 司会 田中</p>');
+  ok('connpass: 「登壇者：山田太郎」「スピーカー 佐藤花子」を抽出', pres.includes('山田太郎') && pres.includes('佐藤花子'));
+  ok('connpass: 単独姓「田中」(役割直後でない)は拾わない', !pres.includes('田中'));
+  ok('connpass: キー未設定なら configured()=false（安全スキップ）', configured() === false);
+
+  // ドメイン→orgログイン候補（eTLD+1でSLDを畳む・汎用ベンダードメインは空）
+  ok('github: cybozu.co.jp→候補cybozu', orgCandidatesFromUrl('https://cybozu.co.jp/').includes('cybozu'));
+  ok('github: corp.freee.co.jp→候補freee（サブドメイン畳み）', orgCandidatesFromUrl('https://corp.freee.co.jp/').includes('freee'));
+  ok('github: 汎用ベンダー dell.com は候補ゼロ（誤帰属遮断）', orgCandidatesFromUrl('https://www.dell.com/ja-jp').length === 0);
+  ok('github: ikea.com も候補ゼロ', orgCandidatesFromUrl('https://www.ikea.com/jp/ja/').length === 0);
+  return fail;
+}
+
+// ---- MOCHICA採点：採用ファネル次元（エントリー数×採用人数×歩留まり）検証 ----
+// MOCHICAが最も刺さるICPの核。エントリー100+/採用10+/歩留まり50%以下が揃うほど押し上げ、
+// 歩留まりは“低いほど痛み＝加点”の向きであることを固定。データ欠損は中立に留め全件を持ち上げない。
+function testMochicaFunnel() {
+  let fail = 0;
+  const ok = (label, cond) => { if (cond) console.log('✓ ' + label); else { console.log('✗ ' + label); fail++; } };
+  const { scoreFunnel, scoreMochica, parsePercent, getWeights, FUNNEL_TH } = require('../src/mochica-fit');
+  const now = new Date('2026-09-15T00:00:00+09:00'); // 9月＝28卒計画ピーク（両レコードで相殺）
+
+  // 目安の既定値（実データ再定義: エントリー100 / 採用6 / 歩留まり50。2026-07更新: 採用は6名+で成約率急伸）
+  ok('FUNNEL_TH: 既定 エントリー100/採用6/歩留50', FUNNEL_TH.entry === 100 && FUNNEL_TH.hire === 6 && FUNNEL_TH.yieldMax === 50);
+
+  // parsePercent: ％表記/比率/裸数字/範囲外
+  ok('parsePercent: "45%"→45', parsePercent('45%') === 45);
+  ok('parsePercent: 比率"0.45"→45', parsePercent('0.45') === 45);
+  ok('parsePercent: 裸"50"→50', parsePercent('50') === 50);
+  ok('parsePercent: 範囲外"120"→null', parsePercent('120') === null);
+  ok('parsePercent: 空→null', parsePercent('') === null);
+
+  // 理想プロファイル（3条件ヒット）は高得点＋combo、確信度も高い
+  const ideal = scoreFunnel({ 'エントリー数': '150', '採用人数': '12', '歩留まり': '40%' });
+  ok('scoreFunnel: 理想(E150/採12/歩40%)は高得点・3ヒット', ideal.score >= 95 && ideal.hitCount === 3);
+  ok('scoreFunnel: 理想は確信度が高い(実数値裏取り)', ideal.confidence >= 85);
+
+  // データ欠損は中立(45)＋低確信度（全件を持ち上げない）
+  const none = scoreFunnel({});
+  ok('scoreFunnel: 指標なしは中立45・0ヒット', none.score === 45 && none.hitCount === 0);
+  ok('scoreFunnel: 指標なしは低確信度', none.confidence <= 30);
+  ok('scoreFunnel: 理想 > 指標なし', ideal.score > none.score);
+
+  // 歩留まりは“低いほど加点”の向き（MOCHICAの改善余地＝痛み）
+  const yLow = scoreFunnel({ '歩留まり': '30%' });
+  const yHigh = scoreFunnel({ '歩留まり': '90%' });
+  ok('scoreFunnel: 歩留まり低(30%) > 高(90%)（痛み＝加点）', yLow.score > yHigh.score);
+
+  // 採用予定人数を採用人数の代理に使える
+  const proxy = scoreFunnel({ '採用予定人数': '10' });
+  ok('scoreFunnel: 採用予定人数10を採用枠として加点', proxy.hire === 10 && proxy.hireHit === true && proxy.score >= 90);
+
+  // 大型採用ヒット：エントリー100+ × 採用10+
+  const big = scoreFunnel({ 'エントリー数': '100', '採用人数': '10' });
+  ok('scoreFunnel: E100×採用10 でヒット2件', big.entryHit && big.hireHit && big.hitCount >= 2);
+
+  // scoreMochica: 同一レコードでファネル指標ありは無しより総合が上がる
+  const baseRec = { '従業員数': '100', '電話番号': '03-1234-5678', '採用担当者名': '山田太郎', '新卒フラグ': '○' };
+  const withF = Object.assign({}, baseRec, { 'エントリー数': '150', '採用人数': '12', '歩留まり': '40%' });
+  const sBase = scoreMochica(baseRec, { now });
+  const sWith = scoreMochica(withF, { now });
+  ok('scoreMochica: ファネル指標ありは総合が上がる', sWith.total > sBase.total);
+  ok('scoreMochica: dims.funnel を返す', typeof sWith.dims.funnel === 'number' && sWith.dims.funnel >= 95);
+  ok('scoreMochica: funnelFit/bigFunnel フラグが立つ', sWith.flags.funnelFit === true && sWith.flags.bigFunnel === true);
+  ok('scoreMochica: 指標なしは funnelFit=false', sBase.flags.funnelFit === false && sBase.flags.bigFunnel === false);
+  ok('scoreMochica: なぜ今…にファネル根拠が載る', /エントリー|採用|歩留|★/.test(sWith.why));
+
+  // 重みに funnel が含まれ、正規化後の合計は1
+  const w = getWeights();
+  const wsum = w.intent + w.funnel + w.size + w.reach + w.timing + w.trust;
+  ok('getWeights: funnel を含み合計1に正規化', w.funnel > 0 && Math.abs(wsum - 1) < 1e-9);
+
+  return fail;
+}
+
 async function run() {
   const cases = [
     { name: 'サンプル株式会社', file: 'fixture.html', expect: 'HIT' },
@@ -737,6 +957,18 @@ async function run() {
   failures += testMediaScrapers();
   console.log('\n--- マイナビ『問合せ先』構造分解（担当者名の精度／再現率）検証 ---');
   failures += testMynaviContact();
+  console.log('\n--- 採用SNS／LinkedIn 検索結果からの氏名抽出（会社一致／役割語／姓辞書）検証 ---');
+  failures += testSocialScraping();
+  console.log('\n--- 半自動リサーチ補助（ワークシート生成／結果取込）検証 ---');
+  failures += testResearchAssist();
+  console.log('\n--- Google Workspace 社内資産抽出（From/署名/メール姓推定）検証 ---');
+  failures += testGoogleContacts();
+  console.log('\n--- プレスリリース「お問い合わせ先」担当者抽出（精度優先）検証 ---');
+  failures += testPressContact();
+  console.log('\n--- テック源（GitHub技術者／connpassイベント）氏名抽出 検証 ---');
+  failures += testTechSources();
+  console.log('\n--- MOCHICA採点：採用ファネル(エントリー数×採用人数×歩留まり)次元 検証 ---');
+  failures += testMochicaFunnel();
 
   if (failures > 0) { console.error(`\nSELFTEST FAILED: ${failures} case(s)`); process.exit(1); }
   console.log('\nSELFTEST PASSED ✓  (抽出→検証→集計 ＋ スプレッドシートI/O ロジックが正常動作)');

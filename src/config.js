@@ -134,10 +134,19 @@ module.exports = {
   PRODUCT_EXISTING: process.env.PRODUCT_EXISTING || '',
   ICP_INDUSTRIES: (process.env.ICP_INDUSTRIES || '').split(',').map(s => s.trim()).filter(Boolean),
   ICP_PREFECTURES: (process.env.ICP_PREFECTURES || '').split(',').map(s => s.trim()).filter(Boolean),
-  ICP_EMP_MIN: int(process.env.ICP_EMP_MIN, 50),
-  ICP_EMP_MAX: int(process.env.ICP_EMP_MAX, 300),
-  ICP_EMP_SWEET_MIN: int(process.env.ICP_EMP_SWEET_MIN, 100),
-  ICP_EMP_SWEET_MAX: int(process.env.ICP_EMP_SWEET_MAX, 250),
+  // 従業員レンジは既存顧客の“実コンバージョン率”で再定義（2026-07 分析）。
+  //   有効レンジ100〜2000名 / スイート300〜500名（成約率24%＝全体17%の1.4x）。
+  //   旧仮説の50〜150名は実データで成約率<14%と判明したため上方修正。
+  ICP_EMP_MIN: int(process.env.ICP_EMP_MIN, 100),
+  ICP_EMP_MAX: int(process.env.ICP_EMP_MAX, 2000),
+  ICP_EMP_SWEET_MIN: int(process.env.ICP_EMP_SWEET_MIN, 300),
+  ICP_EMP_SWEET_MAX: int(process.env.ICP_EMP_SWEET_MAX, 500),
+  // 採用フロア（ユーザー指定 & 実測）: 年間新卒6名以上。1-2名=3.6%/3-5名=13%/6名+=26%へ急伸。
+  ICP_HIRE_MIN: int(process.env.ICP_HIRE_MIN, 6),
+  // 絶対除外（仮説H4）: IT・ソフトウェアは経路・規模を問わず成約率6%前後＝構造的不適合。既定ON。
+  ICP_EXCLUDE_IT: !/^(0|false|no)$/i.test(process.env.ICP_EXCLUDE_IT || 'true'),
+  // ↑ ICPハードルールの実装は src/icp-rules.js（isExcludedIndustry/passesIcpFloor/proposalTier）に集約。
+  //   リスト作成の最大レバー「経路の温度（第4軸）」は src/channel-temp.js（架電30.1% vs コールド一括7.2%＝4.2x）。
   ICP_DEPARTMENT: process.env.ICP_DEPARTMENT || '人事部', // 架電呼称の既定部署
 
   // --- 発掘（企業選定）---

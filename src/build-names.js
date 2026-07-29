@@ -10,7 +10,7 @@
 const fs = require('fs');
 const path = require('path');
 const { readCsv, toCsv, mergeKey } = require('./csv');
-const { findRecruiterName } = require('./scrape-names');
+const { findRecruiterAllChannels } = require('./scrape-names');
 const { closeBrowser } = require('./fetch');
 
 // 接続再利用を抑え、特定サーバでの undici 致命アサーションを減らす（build-media と同じ堅牢化）。
@@ -37,6 +37,10 @@ const OUT = getArg('out', path.join('sources', 'A-names.csv'));
 const LIMIT = parseInt(getArg('limit', '0'), 10) || 0;          // 0=全件
 const CONC = parseInt(getArg('concurrency', '2'), 10) || 2;     // 媒体は polite が直列化。低めが安全
 const INCLUDE_EXPERIMENTAL = process.argv.includes('--include-experimental');
+// 探索チャネル: media（媒体DOM）/ sns（採用SNS）/ linkedin（LinkedIn検索結果）。既定=全部。
+//   例: --channels sns,linkedin  （SNS/LinkedInのみ）/ --channels media（従来の媒体DOMのみ）
+const CHANNELS = String(getArg('channels', 'media,sns,linkedin'))
+  .split(',').map((s) => s.trim().toLowerCase()).filter((s) => ['media', 'sns', 'linkedin'].includes(s));
 
 function log(m) { console.log(`[${new Date().toISOString()}] ${m}`); }
 
@@ -51,10 +55,10 @@ async function run() {
   const text = fs.readFileSync(path.resolve(IN), 'utf8');
   let { records } = readCsv(text);
   if (LIMIT) records = records.slice(0, LIMIT);
-  log(`個人名取得: ${records.length}社（experimental=${INCLUDE_EXPERIMENTAL}, 並列${CONC}）`);
+  log(`個人名取得: ${records.length}社（channels=${CHANNELS.join('+')}, experimental=${INCLUDE_EXPERIMENTAL}, 並列${CONC}）`);
 
   const headers = ['企業名', '法人番号', '採用担当者名', '役職', '部署',
-    '取得元媒体', '根拠URL', '担当者確度', '探索結果', '取得日'];
+    '取得元媒体', 'チャネル', '根拠URL', '担当者確度', '探索結果', '取得日'];
   const out = [];
   const OUTABS = path.resolve(OUT);
   fs.mkdirSync(path.dirname(OUTABS), { recursive: true });
@@ -80,15 +84,15 @@ async function run() {
     const row = {
       '企業名': name, '法人番号': rec['法人番号'] || '',
       '採用担当者名': '', '役職': '', '部署': '',
-      '取得元媒体': '', '根拠URL': '', '担当者確度': '', '探索結果': '',
+      '取得元媒体': '', 'チャネル': '', '根拠URL': '', '担当者確度': '', '探索結果': '',
       '取得日': new Date().toISOString().slice(0, 10),
     };
     await withTimeout((async () => {
       try {
-        const r = await findRecruiterName(name, { includeExperimental: INCLUDE_EXPERIMENTAL });
+        const r = await findRecruiterAllChannels(name, { includeExperimental: INCLUDE_EXPERIMENTAL, channels: CHANNELS });
         Object.assign(row, {
           '採用担当者名': r.採用担当者名, '役職': r.役職, '部署': r.部署,
-          '取得元媒体': r.取得元媒体, '根拠URL': r.根拠URL,
+          '取得元媒体': r.取得元媒体, 'チャネル': r.チャネル || '', '根拠URL': r.根拠URL,
           '担当者確度': r.採用担当者名 ? r.確度 : '',
           '探索結果': Object.entries(r.詳細 || {}).map(([k, v]) => `${k}:${v}`).join(' / '),
         });

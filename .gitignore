@@ -1,16 +1,45 @@
+# =============================================================================
+#  セキュリティ方針: 「データは既定で機密」— コード/設定/フィクスチャのみ追跡。
+#  企業リスト・個人情報(氏名/電話/メール/代表者名/法人番号 等)は一切コミットしない。
+#  取り扱い規約は SECURITY.md を参照。
+#  ※ data/ は末尾スラッシュ(data/)ではなく data/** を使う。
+#    前者だとディレクトリ自体が除外され `!` による再包含(allowlist)が効かないため。
+# =============================================================================
+
+# ---- Secrets / 認証情報 ----
+# `.env.*` だと「.env copy」(ドットではなく空白)を取りこぼすため `.env*` で受ける。
+.env*
+!.env.example
+service-account*.json
+*.pem
+*.key
+*.p12
+*.pfx
+
+# ---- 全データは既定で機密。非PIIの設定/辞書/フィクスチャのみ allowlist で再包含 ----
+data/**
+!data/media-catalog.json
+sources/**
+!sources/manifest.json
+!sources/SF-leads.sample.csv
+archive/**
+eval/**
+
+# ---- 暗号化ボールト/復号平文はローカル限定(既定でコミットしない) ----
+secure/**
+!secure/README.md
+
+# ---- ルート直下の生成物(リード/ログ/スクラッチ) ----
+/*.csv
+/*.log
+scratch-sme.json
+*.enc.json
+
+# ---- 依存/ツール/OS ----
 node_modules/
-.env
-.env copy
-.env.local
-.env.*.local
-results.csv
-service-account.json
-service-account-*.json
+dist/
+coverage/
 .vscode/
+/.idea/
 .DS_Store
 npm-debug.log
-dist/
-/.idea/
-coverage/
-# 精度評価の一時出力（baseline.json/history.jsonl/dashboard.html は追跡する）
-eval/latest.json

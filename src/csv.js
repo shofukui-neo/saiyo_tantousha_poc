@@ -71,11 +71,31 @@ const CORP_FORMS = [
   '公益社団法人', '公益財団法人', '社会福祉法人', '医療法人社団', '医療法人財団', '医療法人',
   '学校法人', '宗教法人', '特定非営利活動法人', 'ＮＰＯ法人', 'NPO法人', '独立行政法人', '国立大学法人',
 ];
+// 社名末尾/内部の注釈（別称・読み・支店ラベル）を囲む括弧類。
+// 例: 「高知県農業協同組合(JA高知県)」「○○銀行【本店営業部】」「田中商店（たなか）」
+//     → 括弧内は同一法人を指す別称/読み/内部ラベルであり、法人の同定には使わない。
+// 最内周から反復除去（入れ子・複数対応）。除去して空になる場合は原文を維持（degenerate回避）。
+function stripAnnotations(input) {
+  let s = input;
+  let prev;
+  do {
+    prev = s;
+    s = s
+      .replace(/【[^【】]*】/g, '')
+      .replace(/〔[^〔〕]*〕/g, '')
+      .replace(/《[^《》]*》/g, '')
+      .replace(/\([^()]*\)/g, '')
+      .replace(/\[[^\[\]]*\]/g, '');
+  } while (s !== prev);
+  return s;
+}
 function normCompanyName(name) {
   let s = toHalfWidth(name).trim();
-  // 囲み文字の法人格マーク（㈱㈲㈳㈿）と括弧付き表記（（株）(株)（有）等）
+  // 囲み文字の法人格マーク（㈱㈲㈳㈿）を除去
   s = s.replace(/[㈱㈲㈳㈿]/g, '');
-  s = s.replace(/[（(]\s*(株|有|合|社|財)\s*[)）]/g, '');
+  // 括弧類の注釈（別称/読み/支店ラベル。(株)(有)等の法人格表記もここで一括除去）
+  const stripped = stripAnnotations(s);
+  if (stripped.replace(/[\s・,，.．\-‐－―_/／&＆]/g, '').trim()) s = stripped; // 空にならない時のみ採用
   for (const f of CORP_FORMS) s = s.split(f).join('');
   s = s.replace(/[\s・,，.．\-‐－―_/／&＆]/g, '');
   return s.toLowerCase();
@@ -97,5 +117,5 @@ function truthy(v) {
 
 module.exports = {
   parseCsv, rowsToRecords, readCsv, csvEscape, toCsv,
-  toHalfWidth, normCorpNumber, normCompanyName, mergeKey, truthy, CORP_FORMS,
+  toHalfWidth, normCorpNumber, normCompanyName, stripAnnotations, mergeKey, truthy, CORP_FORMS,
 };

@@ -13,7 +13,11 @@ const { fetchPage, fetchStatic, fetchText } = require('./fetch');
 const { USER_AGENT } = require('./config');
 
 const CACHE_DIR = path.resolve(__dirname, '..', 'data', 'scrape-cache');
-const DELAY_MS = parseInt(process.env.SCRAPE_DELAY_MS || '4000', 10);      // ホスト別の最小取得間隔
+// ホスト別の最小取得間隔。実行時に setScrapeDelay() で変更可（大量処理時のスループット調整用）。
+// ※ per-host（同一サイト内）の間隔なので、企業をまたいだ並列処理では各サイトへの負荷は増えない。
+let DELAY_MS = parseInt(process.env.SCRAPE_DELAY_MS || '4000', 10);
+function setScrapeDelay(ms) { const n = parseInt(ms, 10); if (Number.isFinite(n) && n >= 0) DELAY_MS = n; return DELAY_MS; }
+function getScrapeDelay() { return DELAY_MS; }
 const CACHE_TTL_MS = parseInt(process.env.SCRAPE_CACHE_TTL_MS || String(7 * 24 * 3600 * 1000), 10);
 const MAX_RETRY = parseInt(process.env.SCRAPE_MAX_RETRY || '2', 10);
 const RESPECT_ROBOTS = process.env.SCRAPE_IGNORE_ROBOTS !== '1';           // 既定で robots を尊重
@@ -104,4 +108,4 @@ async function politeGet(url, opts = {}) {
   return null;
 }
 
-module.exports = { politeGet, allowedByRobots, DELAY_MS };
+module.exports = { politeGet, allowedByRobots, DELAY_MS, setScrapeDelay, getScrapeDelay };
