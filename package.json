@@ -24,6 +24,7 @@
     "deliver": "node src/deliver.js",
     "icp:perfect": "node src/build-icp-perfect-1000.js",
     "icp:fresh": "node --max-old-space-size=3072 src/build-icp-fresh-1000.js",
+    "icp:fresh:rep": "node src/enrich-fresh-rep.js",
     "dashboard": "node src/dashboard.js",
     "bales:format": "node src/format-bales.js",
     "bales:format:all": "node src/format-bales.js --scope all",

@@ -92,8 +92,11 @@ function buildExclusion() {
 // 発掘した1社の資格判定
 // ICP完全適合（担当者名は必須でない＝優先度）: 新卒媒体掲載 + 規模100-2000 + 非IT + 電話妥当
 // 連絡先ティア: 1=採用担当者名アリ / 2=代表者名 / 3=名前なし（ユーザー指定の優先順位）
+// マイナビの面見出し/業務語がcleanCrossRefNameをすり抜けて氏名化する既知ノイズ（実測: 人材/業界研究/専門/人材開発 等）
+const BAD_NAME = new Set(['人材', '人事', '採用', '総務', '業界研究', '会社研究', '企業研究', '専門', '人材開発', '説明会', '募集', '担当', '部門', '管理', '事務', '窓口', '総合職', '技術職', '営業職', '会社説明', '仕事']);
 function evaluate(rec) {
-  const clean = cleanCrossRefName(rec['採用担当者名']);
+  let clean = cleanCrossRefName(rec['採用担当者名']);
+  if (clean && BAD_NAME.has(String(clean).replace(/\s/g, ''))) clean = null; // 業務語は氏名として不採用
   const nameOk = clean && String(clean).replace(/\s/g, '').length >= 2;
   const rep = cleanCrossRefName(rec['代表者名']);
   const repOk = rep && String(rep).replace(/\s/g, '').length >= 2;
