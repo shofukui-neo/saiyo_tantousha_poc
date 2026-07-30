@@ -11,18 +11,25 @@
  * - 住所は都道府県/市区郡/町名・番地に分解、従業員数はBALES規模ブラケットへ丸め
  * - 採用担当者名は姓・名に分割（スペース区切り、無ければ全体を姓へ）
  *
+ * ★最終ゲート（2026-07-30）: 入力の「既存被り」列は信用せず、MOCHICA顧客/BALES既存CRM/
+ *   SF全リード と**必ず突合し直す**（exclusion-index.js）。加えて納品済み台帳・自己重複・
+ *   突合キー無し行も落とし、除外明細を <out>.excluded.csv に出す。
+ *
  * 使い方:
  *   node src/format-bales.js
- *   node src/format-bales.js --scope all           # 全30,290社（被り含む）
+ *   node src/format-bales.js --scope all           # 全30,290社（被り含む・再検証OFF）
  *   node src/format-bales.js --scope named         # 既存被りなし かつ 担当者名あり
  *   node src/format-bales.js --scope callable      # 既存被りなし かつ 担当者名あり かつ 電話番号あり（★架電可能）
  *   node src/format-bales.js --out data/xxx.csv
+ *   node src/format-bales.js --no-verify-masters   # 再検証OFF（従来動作・非推奨）
+ *   node src/format-bales.js --no-fuzzy            # 長音ゆれ突合(tier5)を無効化
  */
 const fs = require('fs');
 const path = require('path');
 const { readCsv, toCsv, parseCsv } = require('./csv');
 const { loadLedger, isDelivered, appendRecords, DEFAULT_LEDGER } = require('./delivered-ledger');
-const { createMatchIndex } = require('./company-match');
+const { createMatchIndex, hasKey } = require('./company-match');
+const { buildExclusionIndex } = require('./exclusion-index');
 
 const ROOT = path.resolve(__dirname, '..');
 const args = process.argv.slice(2);
@@ -41,6 +48,14 @@ const LEDGER = path.resolve(getArg('--ledger', DEFAULT_LEDGER));
 const DEDUPE_HISTORY = !args.includes('--no-dedupe-history'); // 既定ON：台帳に載る過去作成企業を除外
 const RECORD = !args.includes('--no-record');                 // 既定ON：今回の出力企業を台帳へ追記
 const BATCH = getArg('--batch', '');                          // 台帳に残すバッチ名（既定は出力ファイル名）
+// ── 既存被りの再検証（2026-07-30）───────────────────────────────────
+// 以前は入力の「既存被り」列を信用していたため、その列を持たない入力
+// （マイナビ由来の完全新規パイプライン等）は**無検証**で通り、実測で納品リストの
+// 80〜85%が既存顧客/既存CRM/SFリードだった。ここが全成果物の最終ゲートなので、
+// 列を信用せず必ずマスタと突合し直す。--no-verify-masters で従来動作。
+const VERIFY_MASTERS = !args.includes('--no-verify-masters') && SCOPE !== 'all';
+const FUZZY = !args.includes('--no-fuzzy');                   // 長音ゆれ(tier5)突合
+const EXCL_OUT = path.resolve(getArg('--out-excluded', OUT.replace(/\.csv$/i, '') + '.excluded.csv'));
 
 // 氏名として使えない語（丸ごと一致で行を落とす）
 const NON_NAME_WHOLE_RE = /^(窓口|ご担当|担当者|採用担当|人事担当|総務担当|人事|総務|受付|不明|なし|未定|未記入|御中|担当)$/;
@@ -141,18 +156,47 @@ function want(row) {
 }
 
 // 台帳（過去作成企業）をロード。DEDUPE_HISTORY=OFF なら空インデックス扱い。
-const ledgerIdx = DEDUPE_HISTORY ? loadLedger(LEDGER) : createMatchIndex();
+const ledgerIdx = DEDUPE_HISTORY ? loadLedger(LEDGER) : createMatchIndex({ fuzzy: FUZZY });
+// 既存被りマスタ（MOCHICA顧客/BALES既存CRM/SF全リード）。台帳は上の ledgerIdx で別集計。
+const exclIdx = VERIFY_MASTERS ? buildExclusionIndex({ masters: true, ledger: false, fuzzy: FUZZY }).idx : null;
+// 出力内の自己重複（同一企業が複数行）を防ぐ生きた索引
+const outIdx = createMatchIndex({ fuzzy: FUZZY });
 
 const out = [];
 const emitted = []; // 台帳追記用の元レコード（企業名/法人番号を保持）
+const dropped = []; // 除外明細（何がなぜ落ちたかを必ず可視化＝silent drop を作らない）
 let seq = 0;
-let histDupe = 0;
+let histDupe = 0, masterDupe = 0, selfDupe = 0, noKey = 0;
+const byLabel = new Map(), byTier = new Map();
 for (const row of src) {
   if (!want(row)) continue;
-  if (DEDUPE_HISTORY && isDelivered(ledgerIdx, row)) { histDupe += 1; continue; } // 過去作成済み＝再出力しない
+  const cname = g(row, '企業名');
+  // 突合キーが無い行（社名も法人番号も無い）は「新規」と判定できない＝出さない
+  if (!hasKey(row)) { noKey += 1; dropped.push({ 企業名: cname, 除外理由: 'キー無し（突合不能）', 一致マスタ: '', 突合tier: '', 一致相手: '' }); continue; }
+  if (DEDUPE_HISTORY && isDelivered(ledgerIdx, row)) { // 過去作成済み＝再出力しない
+    histDupe += 1;
+    const d = ledgerIdx.matchDetail(row);
+    dropped.push({ 企業名: cname, 除外理由: '納品済み台帳', 一致マスタ: d.label, 突合tier: d.tier, 一致相手: d.master });
+    continue;
+  }
+  if (exclIdx) { // 既存被りの再検証（入力列は信用しない）
+    const d = exclIdx.matchDetail(row);
+    if (d.matched) {
+      masterDupe += 1;
+      byLabel.set(d.label, (byLabel.get(d.label) || 0) + 1);
+      byTier.set(d.tier, (byTier.get(d.tier) || 0) + 1);
+      dropped.push({ 企業名: cname, 除外理由: '既存被り（再検証）', 一致マスタ: d.label, 突合tier: d.tier, 一致相手: d.master });
+      continue;
+    }
+  }
+  { // 同一成果物内の重複（表記ゆれ含む）
+    const s = outIdx.matchDetail(row);
+    if (s.matched) { selfDupe += 1; dropped.push({ 企業名: cname, 除外理由: '自己重複', 一致マスタ: '同ファイル', 突合tier: s.tier, 一致相手: s.master }); continue; }
+  }
   let recruiter = g(row, '採用担当者名');
   if (CLEAN_NAMES) { recruiter = cleanRecruiterName(recruiter); if (!recruiter) continue; } // 非氏名語は行ごと除外
-  emitted.push({ 企業名: g(row, '企業名'), 法人番号: g(row, '法人番号') });
+  outIdx.addRecord(row, cname);
+  emitted.push({ 企業名: cname, 法人番号: g(row, '法人番号') });
   seq += 1;
   const { pref, city, town } = splitAddress(g(row, '都道府県'));
   const { sei, mei } = splitName(recruiter);
@@ -181,6 +225,19 @@ fs.writeFileSync(OUT, '﻿' + toCsv(HEADERS, out), 'utf8');
 console.log(`[format-bales] scope=${SCOPE}  入力 ${src.length}件 → 出力 ${out.length}件`);
 console.log(`[format-bales] 列数 ${HEADERS.length}（BALES構造一致）`);
 if (DEDUPE_HISTORY) console.log(`[format-bales] 過去作成企業を除外: ${histDupe}件（台帳 ${ledgerIdx.size}社と突合）`);
+if (VERIFY_MASTERS) {
+  console.log(`[format-bales] 既存被り 再検証で除外: ${masterDupe}件（マスタ ${exclIdx.size}社と突合）`);
+  if (byLabel.size) console.log('              マスタ別: ' + [...byLabel.entries()].sort((a, b) => b[1] - a[1]).map(([k, v]) => `${k} ${v}`).join(' / '));
+  if (byTier.size) console.log('              tier別  : ' + [...byTier.entries()].sort((a, b) => b[1] - a[1]).map(([k, v]) => `${k} ${v}`).join(' / '));
+} else {
+  console.log('[format-bales] ⚠ 既存被りの再検証: OFF（--no-verify-masters/scope=all）＝入力の「既存被り」列を信用しています');
+}
+console.log(`[format-bales] 自己重複を除外: ${selfDupe}件｜キー無し行: ${noKey}件`);
+if (dropped.length) {
+  fs.mkdirSync(path.dirname(EXCL_OUT), { recursive: true });
+  fs.writeFileSync(EXCL_OUT, '﻿' + toCsv(['企業名', '除外理由', '一致マスタ', '突合tier', '一致相手'], dropped), 'utf8');
+  console.log(`[format-bales] 除外明細: ${path.relative(ROOT, EXCL_OUT)}（${dropped.length}件・表記ゆれ誤爆の確認用）`);
+}
 
 // 今回の出力企業を台帳へ追記（次回作成時の重複防止）。--no-record で無効化。
 if (RECORD && emitted.length) {

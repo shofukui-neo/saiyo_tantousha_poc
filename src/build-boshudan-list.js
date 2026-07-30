@@ -35,6 +35,7 @@ const { parseCsv, rowsToRecords, toCsv, readCsv, normCompanyName } = require('./
 const { detectBoshudanNeeds } = require('./boshudan-needs');
 const { classifyRefusal } = require('./talk-analysis');
 const { createMatchIndex } = require('./company-match');
+const { buildExclusionIndex } = require('./exclusion-index');
 const { loadLedger, DEFAULT_LEDGER } = require('./delivered-ledger');
 const { isExcludedIndustry, ICP } = require('./icp-rules');
 
@@ -157,13 +158,10 @@ const HEADERS = parsed[0];
 const { records } = rowsToRecords(parsed);
 console.log(`[boshudan] BALES既存リード ${records.length}件（${HEADERS.length}列）を走査`);
 
-// MOCHICA既存顧客インデックス
-const custIdx = createMatchIndex();
-if (fs.existsSync(CUSTOMERS)) {
-  const { records: cust } = readCsv(fs.readFileSync(CUSTOMERS, 'utf8'));
-  for (const c of cust) custIdx.addRecord(c, 'MOCHICA顧客');
-  console.log(`[boshudan] MOCHICA既存顧客 ${custIdx.size}社を除外対象に読込`);
-}
+// MOCHICA既存顧客インデックス（構築は exclusion-index.js に集約）。
+// このリストの母集団はBALES既存リードそのものなので、BALES/SF層は除外に使わない。
+const custIdx = buildExclusionIndex({ layers: ['customers'], files: { customers: CUSTOMERS }, quiet: true }).idx;
+console.log(`[boshudan] MOCHICA既存顧客 ${custIdx.size}社を除外対象に読込`);
 const ledgerIdx = loadLedger(DEFAULT_LEDGER);
 
 const drop = {};
@@ -202,10 +200,16 @@ for (const rec of records) {
 }
 
 // ── 1社1行に名寄せ（同一社の複数リードは最良の1件を残す）──────────
+// バケット決定は company-match の全キー系統で行う（strict社名だけだと
+// 「(株)菜の花」と「株式会社菜ノ花」が別社として2行出る）。
 const best = new Map();
+const bucketIdx = createMatchIndex();
 const rank = (x) => (x.needs.level === '強' ? 1000 : 0) + x.sc.score;
 for (const x of cand) {
-  const key = normCompanyName(g(x.rec, C.name)) || ('id:' + g(x.rec, C.id));
+  const name = g(x.rec, C.name);
+  const hit = bucketIdx.matchDetail({ 企業名: name });
+  const key = hit.matched ? hit.label : (normCompanyName(name) || ('id:' + g(x.rec, C.id)));
+  if (!hit.matched) bucketIdx.addName(name, key);
   const prev = best.get(key);
   if (!prev || rank(x) > rank(prev) || (rank(x) === rank(prev) && x.recency > prev.recency)) best.set(key, x);
 }

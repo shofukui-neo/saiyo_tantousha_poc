@@ -28,6 +28,7 @@ const { MynaviScraper } = require('./scrape-mynavi');
 const { scoreMochica, parseEmployees } = require('./mochica-fit');
 const { isExcludedIndustry } = require('./icp-rules');
 const { cleanCrossRefName } = require('./enrich-crossref');
+const { buildExclusionIndex } = require('./exclusion-index');
 
 const ROOT = path.resolve(__dirname, '..');
 const OUT = process.env.ICP_FRESH_OUT || path.join(ROOT, 'data', 'leads-icp-fresh-named-1000.csv');
@@ -61,32 +62,13 @@ function safeWrite(abs, content) {
   try { fs.writeFileSync(abs, content); fs.existsSync(tmp) && fs.unlinkSync(tmp); } catch (_) {}
 }
 
-// ── 既存(マスタ＋CRM)の社名インデックス。ここに当たる社は「新規でない」→スキップ ──
+// ── 既存(マスタ＋CRM＋納品台帳＋既存母集団)の索引。ここに当たる社は「新規でない」→スキップ ──
+// 索引の構築は exclusion-index.js に集約（2026-07-30）。以前はこのファイル独自の
+// Set(正規化社名のみ)で、農協別称・表記ゆれ・納品台帳を突合していなかった。
 function buildExclusion() {
-  const names = new Set(), bangos = new Set();
-  const addName = (n) => { const k = mkey(n); if (k) names.add(k); };
-  const addBango = (b) => { const k = normCorpNumber(b); if (k) bangos.add(k); };
-  // 統合マスタ（過去に発掘した全社）
-  const master = path.join(ROOT, 'data', 'leads-consolidated-all.csv');
-  if (fs.existsSync(master)) { const { records } = readCsv(fs.readFileSync(master, 'utf8')); for (const r of records) { addName(r['企業名']); addBango(r['法人番号']); } log(`  除外索引 統合マスタ: ${records.length}`); }
-  // MOCHICA既存顧客
-  const mc = path.join(ROOT, 'data', 'MOCHICAの既存顧客リスト - mochica-companies-list.csv');
-  if (fs.existsSync(mc)) { const { records } = readCsv(fs.readFileSync(mc, 'utf8')); for (const r of records) addName(r['法人名'] || r['LINEアカウント登録企業名']); log(`  除外索引 MOCHICA顧客: ${records.length}`); }
-  // BALES既存CRM
-  const bl = path.join(ROOT, 'data', 'BALESCLOUDの既存リスト - 202607062007_leadList_utf-8.csv');
-  if (fs.existsSync(bl)) { const { records } = readCsv(fs.readFileSync(bl, 'utf8')); for (const r of records) addName(r['会社情報：会社名']); log(`  除外索引 BALES: ${records.length}`); }
-  // SF全リード（プリアンブル付き）
-  const sf = path.join(ROOT, 'data', 'セールスフォースMOCHICA参照 - 全てのリードSitoke突合用.csv');
-  if (fs.existsSync(sf)) {
-    const { parseCsv } = require('./csv');
-    const rows = parseCsv(fs.readFileSync(sf, 'utf8'));
-    let hi = -1, ci = -1;
-    for (let i = 0; i < Math.min(rows.length, 30); i++) { const j = rows[i].findIndex((c) => /会社名\s*\/\s*取引先/.test(String(c))); if (j >= 0) { hi = i; ci = j; break; } }
-    let n = 0; if (hi >= 0) for (let i = hi + 1; i < rows.length; i++) { const c = String(rows[i][ci] || '').trim(); if (c) { addName(c); n++; } }
-    log(`  除外索引 SF全リード: ${n}`);
-  }
-  log(`  除外索引 合計: 社名 ${names.size} / 法人番号 ${bangos.size}`);
-  return { names, bangos };
+  const ex = buildExclusionIndex({ masters: true, ledger: true, pool: true });
+  log(`  除外索引 合計: ${ex.idx.size}社（${ex.layers.join('+')}）`);
+  return { has: (name) => ex.idx.has(name), detail: (name) => ex.idx.matchDetail(name), size: ex.idx.size };
 }
 
 // 発掘した1社の資格判定
@@ -180,7 +162,7 @@ async function run() {
       const cand = found.filter((f) => !seen.has(String(f.id)));
       // 先に社名で既存(マスタ/CRM)を除外＝スクレイプ節約
       const fresh = [], skipped = [];
-      for (const f of cand) { const k = mkey(f.name); if (k && (excl.names.has(k) || collected.has(k))) skipped.push(f); else fresh.push(f); }
+      for (const f of cand) { const k = mkey(f.name); if (excl.has(f.name) || (k && collected.has(k))) skipped.push(f); else fresh.push(f); }
       skippedExisting += skipped.length;
       for (const f of skipped) seen.add(String(f.id)); // 既存は二度と見ない
       log(`🔍 "${kw}": 掲載${found.length} 新規候補${cand.length} → 既存除外${skipped.length} 探索対象${fresh.length} ｜ 資格${outRows.length}/${TARGET}`);
@@ -200,7 +182,7 @@ async function run() {
         // 二重チェック: 実社名の正規化でも既存に当たれば新規でない
         rec.企業名 = cleanDisplay(rec.企業名);
         const k2 = mkey(rec.企業名);
-        if (k2 && (excl.names.has(k2) || collected.has(k2))) { if (++processed % 20 === 0) flush(); continue; }
+        if (excl.has(rec.企業名) || (k2 && collected.has(k2))) { if (++processed % 20 === 0) flush(); continue; }
         if (has(rec.採用担当者名)) { rawRows.push({ ...rec }); stats.netNewNamed++; }
         const ev = evaluate(rec);
         if (ev.qualifies) {

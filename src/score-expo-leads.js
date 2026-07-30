@@ -23,7 +23,8 @@
 const fs = require('fs');
 const path = require('path');
 const { readCsv, toCsv, normCompanyName } = require('./csv');
-const { createMatchIndex } = require('./company-match');
+const { indexPut, indexGet } = require('./company-match');
+const { buildExclusionIndex } = require('./exclusion-index');
 const { ICP, isExcludedIndustry, proposalTier } = require('./icp-rules');
 
 const DATA = path.join(__dirname, '..', 'data');
@@ -160,7 +161,8 @@ const KNOWN = {
   'ステラス': { ind: 'ソフトウエア', emp: 100 },
   'コニカミノルタジャパン': { ind: 'ソフトウエア', emp: 3000 },
 };
-const KNOWN_INDEX = new Map(Object.entries(KNOWN).map(([k, v]) => [normCompanyName(k), v]));
+// 表記ゆれでも引けるよう全キー系統で登録（company-match.indexPut）
+const KNOWN_INDEX = Object.entries(KNOWN).reduce((m, [k, v]) => indexPut(m, k, v), new Map());
 
 /**
  * 実地調査で裏取りした値（2026-07-29 / 公式採用サイト・マイナビ・gBizINFO等）。最優先で採用する。
@@ -179,7 +181,7 @@ const VERIFIED = {
   'デイ・ナイト': { emp: 99, ind: 'ホール・貸会議室運営', note: 'NTTグループ。従業員99名前後（60～231名で諸説）' },
   'エクネス': { emp: 40, ind: 'マーケティング支援', note: '2018年設立ベンチャー(ロボットレター)。規模フロア未満の見込み・要確認' },
 };
-const VERIFIED_INDEX = new Map(Object.entries(VERIFIED).map(([k, v]) => [normCompanyName(k), v]));
+const VERIFIED_INDEX = Object.entries(VERIFIED).reduce((m, [k, v]) => indexPut(m, k, v), new Map());
 
 // 採用人数(選択リスト) "6～10名" → 6（レンジ下限＝保守的に採る）
 function parseHireRange(s) {
@@ -199,21 +201,13 @@ function arg(name, dflt) {
 
 // --- マスタ読み込み ---------------------------------------------------------
 function loadMasters() {
-  const excl = createMatchIndex();   // 既存顧客/納品済み
-  if (fs.existsSync(F.customers)) {
-    for (const r of readCsv(fs.readFileSync(F.customers, 'utf8')).records) {
-      const nm = r['法人名'] || r['LINEアカウント登録企業名'];
-      if (nm) excl.addName(nm, 'MOCHICA既存顧客');
-    }
-  }
-  if (fs.existsSync(F.ledger)) {
-    for (const r of readCsv(fs.readFileSync(F.ledger, 'utf8')).records) {
-      if (r['企業名']) excl.addName(r['企業名'], '納品済み(' + (r['バッチ'] || '') + ')');
-    }
-  }
+  // 除外索引は exclusion-index.js に集約（2026-07-30）。展示会リードは元々BALES/SFの
+  // リードであることが前提なので、ハード除外に使うのは「既存顧客」と「納品済み台帳」のみ
+  // （BALES/SF被りは除外理由にならない）。突合キーは他経路と同一＝表記ゆれも拾う。
+  const excl = buildExclusionIndex({ layers: ['customers', 'ledger'], quiet: true }).idx;
 
   // BALES既存リード: 同一社に複数リードがあるので「最も情報量の多い1件」を残す
-  const bales = new Map();
+  const balesBest = new Map(); // 正規化社名 -> {name, cand}
   if (fs.existsSync(F.bales)) {
     for (const r of readCsv(fs.readFileSync(F.bales, 'utf8')).records) {
       const key = normCompanyName(r['会社情報：会社名']);
@@ -230,10 +224,14 @@ function loadMasters() {
         lost: (r['カスタム情報：失注商談失注理由大'] || '').trim(),
       };
       const score = (o) => (o.emp ? 2 : 0) + (o.hire ? 2 : 0) + (o.industry ? 1 : 0) + (o.ats && o.ats !== '無し' ? 1 : 0) + (o.ban ? 3 : 0);
-      const prev = bales.get(key);
-      if (!prev || score(cand) > score(prev)) bales.set(key, cand);
+      const prev = balesBest.get(key);
+      if (!prev || score(cand) > score(prev.cand)) balesBest.set(key, { name: r['会社情報：会社名'], cand });
     }
   }
+  // 表記ゆれ（旧字体/カナ/長音/支店）でも引き当てられるよう別名キーを張る。
+  // strict キーだけだと既存リードのATS/禁止/課題感を取りこぼし、被り判定が甘くなる。
+  const bales = new Map();
+  for (const { name, cand } of balesBest.values()) indexPut(bales, name, cand);
 
   // 統合マスタ（従業員数・採用予定人数の補完）
   const cons = new Map();
@@ -241,7 +239,7 @@ function loadMasters() {
     for (const r of readCsv(fs.readFileSync(F.consolidated, 'utf8')).records) {
       const key = normCompanyName(r['企業名']);
       if (!key || cons.has(key)) continue;
-      cons.set(key, {
+      indexPut(cons, r['企業名'], {
         emp: parseIntOrNull(r['従業員数']),
         hire: parseIntOrNull(r['採用予定人数']),
         industry: (r['業種'] || '').trim(),
@@ -254,11 +252,11 @@ function loadMasters() {
 
 // --- 1社の判定 --------------------------------------------------------------
 function judge(lead, M) {
-  const key = normCompanyName(lead.n);
-  const b = M.bales.get(key) || {};
-  const c = M.cons.get(key) || {};
-  const k = KNOWN_INDEX.get(key) || {};
-  const v = VERIFIED_INDEX.get(key) || {};
+  // 引き当ては全キー系統（正規化社名／農協／表記ゆれ／長音ゆれ）で行う
+  const b = indexGet(M.bales, lead.n) || {};
+  const c = indexGet(M.cons, lead.n) || {};
+  const k = indexGet(KNOWN_INDEX, lead.n) || {};
+  const v = indexGet(VERIFIED_INDEX, lead.n) || {};
 
   // 優先順: 実地調査(裏取り済) > BALES(CRM) > 統合マスタ > 公知の目安
   const industry = v.ind || b.industry || c.industry || k.ind || '';

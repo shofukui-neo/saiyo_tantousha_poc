@@ -100,7 +100,7 @@
     "enrich:shinsotsu": "node src/enrich-shinsotsu-flag.js --file data/leads-mochica-target-enriched.csv",
     "enrich:crossref": "node src/enrich-crossref.js --file data/leads-mochica-target-enriched.csv",
     "test:fusion": "node test/name-fusion.test.js",
-    "test:all": "node test/name-fusion.test.js && node test/probe-social.test.js && node test/probe-site-deep.test.js && node test/selftest.js && npm run gchain:test",
+    "test:all": "node test/name-fusion.test.js && node test/probe-social.test.js && node test/probe-site-deep.test.js && node test/company-match.test.js && node test/selftest.js && npm run gchain:test",
     "encrypt:lists": "node scripts/encrypt-lists.js",
     "decrypt:lists": "node scripts/decrypt-lists.js",
     "secure:setup": "node scripts/setup-security.js",
@@ -113,7 +113,10 @@
     "eval": "node src/eval/cli.js run",
     "eval:baseline": "node src/eval/cli.js baseline",
     "eval:gate": "node src/eval/cli.js gate",
-    "eval:dashboard": "node src/eval/cli.js dashboard"
+    "eval:dashboard": "node src/eval/cli.js dashboard",
+    "audit:leak": "node src/audit-leak.js",
+    "excl:show": "node src/exclusion-index.js",
+    "test:dedupe": "node test/company-match.test.js"
   },
   "dependencies": {
     "cheerio": "^1.1.0",
