@@ -120,7 +120,8 @@
     "eval:dashboard": "node src/eval/cli.js dashboard",
     "audit:leak": "node src/audit-leak.js",
     "excl:show": "node src/exclusion-index.js",
-    "test:dedupe": "node test/company-match.test.js"
+    "test:dedupe": "node test/company-match.test.js",
+    "boshudan:split": "node src/split-boshudan-region.js"
   },
   "dependencies": {
     "cheerio": "^1.1.0",
