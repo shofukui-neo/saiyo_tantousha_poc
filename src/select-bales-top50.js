@@ -22,12 +22,16 @@
 const fs = require('fs');
 const path = require('path');
 const { readCsv, toCsv } = require('./csv');
+const { loadLedger, isDelivered, DEFAULT_LEDGER } = require('./delivered-ledger');
+const { createMatchIndex } = require('./company-match');
 
 const DATA = path.join(__dirname, '..', 'data');
 const args = process.argv.slice(2);
 const getArg = (k, d) => { const i = args.indexOf(k); return i >= 0 && args[i + 1] ? args[i + 1] : d; };
 const N = parseInt(getArg('--n', '50'), 10);
 const MINCONF = parseFloat(getArg('--minconf', '0.85'));
+const LEDGER = path.resolve(getArg('--ledger', DEFAULT_LEDGER));
+const DEDUPE_HISTORY = !args.includes('--no-dedupe-history'); // 既定ON：過去作成企業を母集団から除外
 const IN = path.join(DATA, 'leads-named-mochica-max.csv');
 const OUT = path.join(DATA, '_bales-top50-selected.csv');
 
@@ -45,11 +49,17 @@ function isRealName(v) {
 
 const { records } = readCsv(fs.readFileSync(IN, 'utf8'));
 
-const pool = records.filter((r) =>
-  (r['電話番号'] || '').trim() &&
-  isRealName(r['採用担当者名']) &&
-  num(r['担当者確度']) >= MINCONF
-);
+// 過去作成企業（納品済み台帳）を母集団から除外 → top N を「新規のみ」から選ぶ
+const ledgerIdx = DEDUPE_HISTORY ? loadLedger(LEDGER) : createMatchIndex();
+let histDupe = 0;
+
+const pool = records.filter((r) => {
+  if ((r['電話番号'] || '').trim() && isRealName(r['採用担当者名']) && num(r['担当者確度']) >= MINCONF) {
+    if (DEDUPE_HISTORY && isDelivered(ledgerIdx, r)) { histDupe += 1; return false; }
+    return true;
+  }
+  return false;
+});
 
 pool.sort((a, b) =>
   num(b['担当者確度']) - num(a['担当者確度']) ||
@@ -62,6 +72,7 @@ const HEADERS = Object.keys(records[0]);
 fs.writeFileSync(OUT, toCsv(HEADERS, top), 'utf8');
 
 console.log(`[select] 母集団 ${records.length}件 → 品質フィルタ通過 ${pool.length}件 → 上位 ${top.length}件`);
+if (DEDUPE_HISTORY) console.log(`[select] 過去作成企業を除外: ${histDupe}件（台帳 ${ledgerIdx.size}社と突合）`);
 console.log(`[select] 担当者確度 ${num(top[0]['担当者確度'])}〜${num(top[top.length - 1]['担当者確度'])}｜アポ期待度 ${num(top[0]['アポ期待度'])}〜${num(top[top.length - 1]['アポ期待度'])}`);
 console.log(`[select] 全件電話あり=${top.every((r) => (r['電話番号'] || '').trim())}`);
 console.log(`[select] out: ${path.relative(path.join(__dirname, '..'), OUT)}`);

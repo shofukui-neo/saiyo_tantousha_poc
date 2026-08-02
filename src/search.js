@@ -137,6 +137,10 @@ function scoreCandidates(candidates, companyName) {
     const domHit = tokens.some((t) => /^[a-z0-9-]+$/.test(t) && t.length >= 3 && c.domain.includes(t));
     if (domHit) { score += 3; reasons.push('name-in-domain'); }
 
+    // URL に企業名トークンが含まれる（サブディレクトリ/パス含む）
+    const urlHit = tokens.some((t) => t.length >= 3 && c.url.toLowerCase().includes(t));
+    if (urlHit) { score += 2; reasons.push('name-in-url'); }
+
     // TLD によるコーポレートらしさ
     for (const [tld, bonus] of Object.entries(cfg.TLD_BONUS)) {
       if (c.domain.endsWith(tld)) { score += bonus; if (bonus) reasons.push('tld' + tld); break; }
@@ -147,12 +151,12 @@ function scoreCandidates(candidates, companyName) {
     try { path = new URL(c.url).pathname || '/'; } catch (_) {}
     const depth = path.split('/').filter(Boolean).length;
     if (depth === 0) { score += 2; reasons.push('root-path'); }
-    else if (depth >= 3) { score -= 1; }
+    else if (depth >= 3) { score -= 1; reasons.push('deep-path'); }
 
     // 「採用」「会社概要」等の語がタイトルにあると公式の確度UP（弱い加点）
     if (/採用|recruit|会社概要|company|corporate|について|公式/i.test(hay)) { score += 1; reasons.push('corp-word'); }
 
-    scored.push({ ...c, score, rank, titleHit, domHit, reasons });
+    scored.push({ ...c, score, rank, titleHit, domHit, urlHit, reasons });
   });
   // 同点はドメインの短さ（=トップ階層らしさ）で寄せる
   scored.sort((a, b) => b.score - a.score || a.domain.length - b.domain.length);
@@ -250,8 +254,14 @@ async function discoverUrl(companyName, deps = {}, opt = {}) {
     return { url: null, source: 'search-disabled', verified: false, candidates: 0, error: 'SEARCH_ENGINE=none' };
   }
 
-  // 公式サイトに当たりやすいクエリを順に試す
-  const queries = [`${companyName} 公式サイト`, `${companyName} 会社概要 採用`];
+  // 公式サイトに当たりやすいクエリを順に試す。まずは社名を引用符で囲んで精度を高める。
+  const normalizedName = String(companyName || '').replace(/["“”]/g, '').trim();
+  const queries = [
+    `"${normalizedName}" 公式サイト`,
+    `"${normalizedName}" 会社概要 採用`,
+    `${normalizedName} 公式サイト`,
+    `${normalizedName} 会社概要 採用`,
+  ];
   let candidates = [];
   let lastErr = '';
   for (const q of queries) {
@@ -302,9 +312,12 @@ async function discoverUrl(companyName, deps = {}, opt = {}) {
     }
     // 住所までは一致しなかったが、名前一致は得られた場合
     if (nameMatched) return { url: nameMatched.url, source: 'search+verified', verified: true, candidates: nameMatched.candidates };
+
+    // 検証に成功しなかった場合、fetchPage/extractText があるなら未検証候補は返さない
+    return { url: null, source: 'search', verified: false, candidates: candidates.length, error: 'verification failed' };
   }
 
-  // 検証は通らなかったが最有力候補は返す（origin に正規化）。source で未検証と分かるようにする。
+  // fetchPage/extractText が渡されなければ、最有力候補は返す（検証なし）
   let best = scored[0].url;
   try { best = new URL(scored[0].url).origin; } catch (_) {}
   return { url: best, source: 'search(unverified)', verified: false, candidates: candidates.length };

@@ -51,3 +51,7 @@ npm-debug.log
 # ---- 精度評価の一時出力（ローカル限定・コミットしない） ----
 eval/latest.json
 eval/baseline.json
+
+# ---- 一時クロール出力（絶対にコミットしない） ----
+tmp_crawl_output.txt
+tmp_*.txt
