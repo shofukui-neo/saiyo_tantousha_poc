@@ -97,5 +97,61 @@ t('空履歴でも落ちない', () => {
   assert.strictEqual(w.n, 0);
 });
 
+// ---------------- stt parsers ----------------
+console.log('voice/stt parsers:');
+const stt = require('../src/gchain/voice/stt');
+t('parseTimestamp: HH:MM:SS,mmm → 秒', () => {
+  assert.strictEqual(stt.parseTimestamp('00:00:02,340'), 2.34);
+  assert.strictEqual(stt.parseTimestamp('00:01:05,000'), 65);
+});
+t('parseWhisperJson: offsets はミリ秒（10倍ズレ回帰防止）', () => {
+  const segs = stt.parseWhisperJson({ transcription: [{ offsets: { from: 0, to: 3480 }, text: ' こんにちは' }] });
+  assert.strictEqual(segs.length, 1);
+  assert.strictEqual(segs[0].start, 0);
+  assert.strictEqual(segs[0].end, 3.48); // 3480ms=3.48s（旧実装は34.8になっていた）
+  assert.strictEqual(segs[0].text, 'こんにちは');
+});
+t('parseWhisperJson: timestamps文字列', () => {
+  const segs = stt.parseWhisperJson({ transcription: [{ timestamps: { from: '00:00:02,340', to: '00:00:05,000' }, text: 'テスト' }] });
+  assert.strictEqual(segs[0].start, 2.34);
+  assert.strictEqual(segs[0].end, 5);
+});
+t('parseWhisperJson: t0/t1 センチ秒', () => {
+  const segs = stt.parseWhisperJson({ segments: [{ t0: 100, t1: 250, text: 'あ' }] });
+  assert.strictEqual(segs[0].start, 1);
+  assert.strictEqual(segs[0].end, 2.5);
+});
+t('parseWhisperJson: start/end 秒 & 空text除外', () => {
+  const segs = stt.parseWhisperJson({ segments: [{ start: 1.2, end: 3.4, text: 'x' }, { start: 4, end: 5, text: '  ' }] });
+  assert.strictEqual(segs.length, 1);
+  assert.strictEqual(segs[0].start, 1.2);
+});
+t('parseOpenAiJson: verbose_json segments', () => {
+  const segs = stt.parseOpenAiJson({ segments: [{ start: 0.5, end: 2.1, text: ' hello ' }] });
+  assert.strictEqual(segs[0].text, 'hello');
+  assert.strictEqual(segs[0].start, 0.5);
+});
+
+// ---------------- pipeline (ports & adapters) ----------------
+console.log('voice/pipeline:');
+const pipeline = require('../src/gchain/voice/pipeline');
+t('processAudio: ポート注入でコアが動く（移植境界）', () => {
+  const saved = [];
+  const ports = {
+    stt: { transcribe: () => ({ segments: CALL_BALANCED, channels: 2, attributed: true, backend: 'mock' }) },
+    storage: { saveCall: (r) => { saved.push(r); return 'ref1'; } },
+  };
+  const { record, ref } = pipeline.processAudio('dummy.wav', { company: 'X', started_at: '2026-08-02T09:00:00Z' }, ports, { useLLM: false });
+  assert.strictEqual(ref, 'ref1');
+  assert.strictEqual(saved.length, 1);
+  assert.ok(record.metrics && record.feedback.execution_score >= 80);
+  assert.deepStrictEqual(record.stt, { backend: 'mock', channels: 2, attributed: true });
+});
+t('report: storageポートから履歴集計', () => {
+  const recs = [analyze.analyzeCall({ started_at: '2026-08-02T09:00:00Z', segments: CALL_TALKATIVE, useLLM: false })];
+  const w = pipeline.report({ storage: { loadCalls: () => recs } });
+  assert.strictEqual(w.n, 1);
+});
+
 console.log(`\ngchain-voice: ${pass} passed, ${fail} failed`);
 if (fail) process.exit(1);

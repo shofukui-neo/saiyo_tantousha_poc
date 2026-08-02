@@ -71,6 +71,8 @@ npm run gchain:web        # http://localhost:5180 →「🎙 架電分析」タ�
 
 ### CLI
 ```
+npm run gchain:voice -- doctor                     # 環境自己診断（ffmpeg/デバイス/STT/LLMを✓✗表示）
+npm run gchain:voice -- selftest                   # 合成wavでキャプチャ→分離の配線検証
 npm run gchain:voice -- devices                    # デバイス確認
 npm run gchain:voice -- record --company "会社名"   # 録音→Enterで停止→分析→保存
 npm run gchain:voice -- analyze path\to\call.wav    # 既存wavを分析
