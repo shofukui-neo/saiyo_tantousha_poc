@@ -90,7 +90,12 @@
     "secure:scan": "node scripts/check-staged-security.js",
     "gchain:voice": "node src/gchain/voice.js",
     "gchain:voice:demo": "node src/gchain/voice.js demo",
-    "gchain:voice:report": "node src/gchain/voice.js report"
+    "gchain:voice:report": "node src/gchain/voice.js report",
+    "test:accuracy": "node test/accuracy.test.js",
+    "eval": "node src/eval/cli.js run",
+    "eval:baseline": "node src/eval/cli.js baseline",
+    "eval:gate": "node src/eval/cli.js gate",
+    "eval:dashboard": "node src/eval/cli.js dashboard"
   },
   "dependencies": {
     "cheerio": "^1.1.0",
