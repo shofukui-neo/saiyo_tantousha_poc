@@ -26,12 +26,20 @@ function scoreDimensions(m) {
   s.questions = clamp01(m.question_count / 3);
   // 打診: したか否か（会話が成立した通話でのみ意味を持つ→analyzeで前提判定）
   s.proposal = m.proposal_made ? 1 : 0;
-  // 冒頭: 目的明示＋相手が早く話し出す（<10秒満点、>25秒で0）
+  // 冒頭: 目的明示＋相手が早く話し出す。時刻があれば秒(<10満点/>25で0)、無ければターン番号(0-1番=満点/6番+で0)。
   let op = m.opening_has_purpose ? 0.4 : 0;
-  if (m.opening_customer_first_sec != null) op += 0.6 * clamp01(1 - (m.opening_customer_first_sec - 10) / 15);
+  if (m.timing_basis === 'time' && m.opening_customer_first_sec != null) {
+    op += 0.6 * clamp01(1 - (m.opening_customer_first_sec - 10) / 15);
+  } else if (m.opening_customer_first_index != null) {
+    op += 0.6 * clamp01(1 - (m.opening_customer_first_index - 1) / 5);
+  }
   s.opening = clamp01(op);
-  // 一方通行の抑制: 最長独白 <20秒満点、>60秒で0
-  s.monologue = clamp01(1 - (m.longest_monologue_sec - 20) / 40);
+  // 一方通行の抑制: 時刻なら最長独白<20秒満点/>60で0、文字数なら<80満点/>280で0。
+  if (m.timing_basis === 'time') {
+    s.monologue = clamp01(1 - (m.longest_monologue_sec - 20) / 40);
+  } else {
+    s.monologue = clamp01(1 - ((m.longest_monologue_chars || 0) - 80) / 200);
+  }
   return s;
 }
 
@@ -73,10 +81,13 @@ function goodText(key, m) {
     case 'questions': return { point: `よくヒアリングできた（質問${m.question_count}件）`, metric: 'question_count', value: m.question_count, quote: m.question_examples[0] };
     case 'proposal': return { point: '次接点の打診ができた', metric: 'proposal_made', value: true, quote: m.proposal_examples[0] };
     case 'opening': return { point: '冒頭で相手を引き込めた', metric: 'opening', quote: null };
-    case 'monologue': return { point: `一方的な説明を抑えられた（最長独白 ${m.longest_monologue_sec}秒）`, metric: 'longest_monologue_sec', value: m.longest_monologue_sec };
+    case 'monologue': return { point: `一方的な説明を抑えられた（最長独白 ${monoLabel(m)}）`, metric: 'longest_monologue', value: m.longest_monologue_sec };
     default: return null;
   }
 }
+
+function monoLabel(m) { return m.timing_basis === 'time' ? `${m.longest_monologue_sec}秒` : `${m.longest_monologue_chars || 0}文字`; }
+function openLabel(m) { return m.timing_basis === 'time' ? `${m.opening_customer_first_sec ?? '—'}秒` : `${m.opening_customer_first_index == null ? '—' : m.opening_customer_first_index + 1}番目のターン`; }
 
 function moreText(key, m, o) {
   switch (key) {
@@ -96,14 +107,14 @@ function moreText(key, m, o) {
       metric: 'proposal_made', value: false,
     };
     case 'opening': return {
-      point: `冒頭で引き込めていない（相手の初回発話まで ${m.opening_customer_first_sec ?? '—'}秒）`,
-      next_action: '名乗り→用件を1文→すぐ相手に問いを投げ、15秒以内に相手を話させる',
-      metric: 'opening_customer_first_sec', value: m.opening_customer_first_sec,
+      point: `冒頭で引き込めていない（相手の初回発話まで ${openLabel(m)}）`,
+      next_action: '名乗り→用件を1文→すぐ相手に問いを投げ、序盤で相手を話させる',
+      metric: 'opening', value: m.opening_customer_first_sec,
     };
     case 'monologue': return {
-      point: `一方的な説明が長い（最長独白 ${m.longest_monologue_sec}秒）`,
-      next_action: '30秒以上の連続説明を禁止。20秒ごとに相手へ確認の問いを入れる',
-      metric: 'longest_monologue_sec', value: m.longest_monologue_sec,
+      point: `一方的な説明が長い（最長独白 ${monoLabel(m)}）`,
+      next_action: '長い連続説明を禁止。一区切りごとに相手へ確認の問いを入れる',
+      metric: 'longest_monologue', value: m.longest_monologue_sec,
     };
     default: return null;
   }

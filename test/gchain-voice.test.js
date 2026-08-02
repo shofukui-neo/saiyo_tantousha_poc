@@ -97,6 +97,38 @@ t('空履歴でも落ちない', () => {
   assert.strictEqual(w.n, 0);
 });
 
+// ---------------- 移植先(asumo)互換: タイムスタンプ無し + agentラベル ----------------
+console.log('voice/metrics (asumo互換):');
+t('normalizeSpeaker: agent→self, 顧客→customer', () => {
+  assert.strictEqual(metrics.normalizeSpeaker('agent'), 'self');
+  assert.strictEqual(metrics.normalizeSpeaker('customer'), 'customer');
+  assert.strictEqual(metrics.normalizeSpeaker('顧客'), 'customer');
+  assert.strictEqual(metrics.normalizeSpeaker('その他'), 'unknown');
+});
+t('タイムスタンプ無し(agentラベル)でも talk比を文字数で算出', () => {
+  // asumo の call_transcripts.segments 想定: start/end 無し、speaker=agent/customer
+  const segs = [
+    { speaker: 'agent', text: '弊社のサービスはとても長い説明をします。'.repeat(3) },
+    { speaker: 'customer', text: 'はい。' },
+    { speaker: 'agent', text: '来週お時間いただけますか。' },
+  ];
+  const m = metrics.computeMetrics(segs);
+  assert.strictEqual(m.timing_basis, 'chars');
+  assert.ok(m.talk_ratio_self > 0.9, 'talk_ratio=' + m.talk_ratio_self); // 話しすぎを文字数で検出
+  assert.strictEqual(m.proposal_made, true); // 「来週お時間」
+  assert.ok(m.longest_monologue_chars > 0);
+  assert.strictEqual(m.opening_customer_first_index, 1); // 2番目のセグメントで相手が初発話
+});
+t('タイムスタンプ無しでも feedback がスコアを出す', () => {
+  const segs = [
+    { speaker: 'agent', text: 'ずっと自分だけ話し続ける長い長い説明です。'.repeat(4) },
+    { speaker: 'agent', text: 'さらに話し続けます。'.repeat(4) },
+  ];
+  const f = feedback.buildFeedback(metrics.computeMetrics(segs), { connected: true });
+  assert.ok(f.execution_score != null && f.execution_score < 50); // 話しすぎ・質問なしで低い
+  assert.ok(f.more && f.more.point);
+});
+
 // ---------------- stt parsers ----------------
 console.log('voice/stt parsers:');
 const stt = require('../src/gchain/voice/stt');
