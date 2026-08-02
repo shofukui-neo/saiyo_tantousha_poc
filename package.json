@@ -26,6 +26,8 @@
     "icp:fresh": "node --max-old-space-size=3072 src/build-icp-fresh-1000.js",
     "icp:fresh:rep": "node src/enrich-fresh-rep.js",
     "dashboard": "node src/dashboard.js",
+    "koso": "node src/build-koso-list.js",
+    "koso:test": "node test/koso-signal.test.js",
     "new-list": "node src/build-new-icp-list.js",
     "new-list:from-raw": "node src/build-new-icp-list.js --skip-harvest",
     "new-list:help": "node src/build-new-icp-list.js --help",
