@@ -18,7 +18,7 @@ const { readCsv, toCsv, normCompanyName, normCorpNumber, mergeKey } = require('.
 const { scoreMochica, parseEmployees } = require('./mochica-fit');
 const { qualifiesForList, proposalTier } = require('./icp-rules');
 const { buildBalesIndex, suppress } = require('./suppression');
-const { createMatchIndex } = require('./company-match');
+const { buildExclusionIndex } = require('./exclusion-index');
 
 const ROOT = path.resolve(__dirname, '..');
 const args = process.argv.slice(2);
@@ -105,44 +105,11 @@ function canonicalize(raw) {
 const firstNonEmpty = (a, b) => (String(a || '').trim() ? a : b);
 
 // ── 既存被りマスタ索引の構築（除外はしない＝フラグのみ） ──────────────
-// company-match の MatchIndex を使用（法人番号/正規化社名/農協コアの3系統で突合）。
-function buildExclusionIndex() {
-  const idx = createMatchIndex();
-  // MOCHICA既存顧客：法人名 と LINE登録名 の“両方”を索引（別称登録の取りこぼしを防ぐ）
-  const mc = path.join(ROOT, 'data', 'MOCHICAの既存顧客リスト - mochica-companies-list.csv');
-  if (fs.existsSync(mc)) {
-    const { records } = readCsv(fs.readFileSync(mc, 'utf8'));
-    for (const r of records) { idx.addName(r['法人名'], 'MOCHICA顧客'); idx.addName(r['LINEアカウント登録企業名'], 'MOCHICA顧客'); }
-    console.log(`  既存索引 MOCHICA顧客: ${records.length}`);
-  }
-  // BALES既存CRM（会社情報：会社名）
-  const bl = path.join(ROOT, 'data', 'BALESCLOUDの既存リスト - 202607062007_leadList_utf-8.csv');
-  if (fs.existsSync(bl)) { const { records } = readCsv(fs.readFileSync(bl, 'utf8')); for (const r of records) idx.addName(r['会社情報：会社名'], 'BALES'); console.log(`  既存索引 BALES: ${records.length}`); }
-  // SF全リード（Salesforceレポート：プリアンブル後の「会社名 / 取引先」列）
-  const sf = path.join(ROOT, 'data', 'セールスフォースMOCHICA参照 - 全てのリードSitoke突合用.csv');
-  if (fs.existsSync(sf)) {
-    const { records, n } = parseSfReport(fs.readFileSync(sf, 'utf8'));
-    for (const r of records) idx.addName(r.company, 'SF');
-    console.log(`  既存索引 SF全リード: ${n}`);
-  }
-  return idx;
-}
-// Salesforceレポート形式（先頭に説明行、ヘッダ行に「会社名 / 取引先」）から会社名を抽出
-function parseSfReport(text) {
-  const { parseCsv } = require('./csv');
-  const rows = parseCsv(text);
-  let hi = -1, ci = -1;
-  for (let i = 0; i < Math.min(rows.length, 30); i++) {
-    const j = rows[i].findIndex((c) => /会社名\s*\/\s*取引先/.test(String(c)));
-    if (j >= 0) { hi = i; ci = j; break; }
-  }
-  if (hi < 0) return { records: [], n: 0 };
-  const out = [];
-  for (let i = hi + 1; i < rows.length; i++) {
-    const c = String(rows[i][ci] || '').trim();
-    if (c) out.push({ company: c });
-  }
-  return { records: out, n: out.length };
+// 索引の構築は exclusion-index.js に集約（全経路で同一の除外定義を使うため）。
+// ここでは masters のみ（納品台帳は納品時の別レイヤ = format-bales/delivered-ledger）。
+function buildMasterIndex() {
+  const ex = buildExclusionIndex({ masters: true, ledger: false, pool: false });
+  return ex.idx;
 }
 
 function main() {
@@ -178,7 +145,7 @@ function main() {
 
   // 既存被りマスタ
   console.log('既存被りマスタ索引を構築中…');
-  const excl = buildExclusionIndex();
+  const excl = buildMasterIndex();
   let balesIdx = new Map();
   const balesP = path.join(ROOT, 'data', 'BALESCLOUDの既存リスト - 202607062007_leadList_utf-8.csv');
   if (fs.existsSync(balesP)) balesIdx = buildBalesIndex(fs.readFileSync(balesP, 'utf8'));

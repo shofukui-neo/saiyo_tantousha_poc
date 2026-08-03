@@ -8,10 +8,11 @@
  * env変数を差し替えながら手動で順に叩いていた。それを1プロセスに統合した。
  *
  * パイプライン（4フェーズ）:
- *   1. harvest : マイナビ現行卒年サイトを勝ち筋(非IT)キーワードで巡回し、pool/台帳に
- *                社名で載っていない企業だけをスクレイプ → data/recruiter-mynavi-new<gy>.csv
+ *   1. harvest : マイナビ現行卒年サイトを勝ち筋(非IT)キーワードで巡回し、除外索引
+ *                (MOCHICA顧客/BALES既存CRM/SFリード/納品台帳/既存母集団pool)に載っていない
+ *                企業だけをスクレイプ → data/recruiter-mynavi-new<gy>.csv
  *   2. map     : qualifiesForList(名+電話+新卒6名+従業員100-2000+非IT)で選別し、完全新規
- *                (pool/台帳になし)だけを consolidated スキーマへ写像 → mapped.csv
+ *                (除外索引になし)だけを consolidated スキーマへ写像 → mapped.csv
  *   3. enrich  : 会社概要(outline.html)を追加取得して 業種/都道府県/設立/従業員 を補完し、
  *                IT名/規模超(>2000)/非人名を除外（--skip-enrich でスキップ可）
  *   4. format  : format-bales.js で BALESCLOUD 取込構造(266列)へ整形し、納品台帳へ記録
@@ -28,8 +29,7 @@ const P = require('path');
 const fs = require('fs');
 const { spawnSync } = require('child_process');
 const { readCsv, toCsv } = require('./csv');
-const { createMatchIndex } = require('./company-match');
-const { loadLedger, isDelivered } = require('./delivered-ledger');
+const { buildExclusionIndex } = require('./exclusion-index');
 const { qualifiesForList, proposalTier } = require('./icp-rules');
 const { isPlausiblePersonName } = require('./jp-names');
 const { MynaviScraper } = require('./scrape-mynavi');
@@ -123,13 +123,14 @@ function safeWrite(abs, content) {
   try { fs.writeFileSync(abs, content); fs.existsSync(tmp) && fs.unlinkSync(tmp); } catch (_) {}
 }
 
-// pool(consolidated-all)＋納品台帳の社名索引（scrape前スキップ・完全新規判定に共用）
+// 既知企業の索引（scrape前スキップ・完全新規判定に共用）。
+// ⚠2026-07-30まで pool(consolidated-all)＋納品台帳のみを見ていたため、**3マスタ
+//   （MOCHICA顧客/BALES既存CRM/SF全リード）と未突合**のまま「完全新規」として納品しており、
+//   実測で07-24納品40社中34社(85%)・07-29納品15社中12社(80%)が既存だった。
+//   除外集合の構築は exclusion-index.js に集約（masters + 台帳 + pool）。
 function loadPoolIndex() {
-  const idx = createMatchIndex();
-  const poolFile = P.join(ROOT, 'data/leads-consolidated-all.csv');
-  for (const r of readCsv(fs.readFileSync(poolFile, 'utf8')).records) idx.addRecord(r, 'pool');
-  const ledger = loadLedger();
-  return { inPool: (name) => idx.has(name) || isDelivered(ledger, { 企業名: name }), size: idx.size };
+  const ex = buildExclusionIndex({ masters: true, ledger: true, pool: true });
+  return { inPool: (name) => ex.idx.has(name), size: ex.idx.size, missing: ex.missing };
 }
 
 // ── フェーズ1: harvest（マイナビ新規スクレイプ） ────────────────────────
@@ -148,7 +149,7 @@ const RAW_HEADERS = ['企業名', 'corpID', 'マイナビ掲載', '採用担当�
 async function phaseHarvest() {
   log(`▼ harvest: gy=${GY} / target ${TARGET_QUALIFY} qualify / max ${MAX_SCRAPE} scrape / ${KEYWORDS.length}キーワード`);
   const { inPool, size } = loadPoolIndex();
-  log(`  社名索引: pool ${size}社 + 台帳`);
+  log(`  除外索引: ${size}社（MOCHICA顧客+BALES既存CRM+SFリード+納品台帳+既存母集団pool）`);
 
   const rows = []; const seen = new Set();
   if (fs.existsSync(RAW)) { try { for (const r of readCsv(fs.readFileSync(RAW, 'utf8')).records) { rows.push(r); if (r.corpID) seen.add(String(r.corpID)); } } catch (_) {} }
@@ -357,7 +358,16 @@ async function main() {
   if (!SKIP_ENRICH) await phaseEnrich();
   else log('▼ enrich: スキップ（--skip-enrich）');
   phaseFormat();
-  console.log('\n✓ 完了。成果物はダウンロードフォルダへ移動して納品してください。');
+  // 納品前ゲート: 成果物側から再突合し、被り0を確認してから渡す（--ignore-ledger は
+  // 直前の format-bales が今回の出力を台帳へ記録済みのため自己一致を除くための指定）
+  log('▼ verify: 成果物を再突合（リーク監査）');
+  const audit = spawnSync(process.execPath, ['src/audit-leak.js', OUT, '--ignore-ledger'], { cwd: ROOT, stdio: 'inherit' });
+  if (audit.status !== 0) {
+    console.error('\n✗ リーク監査で被りを検出しました。納品せず原因を確認してください（除外明細: <out>.excluded.csv）');
+    process.exitCode = 1;
+    return;
+  }
+  console.log('\n✓ 完了（リーク監査PASS）。成果物はダウンロードフォルダへ移動して納品してください。');
   console.log(`  最終成果物: ${P.relative(ROOT, OUT)}`);
 }
 main().catch((e) => { console.error('FATAL', e && e.stack ? e.stack : e); process.exitCode = 1; });

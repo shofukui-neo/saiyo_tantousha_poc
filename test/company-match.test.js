@@ -12,7 +12,7 @@ const fs = require('fs');
 const path = require('path');
 const assert = require('assert');
 const { normCompanyName, stripAnnotations } = require('../src/csv');
-const { companyCore, createMatchIndex, keysOf } = require('../src/company-match');
+const { companyCore, createMatchIndex, keysOf, looseKey, fuzzyKey, stripBranch, hasKey } = require('../src/company-match');
 
 let pass = 0, fail = 0;
 const fails = [];
@@ -145,6 +145,75 @@ if (fs.existsSync(MC)) {
   ok('MOCHICA顧客内で農協コア衝突なし', collisions.length === 0);
 } else {
   console.log('  (スキップ)');
+}
+
+// ── 8) 表記ゆれキー tier4（2026-07-30 追加） ────────────────────────
+console.log('\n[8] 表記ゆれキー（旧字体／長音字種／カナ⇔かな／支店・拠点）');
+{
+  const same = (label, a, b) => eq(label, looseKey(a), looseKey(b));
+  same('旧字体 髙島屋⇔高島屋', '株式会社ジェイアール東海髙島屋', '株式会社ジェイアール東海高島屋');
+  same('旧字体 濵⇔濱⇔浜', '濵田酒造株式会社', '浜田酒造株式会社');
+  same('旧字体 渡邊⇔渡辺', '株式会社渡邊製作所', '株式会社渡辺製作所');
+  same('カナ⇔かな かわでん', '株式会社かわでん', '株式会社カワデン');
+  same('カナ⇔かな 八幡ねじ', '株式会社八幡ねじ', '株式会社八幡ネジ');
+  same('カナ⇔かな 生協', '生活協同組合コープかごしま', '生活協同組合コープカゴシマ');
+  same('長音の字種ゆれ（―／－→ー）', 'ソニ―生命保険株式会社', 'ソニー生命保険株式会社');
+  same('拠点 本社付き', '株式会社コスモネット本社', '株式会社コスモネット');
+  same('拠点 本店営業部付き', 'アルプス中央信用金庫本店営業部', 'アルプス中央信用金庫');
+  same('拠点 後株＋支社', 'ソニー生命保険株式会社柏支社', 'ソニー生命保険株式会社');
+  same('拠点 後株＋県名支社', 'トヨタモビリティパーツ株式会社茨城支社', 'トヨタモビリティパーツ株式会社');
+  same('グループ表記', 'オーハシテクニカグループ', '株式会社オーハシテクニカ');
+  // 長音の“有無”は tier5 のみ（tier4では別扱い＝過剰collapseしない）
+  ne('tier4はファミリー≠ファミリ', looseKey('株式会社ファミリー'), looseKey('株式会社ファミリ'));
+  eq('tier5はコンピュータ＝コンピューター', fuzzyKey('株式会社コンピュータマインド'), fuzzyKey('株式会社コンピューターマインド'));
+  // 別法人を潰さないガード
+  ne('浜田≠浜田酒造', looseKey('株式会社浜田'), looseKey('浜田酒造株式会社'));
+  ne('ホールディングスは別法人', looseKey('ナカザワホールディングス株式会社'), looseKey('株式会社ナカザワ'));
+  ne('信連は本体農協と別', looseKey('高知県信用農業協同組合連合会'), looseKey('高知県農業協同組合'));
+  ok('1文字キーは無効（衝突源にしない）', looseKey('株式会社A') === '' || looseKey('株式会社A').length >= 2);
+  eq('stripBranch 後株＋支店', stripBranch('ソニー生命保険株式会社柏支社'), 'ソニー生命保険株式会社');
+  ok('stripBranch は支店語が無ければ素通し', stripBranch('株式会社トヨタ') === '株式会社トヨタ');
+}
+{
+  const idx = createMatchIndex();
+  idx.addName('イワテ生活協同組合', 'BALES');
+  ok('★実ケース いわて生活協同組合 がヒット（カナ⇔かな）', idx.has('いわて生活協同組合'));
+  eq('tier は表記ゆれ', idx.matchDetail('いわて生活協同組合').tier, '表記ゆれ');
+  eq('一致相手を返す', idx.matchDetail('いわて生活協同組合').master, 'イワテ生活協同組合');
+}
+{
+  const idx = createMatchIndex({ fuzzy: false });
+  idx.addName('株式会社コンピューターマインド', 'BALES');
+  ok('fuzzy=false なら長音ゆれは非ヒット', !idx.has('株式会社コンピュータマインド'));
+  const idx2 = createMatchIndex();
+  idx2.addName('株式会社コンピューターマインド', 'BALES');
+  ok('fuzzy=true（既定）で長音ゆれはヒット', idx2.has('株式会社コンピュータマインド'));
+  eq('tier は長音ゆれ', idx2.matchDetail('株式会社コンピュータマインド').tier, '長音ゆれ');
+}
+
+// ── 9) キー無し行の検出（「未突合＝新規」の誤認を防ぐ） ────────────────
+console.log('\n[9] 突合キー無し行の検出');
+ok('社名も番号も無い行は hasKey=false', !hasKey({ '企業名': '', '法人番号': '' }));
+ok('社名だけでも hasKey=true', hasKey({ '企業名': 'トヨタ自動車' }));
+ok('法人番号だけでも hasKey=true', hasKey({ '企業名': '', '法人番号': '1234567890123' }));
+{
+  const idx = createMatchIndex();
+  idx.addName('トヨタ自動車株式会社', 'X');
+  ok('空社名は誤ヒットしない', !idx.has({ '企業名': '' }));
+  ok('空社名はマスタ側にも登録されない', createMatchIndex().size === 0);
+}
+
+// ── 10) 除外索引（exclusion-index）の健全性 ─────────────────────────
+console.log('\n[10] 除外索引の層構成');
+{
+  const { buildExclusionIndex } = require('../src/exclusion-index');
+  const ex = buildExclusionIndex({ quiet: true, ledger: false });
+  ok('masters層が読めている（顧客/BALES/SFのいずれか）', Object.keys(ex.stats).length > 0);
+  ok('マスタ未配置は missing に出る（silentにしない）', Array.isArray(ex.missing));
+  ok('索引サイズ > 0', ex.idx.size > 0);
+  if (ex.stats['MOCHICA顧客']) ok('★発端ケース JA高知県 が索引でヒット', ex.idx.has('高知県農業協同組合(JA高知県)'));
+  console.log(`    層: ${ex.layers.join('+')}／${Object.entries(ex.stats).map(([k, v]) => k + ' ' + v).join(' / ')}`);
+  for (const m of ex.missing) console.log(`    ⚠ 未配置: ${m}`);
 }
 
 // ── 結果 ────────────────────────────────────────────────────────────

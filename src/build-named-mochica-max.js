@@ -15,8 +15,9 @@
  */
 const fs = require('fs');
 const path = require('path');
-const { readCsv, parseCsv, toCsv, normCompanyName, normCorpNumber } = require('./csv');
+const { readCsv, toCsv, normCompanyName, normCorpNumber } = require('./csv');
 const { scoreMochica } = require('./mochica-fit');
+const { buildExclusionIndex } = require('./exclusion-index');
 
 const DATA = path.join(__dirname, '..', 'data');
 const args = process.argv.slice(2);
@@ -81,57 +82,16 @@ for (const f of NAMED_FILES) {
 }
 console.log(`ユニオン: ${namedRows}行 → ユニーク社(担当者名あり) ${merged.size}社`);
 
-// ── 2) 既存リスト除外キー ────────────────────────────────────
-const exclude = new Set();
-function addExclude(name, num) {
-  const co = normCompanyName(name || '');
-  if (co) exclude.add('N:' + co);
-  const n = normCorpNumber(num || '');
-  if (n) exclude.add('C:' + n);
-}
-
-// BALESCLOUD（会社情報：会社名）
-(() => {
-  const p = path.join(DATA, 'BALESCLOUDの既存リスト - 202607062007_leadList_utf-8.csv');
-  if (!fs.existsSync(p)) return;
-  const { records } = readCsv(fs.readFileSync(p, 'utf8'));
-  for (const r of records) addExclude(r['会社情報：会社名']);
-  console.log(`除外源 BALESCLOUD: ${records.length}社`);
-})();
-// MOCHICA既存顧客（法人名）
-(() => {
-  const p = path.join(DATA, 'MOCHICAの既存顧客リスト - mochica-companies-list.csv');
-  if (!fs.existsSync(p)) return;
-  const { records } = readCsv(fs.readFileSync(p, 'utf8'));
-  for (const r of records) { addExclude(r['法人名']); addExclude(r['LINEアカウント登録企業名']); }
-  console.log(`除外源 MOCHICA顧客: ${records.length}社`);
-})();
-// SF全リード（プリアンブルありの変則CSV。位置ベースで「会社名 / 取引先」列を拾う）
-(() => {
-  const p = path.join(DATA, 'セールスフォースMOCHICA参照 - 全てのリードSitoke突合用.csv');
-  if (!fs.existsSync(p)) return;
-  const rows = parseCsv(fs.readFileSync(p, 'utf8'));
-  // ヘッダ行（いずれかのセルが「会社名 / 取引先」）を探し、その列インデックスを特定
-  let colIdx = -1, headerRow = -1;
-  for (let i = 0; i < Math.min(rows.length, 40); i++) {
-    const j = rows[i].findIndex((c) => (c || '').trim() === '会社名 / 取引先');
-    if (j >= 0) { colIdx = j; headerRow = i; break; }
-  }
-  let n = 0;
-  if (colIdx >= 0) {
-    for (let i = headerRow + 1; i < rows.length; i++) {
-      const co = rows[i][colIdx];
-      if (co && co.trim()) { addExclude(co); n++; }
-    }
-  }
-  console.log(`除外源 SF全リード: ${n}社(会社名列idx=${colIdx})`);
-})();
-// アプローチ禁止企業
+// ── 2) 既存リスト除外索引 ────────────────────────────────────
+// 除外集合の構築は exclusion-index.js に集約（2026-07-30）。以前はこのファイル独自の
+// Set(正規化社名/法人番号)で、農協別称・表記ゆれ・納品台帳を突合していなかった。
+// MOCHICA顧客 / BALES既存CRM / SF全リード / 納品済み台帳 ＋ アプローチ禁止企業。
+const exclude = buildExclusionIndex({ masters: true, ledger: true }).idx;
 (() => {
   const p = path.join(DATA, 'アプローチ禁止企業一覧.txt');
   if (!fs.existsSync(p)) return;
   const lines = fs.readFileSync(p, 'utf8').split(/\r?\n/).filter(Boolean);
-  for (const l of lines) addExclude(l);
+  for (const l of lines) exclude.addName(l, 'アプローチ禁止');
   console.log(`除外源 アプローチ禁止: ${lines.length}社`);
 })();
 
@@ -141,7 +101,7 @@ let excluded = 0, itDropped = 0, lowDropped = 0;
 const scored = [];
 for (const [k, rec] of merged) {
   const co = rec._co, num = rec._num;
-  if (exclude.has('N:' + co) || (num && exclude.has('C:' + num))) { excluded++; continue; }
+  if (exclude.has({ 企業名: rec['企業名'] || co, 法人番号: num || '' })) { excluded++; continue; }
   const s = scoreMochica(rec, { now });
   const row = {
     'アポ期待度': s.total,
