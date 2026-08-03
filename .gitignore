@@ -23,7 +23,11 @@ sources/**
 !sources/manifest.json
 !sources/SF-leads.sample.csv
 archive/**
+# eval/ は既定で除外（baseline.json は実在氏名=PII を含むため絶対にコミットしない）。
+# 非PIIの集計成果物のみ allowlist で再包含する。
 eval/**
+!eval/history.jsonl
+!eval/dashboard.html
 
 # ---- 暗号化ボールト/復号平文はローカル限定(既定でコミットしない) ----
 secure/**
@@ -43,3 +47,11 @@ coverage/
 /.idea/
 .DS_Store
 npm-debug.log
+
+# ---- 精度評価の一時出力（ローカル限定・コミットしない） ----
+eval/latest.json
+eval/baseline.json
+
+# ---- 一時クロール出力（絶対にコミットしない） ----
+tmp_crawl_output.txt
+tmp_*.txt

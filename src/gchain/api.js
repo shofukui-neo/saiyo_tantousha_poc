@@ -280,10 +280,11 @@ async function voiceRecordStop() {
   _recording = null;
   try {
     await rec.stop();
-    const { segments, backend } = voiceStt.transcribeStereo(meta.audio_path, {});
-    const record = voiceAnalyze.analyzeCall({ ...meta, segments });
+    const { segments, backend, channels, attributed } = voiceStt.transcribeStereo(meta.audio_path, {});
+    const record = voiceAnalyze.analyzeCall({ ...meta, segments, attributed });
+    record.stt = { backend, channels, attributed };
     voiceStore.saveCall(record);
-    return { ok: true, backend, record: { company: record.company, metrics: record.metrics, feedback: record.feedback, connected: record.connected } };
+    return { ok: true, backend, channels, attributed, record: { company: record.company, metrics: record.metrics, feedback: record.feedback, connected: record.connected } };
   } catch (e) {
     return { ok: false, error: String(e.message), hint: voiceStt.hint() };
   }

@@ -27,7 +27,10 @@
     "deliver": "node src/deliver.js",
     "icp:perfect": "node src/build-icp-perfect-1000.js",
     "icp:fresh": "node --max-old-space-size=3072 src/build-icp-fresh-1000.js",
+    "icp:fresh:rep": "node src/enrich-fresh-rep.js",
     "dashboard": "node src/dashboard.js",
+    "koso": "node src/build-koso-list.js",
+    "koso:test": "node test/koso-signal.test.js",
     "bales:format": "node src/format-bales.js --no-record",
     "bales:format:all": "node src/format-bales.js --scope all --no-record",
     "bales:format:named": "node src/format-bales.js --scope named",
@@ -104,7 +107,7 @@
     "enrich:shinsotsu": "node src/enrich-shinsotsu-flag.js --file data/leads-mochica-target-enriched.csv",
     "enrich:crossref": "node src/enrich-crossref.js --file data/leads-mochica-target-enriched.csv",
     "test:fusion": "node test/name-fusion.test.js",
-    "test:all": "node test/name-fusion.test.js && node test/probe-social.test.js && node test/probe-site-deep.test.js && node test/company-match.test.js && node test/selftest.js && npm run gchain:test",
+    "test:all": "node test/name-fusion.test.js && node test/probe-social.test.js && node test/probe-site-deep.test.js && node test/company-match.test.js && node test/media-crawl.test.js && node test/koso-signal.test.js && node test/mynavi-extract.test.js && node test/email-harvest.test.js && node test/telapo.test.js && node test/boshudan-needs.test.js && node test/selftest.js && npm run gchain:test",
     "encrypt:lists": "node scripts/encrypt-lists.js",
     "decrypt:lists": "node scripts/decrypt-lists.js",
     "secure:setup": "node scripts/setup-security.js",
@@ -121,6 +124,7 @@
     "audit:leak": "node src/audit-leak.js",
     "excl:show": "node src/exclusion-index.js",
     "test:dedupe": "node test/company-match.test.js",
+    "test:media": "node test/media-crawl.test.js",
     "boshudan:split": "node src/split-boshudan-region.js"
   },
   "dependencies": {
