@@ -14,7 +14,6 @@
 require('dotenv').config();
 const fs = require('fs');
 const path = require('path');
-const cheerio = require('cheerio');
 
 const { search, pickProvider, setupHelp } = require('./koso-search');
 const { classifyKoso, extractCompanyName } = require('./koso-signal');
@@ -24,6 +23,7 @@ const { extractText } = require('./fetch');
 const { extractOrganization } = require('./structured');
 const { gbizAvailable, gbizSearch } = require('./gbiz');
 const { toCsv, normCompanyName, normCorpNumber } = require('./csv');
+const { sleep, hostOf } = require('./cli-util');
 const cfg = require('./config');
 
 // ---- CLI引数 ----
@@ -76,36 +76,43 @@ function buildQueries(a) {
 }
 
 // ---- ユーティリティ ----
-const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
-function registrableHost(url) { try { return new URL(url).hostname.replace(/^www\./i, '').toLowerCase(); } catch { return ''; } }
 // 共有 EXCLUDE_DOMAINS に載っていない媒体/集約サイトの追加除外（企業自社ページのみ残す）。
-const KOSO_EXTRA_EXCLUDE = new Set([
+const KOSO_EXTRA_EXCLUDE = [
   'xn--pckua2a7gp15o89zb.com', // 求人ボックス（punycode）
   'job-draft.jp', 'jobtalk.jp', 'stanby.com', 'jp.stanby.com', 'kyujinbox.com',
   'hellowork.mhlw.go.jp', 'koukou.gakusei.hellowork.mhlw.go.jp',
   'ameblo.jp', 'hatenablog.com', 'note.com', 'ameba.jp', 'fc2.com',
-]);
+];
 function isMediaOrExcluded(host) {
   if (!host) return true;
-  if (isExcludedDomain(host)) return true;
-  for (const d of KOSO_EXTRA_EXCLUDE) if (host === d || host.endsWith('.' + d)) return true;
-  return false;
-}
-function ogSiteName(html) {
-  try { const $ = cheerio.load(html); return $('meta[property="og:site_name"]').attr('content') || ''; } catch { return ''; }
+  return isExcludedDomain(host) || isExcludedDomain(host, KOSO_EXTRA_EXCLUDE);
 }
 
-// gBizで社名補完（best-effort・名前一致の最有力1件）
-async function enrichGbiz(name, prefHint) {
+// gBizで社名補完（best-effort・正規化名が一致する1件を優先、無ければ最有力）
+async function enrichGbiz(name) {
   if (!gbizAvailable(cfg) || !name) return null;
   try {
-    const hits = await gbizSearch({ name, prefecture: prefHint || undefined, limit: 5 }, cfg);
+    const hits = await gbizSearch({ name, limit: 5 }, cfg);
     if (!hits || !hits.length) return null;
     const want = normCompanyName(name);
-    // 正規化一致を優先、無ければ先頭
-    return hits.find(h => normCompanyName(h.name) === want) || hits[0];
+    return hits.find((h) => normCompanyName(h.name) === want) || hits[0];
   } catch { return null; }
 }
+
+/** レコードに gBiz の属性（法人番号/業種/所在地/従業員/代表者/URL）を反映。反映したら true。 */
+function applyGbiz(rec, g) {
+  if (!g) return false;
+  if (g.corporateNumber) rec['法人番号'] = normCorpNumber(g.corporateNumber) || g.corporateNumber;
+  if (g.businessSummary || (g.businessItems || []).length) rec['業種'] = g.businessSummary || (g.businessItems || []).join('・');
+  if (g.prefecture) rec['所在地'] = g.prefecture;
+  if (g.employees != null) rec['従業員数'] = g.employees;
+  if (g.representativeName) rec['代表者名'] = g.representativeName;
+  if (!rec['公式URL'] && g.websiteUrl) rec['公式URL'] = g.websiteUrl;
+  return true;
+}
+
+/** URLのオリジン（scheme+host）。解釈できなければ元のURLを返す。 */
+function originOf(url) { try { return new URL(url).origin; } catch { return url; } }
 
 async function main() {
   const a = parseArgs(process.argv);
@@ -143,10 +150,11 @@ async function main() {
       if (acceptedByKey.size >= a.target) break outer;
       const url = r.link;
       if (!url || !/^https?:\/\//i.test(url)) continue;
-      const host = registrableHost(url);
+      const host = hostOf(url);
       if (isMediaOrExcluded(host)) continue;                     // 媒体/SNS/DB/集約サイト を除外
       if (acceptedDomains.has(host)) continue;                   // 既に採用済みドメイン
-      if (seenUrls.has(url)) continue; seenUrls.add(url);
+      if (seenUrls.has(url)) continue;
+      seenUrls.add(url);
 
       // スニペット段階で明らかに情報記事なら本文取得もスキップ（節約）
       const pre = classifyKoso({ title: r.title, snippet: r.snippet, baseYear: a.year });
@@ -162,10 +170,13 @@ async function main() {
       if (!cls.isKosoShinsotsu) continue;
 
       const org = extractOrganization(page.html) || {};
-      const nm = extractCompanyName({ html: page.html, orgName: org.name, ogSiteName: ogSiteName(page.html), title: r.title, snippet: r.snippet });
+      // og:site_name は extractCompanyName が html から自前で読む（ここで先読みしない）
+      const nm = extractCompanyName({ html: page.html, orgName: org.name, title: r.title, snippet: r.snippet });
       if (!nm.name) continue;
       const key = normCompanyName(nm.name);
-      if (!key || acceptedByKey.has(key)) { acceptedDomains.add(host); continue; }
+      // 既出社名ならこのドメインは打ち止め。社名が取れなかっただけならドメインは温存する。
+      if (!key) continue;
+      if (acceptedByKey.has(key)) { acceptedDomains.add(host); continue; }
 
       const rec = {
         '企業名': nm.name,
@@ -177,7 +188,7 @@ async function main() {
         '所在地': org.address || '',
         '従業員数': '',
         '代表者名': '',
-        '公式URL': (() => { try { return new URL(page.finalUrl || url).origin; } catch { return url; } })(),
+        '公式URL': originOf(page.finalUrl || url),
         '電話番号': org.telephone || '',
         '根拠URL': page.finalUrl || url,
         '取得元媒体': `検索API:${provider}`,
@@ -198,15 +209,7 @@ async function main() {
     console.log(`[koso] gBiz補完 開始（${records.length}社）…`);
     let enriched = 0;
     for (const rec of records) {
-      const g = await enrichGbiz(rec['企業名']);
-      if (!g) continue;
-      if (g.corporateNumber) rec['法人番号'] = normCorpNumber(g.corporateNumber) || g.corporateNumber;
-      if (g.businessSummary || (g.businessItems || []).length) rec['業種'] = g.businessSummary || (g.businessItems || []).join('・');
-      if (g.prefecture) rec['所在地'] = g.prefecture;
-      if (g.employees != null) rec['従業員数'] = g.employees;
-      if (g.representativeName) rec['代表者名'] = g.representativeName;
-      if (!rec['公式URL'] && g.websiteUrl) rec['公式URL'] = g.websiteUrl;
-      enriched++;
+      if (applyGbiz(rec, await enrichGbiz(rec['企業名']))) enriched++;
     }
     console.log(`[koso] gBiz補完 完了（${enriched}/${records.length}社に属性付与）`);
   }
@@ -227,4 +230,8 @@ async function main() {
   console.log(`出力: ${outPath}`);
 }
 
-main().catch((e) => { console.error('FATAL', e && e.stack || e); process.exit(1); });
+module.exports = { parseArgs, buildQueries, isMediaOrExcluded, applyGbiz, originOf, BASE_QUERIES };
+
+if (require.main === module) {
+  main().catch((e) => { console.error('FATAL', e && e.stack || e); process.exit(1); });
+}

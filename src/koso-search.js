@@ -13,6 +13,7 @@
 //
 // いずれも戻り値は共通形 { title, link, snippet, displayLink } の配列。
 require('dotenv').config();
+const { sleep } = require('./cli-util');
 
 const env = (k) => (process.env[k] || '').trim();
 
@@ -48,7 +49,6 @@ function setupHelp() {
   ].join('\n');
 }
 
-const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 const TIMEOUT_MS = parseInt(env('KOSO_SEARCH_TIMEOUT_MS') || '15000', 10);
 
 async function getJson(url, headers, body) {
