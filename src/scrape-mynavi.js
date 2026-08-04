@@ -232,6 +232,48 @@ function extractIntentSignals(text) {
   return sig;
 }
 
+/**
+ * 会社概要(outline.html)の本文テキストから ICP判定に効く事実を「ラベル→次ブロック」の構造で取る。
+ * 自由文の正規表現（従業員数[^0-9]{0,6}\d+）は、すかいらーく型の
+ *   「従業員数／すかいらーくグループ 正社員 5,779名／クルー 98,327名」
+ * のような改行＋前置きのある表記を取り落とし・誤読するため、ここではラベル行の“次の行”を丸ごと読む。
+ * 従業員数は複数記載（正社員/クルー、単体/連結）なら最大値を採る＝規模帯(100-2000)から外れる巨大企業を
+ * 取りこぼさない保守側。
+ * @param {string} text document.body.innerText
+ * @returns {{企業名:string,業種:string,従業員数:string,本社:string,上場:string}}
+ */
+function extractOutlineFacts(text) {
+  const t = String(text || '').replace(/\r/g, '');
+  const out = { 企業名: '', 業種: '', 従業員数: '', 本社: '', 上場: '' };
+  // 業種: 「業種」行の次から「基本情報/会社概要/本社」ラベルまでの複数行（マイナビは最大3分類）
+  const ind = t.match(/\n業種\n([\s\S]{1,240}?)\n(?:基本情報|会社概要|本社|資本金|売上高|従業員)/);
+  if (ind) out.業種 = ind[1].split('\n').map((s) => s.trim()).filter(Boolean).slice(0, 3).join('/');
+  // 社名: 「業種」ラベルの直前行（[グループ募集]や上場バッジ行を挟む場合があるので数行さかのぼる）
+  const head = t.slice(0, ind ? t.indexOf(ind[0]) : 400).split('\n').map((s) => s.trim()).filter(Boolean);
+  for (let i = head.length - 1; i >= 0 && i >= head.length - 4; i--) {
+    const s = head[i];
+    if (!s || /^(上場企業|最終更新日|\d{2}\/\d{1,2}\/\d{1,2}|東証|業種)/.test(s)) continue;
+    if (s.length >= 2 && s.length <= 80) { out.企業名 = s; break; }
+  }
+  if (/上場企業|東証(プライム|スタンダード|グロース)/.test(t.slice(0, 600))) out.上場 = '上場';
+  // 本社: 「本社」ラベルの次行（都道府県）
+  const hq = t.match(/\n本社\n([^\n]{2,40})/);
+  if (hq) out.本社 = hq[1].trim();
+  // 従業員数: 「従業員数/従業員（単体）/社員数」ラベルの次行を丸ごと読み、「N名/N人」を全部拾って最大値
+  const emp = t.match(/\n(?:従業員数|従業員（[^）]*）|従業員\([^)]*\)|従業員|社員数)\n([^\n]{1,160})/);
+  if (emp) {
+    const nums = [];
+    const re = /([0-9０-９][0-9０-９,，]{0,8})\s*[名人]/g;
+    let m;
+    while ((m = re.exec(emp[1])) !== null) {
+      const n = parseInt(String(m[1]).replace(/[，,]/g, '').replace(/[０-９]/g, (d) => '０１２３４５６７８９'.indexOf(d)), 10);
+      if (Number.isFinite(n) && n > 0 && n < 2000000) nums.push(n);
+    }
+    if (nums.length) out.従業員数 = String(Math.max(...nums));
+  }
+  return out;
+}
+
 // 1つの募集コース面（displayEmployment 等）から「募集人数 X～Y名」を1件だけ取る。
 // 全角数字を半角化し、レンジは {lo, hi} で返す（"6名"は lo=hi=6）。無ければ null。
 function extractHireOnPage(text) {
@@ -365,6 +407,89 @@ class MynaviScraper {
   }
 
   /**
+   * ディスカバリ経路（ページ送り版）：フリーワード検索の全ページを「次の100社」で辿り、掲載企業を最大 maxPages*100 件収穫する。
+   * 1ページ目だけの discoverCorpIds は 1キーワード=100社で頭打ちになり（実測「食品」は6,150社ヒット中100社しか見ない）、
+   * これが「完全新規の母集団上限」の正体だった。ページ送りは form(displaySearchCorpListByGenCondDispForm) の
+   * POST /doNextPage（displaytop を +100）で、クリックすると通常遷移する＝Playwrightのクリックで素直に辿れる。
+   * @param {string} keyword 業種/職種/地域などのフリーワード
+   * @param {number} maxPages 辿る最大ページ数（1ページ100社）
+   * @returns {Promise<{items: Array<{id,name}>, total: number, pages: number}>}
+   */
+  async discoverCorpIdsPaged(keyword, maxPages = 15) {
+    const page = await this.context.newPage();
+    const out = []; const seen = new Set();
+    let total = 0, pages = 0;
+    const harvest = () => page.evaluate(() => {
+      const res = []; const s = {};
+      for (const a of Array.from(document.querySelectorAll('a[href]'))) {
+        const m = (a.getAttribute('href') || '').match(/corp(\d+)\/outline/);
+        if (!m || s[m[1]]) continue; s[m[1]] = 1;
+        res.push({ id: m[1], name: (a.innerText || '').replace(/\s+/g, ' ').trim() });
+      }
+      return res;
+    }).catch(() => []);
+    try {
+      await page.goto(CONFIG.searchUrl(this.gradYear, keyword), { waitUntil: 'domcontentloaded' }).catch(() => {});
+      await page.waitForLoadState('networkidle', { timeout: 10000 }).catch(() => {});
+      // 総ヒット件数（idListMax）＝このキーワードの母集団サイズ
+      total = await page.evaluate(() => {
+        const el = document.querySelector('input[name="idListMax"]');
+        return el ? parseInt(el.value, 10) || 0 : 0;
+      }).catch(() => 0);
+      for (let p = 0; p < maxPages; p++) {
+        const items = await harvest();
+        let added = 0;
+        for (const it of items) if (it.id && !seen.has(it.id)) { seen.add(it.id); out.push(it); added++; }
+        pages++;
+        if (!added) break;                        // 同じ面を再取得＝末尾
+        if (out.length >= total && total > 0) break;
+        const next = page.locator('a:has-text("次の100社")').first();
+        if (!(await next.count().catch(() => 0))) break;
+        await Promise.all([
+          page.waitForNavigation({ waitUntil: 'domcontentloaded', timeout: 20000 }).catch(() => {}),
+          next.click({ timeout: 10000 }).catch(() => {}),
+        ]);
+        await page.waitForLoadState('networkidle', { timeout: 8000 }).catch(() => {});
+        await sleep(700); // ページ送りの礼儀
+      }
+    } catch (_) { /* keyword単位の失敗は無視 */ } finally {
+      await page.close().catch(() => {});
+    }
+    return { items: out, total, pages };
+  }
+
+  /**
+   * 会社概要（outline.html）1枚だけを開いて ICP判定に効く事実（業種・従業員数・本社・上場）を構造で取る。
+   * 全面巡回(scrapeByCorp)の前段プレフィルタ用。1ページ=数秒なので、規模帯/非ITで落ちる社に
+   * 問合せ先巡回のコストを払わずに済む（実測で探索スループットが約3倍）。
+   * @param {string} id corpID
+   */
+  async scrapeOutline(id) {
+    const out = { corpID: id, 企業名: '', 業種: '', 従業員数: '', 本社: '', 上場: '', ok: false };
+    const page = await this.context.newPage();
+    try {
+      const url = `https://job.mynavi.jp/${this.gradYear}/pc/search/corp${id}/outline.html`;
+      const resp = await page.goto(url, { waitUntil: 'domcontentloaded' }).catch(() => null);
+      if (resp && resp.status() >= 400) return out;
+      await page.waitForLoadState('networkidle', { timeout: 6000 }).catch(() => {});
+      const got = await page.evaluate(() => ({
+        text: document.body ? document.body.innerText : '',
+        // h1 は社名そのもの（"クックマート(株)"）。本文の見出し推定より確実で、
+        // 「既卒可」等のバッジ行を社名と誤認する事故を防ぐ＝別卒年ページの同一社判定にも使える。
+        h1: (document.querySelector('h1') || {}).innerText || '',
+      })).catch(() => ({ text: '', h1: '' }));
+      if (!got.text) return out;
+      const f = extractOutlineFacts(got.text);
+      Object.assign(out, f, { ok: true });
+      const h1 = String(got.h1 || '').replace(/\s+/g, ' ').trim();
+      if (h1) out.企業名 = h1;
+    } catch (_) { /* 1社の失敗は無視 */ } finally {
+      await page.close().catch(() => {});
+    }
+    return out;
+  }
+
+  /**
    * ディスカバリ経路：検索を挟まず corpID から直接 詳細面を巡回して担当者名（3パターン）と到達性を取る。
    * @param {string} id corpID
    * @param {string} name 企業名（検索結果リンクの表示名）
@@ -373,7 +498,7 @@ class MynaviScraper {
     const r = {
       企業名: name || '', corpID: id, マイナビ掲載: '○', 採用担当者名: '', 担当者確度: '', パターン: '',
       役職: '', 部署: '', メール: '', 電話番号: '', 採用ページURL: `https://job.mynavi.jp/${this.gradYear}/pc/search/corp${id}/outline.html`,
-      募集職種: '', 募集職種数: '', 採用予定人数: '', 卒年: '', 従業員数: '', 根拠: '',
+      募集職種: '', 募集職種数: '', 採用予定人数: '', 卒年: '', 従業員数: '', 業種: '', 本社: '', 上場: '', 根拠: '',
     };
     const page = await this.context.newPage();
     try {
@@ -569,6 +694,16 @@ class MynaviScraper {
       if (c.部署 && !r.部署) r.部署 = c.部署;
       if (c.メール && !r.メール) r.メール = c.メール;
       if (c.電話番号 && !r.電話番号) r.電話番号 = c.電話番号;
+      // outline.html は会社概要の構造ページ＝ICP判定の一次情報。業種/従業員数はここの値を最優先で採る
+      // （自由文の従業員数マッチは他社の記載や採用データの数字を拾う誤読があるため上書きする）。
+      if (/\/outline\.html$/.test(url)) {
+        const facts = extractOutlineFacts(text);
+        if (facts.業種) r.業種 = facts.業種;
+        if (facts.従業員数) r.従業員数 = facts.従業員数;
+        if (facts.本社) r.本社 = facts.本社;
+        if (facts.上場) r.上場 = facts.上場;
+        if (facts.企業名 && !r.企業名) r.企業名 = facts.企業名;
+      }
       const sig = extractIntentSignals(text);
       if (sig.募集職種 && !r.募集職種) r.募集職種 = sig.募集職種;
       if (sig.募集職種数 && !r.募集職種数) r.募集職種数 = sig.募集職種数;
@@ -612,4 +747,4 @@ async function main() {
 
 if (require.main === module) main().catch((e) => { console.error('FATAL', e); process.exit(1); });
 
-module.exports = { MynaviScraper, parseContactBlock, extractRecruiterName, extractIntentSignals, extractHireOnPage, sumHireCourses, validName, CONFIG };
+module.exports = { MynaviScraper, parseContactBlock, extractRecruiterName, extractIntentSignals, extractOutlineFacts, extractHireOnPage, sumHireCourses, validName, CONFIG };

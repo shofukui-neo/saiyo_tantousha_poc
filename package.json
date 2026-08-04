@@ -113,7 +113,14 @@
     "eval": "node src/eval/cli.js run",
     "eval:baseline": "node src/eval/cli.js baseline",
     "eval:gate": "node src/eval/cli.js gate",
-    "eval:dashboard": "node src/eval/cli.js dashboard"
+    "eval:dashboard": "node src/eval/cli.js dashboard",
+    "icp:v2": "node --max-old-space-size=3072 src/build-icp-fresh-v2.js",
+    "icp:verify": "node src/verify-icp-legacy.js",
+    "icp:final": "node src/build-icp-final-1000.js",
+    "icp:names": "node src/enrich-icp-names.js",
+    "mynavi:corpus": "node src/mynavi-corpus.js",
+    "icp:crossyear": "node src/enrich-mynavi-crossyear.js --file data/leads-icp-fresh-perfect-1000.csv --conc 3",
+    "icp:finalize": "node src/finalize-icp-1000.js"
   },
   "dependencies": {
     "cheerio": "^1.1.0",
