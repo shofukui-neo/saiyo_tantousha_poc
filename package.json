@@ -120,7 +120,11 @@
     "icp:names": "node src/enrich-icp-names.js",
     "mynavi:corpus": "node src/mynavi-corpus.js",
     "icp:crossyear": "node src/enrich-mynavi-crossyear.js --file data/leads-icp-fresh-perfect-1000.csv --conc 3",
-    "icp:finalize": "node src/finalize-icp-1000.js"
+    "icp:finalize": "node src/finalize-icp-1000.js",
+    "icp:hire6:record": "node src/enrich-hire-record.js --conc 4",
+    "icp:hire6:enrich": "node src/enrich-hire-crossyear.js --conc 3 --search-fallback",
+    "icp:hire6:harvest": "node src/harvest-icp-hire6.js",
+    "icp:hire6": "node src/build-icp-hire6-500.js"
   },
   "dependencies": {
     "cheerio": "^1.1.0",
