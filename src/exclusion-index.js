@@ -39,9 +39,22 @@ const { createMatchIndex } = require('./company-match');
 const ROOT = path.resolve(__dirname, '..');
 const DATA = path.join(ROOT, 'data');
 
+/**
+ * data/ にある最新の BALESCLOUD leadList を選ぶ（ファイル名の日時スタンプ昇順の末尾）。
+ * BALESは定期的に新しいスナップショットへ差し替わるため、固定パスにすると
+ * 旧ファイル削除時にBALES層が丸ごと未突合になる（＝既存企業が新規として出る）。
+ */
+function latestBales() {
+  const fallback = path.join(DATA, 'BALESCLOUDの既存リスト - 202608071207_leadList_utf-8.csv');
+  try {
+    const c = fs.readdirSync(DATA).filter((f) => /^BALESCLOUD.*leadList.*\.csv$/i.test(f)).sort();
+    return c.length ? path.join(DATA, c[c.length - 1]) : fallback;
+  } catch { return fallback; }
+}
+
 const FILES = {
   customers: path.join(DATA, 'MOCHICAの既存顧客リスト - mochica-companies-list.csv'),
-  bales: path.join(DATA, 'BALESCLOUDの既存リスト - 202607062007_leadList_utf-8.csv'),
+  bales: latestBales(),
   sf: path.join(DATA, 'セールスフォースMOCHICA参照 - 全てのリードSitoke突合用.csv'),
   ledger: path.join(DATA, '_delivered-ledger.csv'),
   pool: path.join(DATA, 'leads-consolidated-all.csv'),
@@ -103,6 +116,14 @@ function buildExclusionIndex(opts = {}) {
     if (!fs.existsSync(p)) { missing.push(`${label}: ${path.relative(ROOT, p)}`); return null; }
     return fs.readFileSync(p, 'utf8');
   };
+  // 「行はあるのに突合キーが1つも増えない」＝列名の取り違え/区切り文字違いで実質未突合。
+  // ファイル未配置と同じく missing に積んで、黙って0件突合が通らないようにする
+  // （実例: 顧客マスタがTSVでカンマパースだと1列に潰れ、430行読めているのにキー0だった）。
+  const assertIndexed = (label, rows, before) => {
+    if (rows > 0 && idx.size === before) {
+      missing.push(`${label}: ${rows}行読めたが突合キー0（列名または区切り文字の不一致＝実質未突合）`);
+    }
+  };
 
   if (useMasters) {
     layers.push([...wanted].filter((l) => l !== 'ledger' && l !== 'pool').join('+'));
@@ -110,23 +131,29 @@ function buildExclusionIndex(opts = {}) {
     const t1 = wanted.has('customers') ? readOrMiss(files.customers, 'MOCHICA顧客') : null;
     if (t1 != null) {
       const { records } = readCsv(t1);
+      const before = idx.size;
       for (const r of records) { idx.addName(r['法人名'], 'MOCHICA顧客'); idx.addName(r['LINEアカウント登録企業名'], 'MOCHICA顧客'); idx.addBango(r['法人番号'], 'MOCHICA顧客', r['法人名'] || ''); }
       stats['MOCHICA顧客'] = records.length;
+      assertIndexed('MOCHICA顧客', records.length, before);
     }
     // BALES既存CRM
     const t2 = wanted.has('bales') ? readOrMiss(files.bales, 'BALES既存CRM') : null;
     if (t2 != null) {
       const { records } = readCsv(t2);
+      const before = idx.size;
       for (const r of records) idx.addName(r['会社情報：会社名'], 'BALES既存');
       stats['BALES既存'] = records.length;
+      assertIndexed('BALES既存CRM', records.length, before);
     }
     // SF全リード
     const t3 = wanted.has('sf') ? readOrMiss(files.sf, 'SF全リード') : null;
     if (t3 != null) {
       const { names, headerFound } = parseSfReport(t3);
       if (!headerFound) missing.push('SF全リード: ヘッダ「会社名 / 取引先」を検出できず0件（形式変更の疑い）');
+      const before = idx.size;
       for (const n of names) idx.addName(n, 'SFリード');
       stats['SFリード'] = names.length;
+      assertIndexed('SF全リード', names.length, before);
     }
   }
   if (useLedger) {

@@ -3,11 +3,25 @@
 // 多系統マージ（merge.js）・ソース別KPI（source-kpi.js）・統合オーケストレータ（build-list.js）で共用。
 // 依存なし・純ロジック（ネットワーク/APIキー不要）。
 
-// ---- CSVパース（ダブルクォート対応・改行/カンマ内包可・BOM除去）----
-function parseCsv(text) {
+/**
+ * 区切り文字の推定（ヘッダ行のみで判定）。
+ * スプレッドシートから落とした「.csv だが中身はTSV」が混ざるため。実害があった例:
+ * MOCHICA既存顧客マスタがTSVで、カンマ固定パースだと1列に潰れて `法人名` が引けず、
+ * exclusion-index の顧客レイヤが**0件突合のまま警告も出ずに**通っていた（2026-08）。
+ * ヘッダにカンマが1つでもあれば従来通りカンマ（既存CSVの挙動を変えない）。
+ */
+function sniffDelimiter(s) {
+  const head = s.slice(0, s.indexOf('\n') + 1 || s.length);
+  if (head.includes(',')) return ',';
+  return head.includes('\t') ? '\t' : ',';
+}
+
+// ---- CSVパース（ダブルクォート対応・改行/カンマ内包可・BOM除去・TSV自動判別）----
+function parseCsv(text, opts = {}) {
   const rows = [];
   let row = [], cur = '', q = false;
   const s = String(text).replace(/^﻿/, '');
+  const delim = opts.delimiter || sniffDelimiter(s);
   for (let i = 0; i < s.length; i++) {
     const ch = s[i];
     if (q) {
@@ -15,7 +29,7 @@ function parseCsv(text) {
       else if (ch === '"') q = false;
       else cur += ch;
     } else if (ch === '"') q = true;
-    else if (ch === ',') { row.push(cur); cur = ''; }
+    else if (ch === delim) { row.push(cur); cur = ''; }
     else if (ch === '\n') { row.push(cur); rows.push(row); row = []; cur = ''; }
     else if (ch === '\r') { /* skip */ }
     else cur += ch;
@@ -38,7 +52,7 @@ function rowsToRecords(rows) {
 }
 
 // CSVテキスト → オブジェクト配列（ショートカット）
-function readCsv(text) { return rowsToRecords(parseCsv(text)); }
+function readCsv(text, opts) { return rowsToRecords(parseCsv(text, opts)); }
 
 function csvEscape(v) {
   const sv = String(v == null ? '' : v);
@@ -116,6 +130,6 @@ function truthy(v) {
 }
 
 module.exports = {
-  parseCsv, rowsToRecords, readCsv, csvEscape, toCsv,
+  parseCsv, rowsToRecords, readCsv, csvEscape, toCsv, sniffDelimiter,
   toHalfWidth, normCorpNumber, normCompanyName, stripAnnotations, mergeKey, truthy, CORP_FORMS,
 };

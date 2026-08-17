@@ -41,6 +41,7 @@
     "bales:format:pure": "node src/format-bales.js --scope callable --exclude-rep --out data/leads-bales-callable-pure.csv",
     "bales:format:icp": "node src/format-bales.js --scope callable --exclude-rep --icp-only --out data/leads-bales-icp.csv",
     "bales:format:icp:clean": "node src/format-bales.js --scope callable --exclude-rep --icp-only --clean-names --out data/leads-bales-icp-clean.csv",
+    "sf:fresh": "node --max-old-space-size=4096 src/build-sf-fresh-list.js",
     "boshudan": "node src/build-boshudan-list.js",
     "badnumber": "node src/build-badnumber-list.js",
     "badnumber:strict": "node src/build-badnumber-list.js --picklist-only",
