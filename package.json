@@ -124,7 +124,10 @@
     "icp:hire6:record": "node src/enrich-hire-record.js --conc 4",
     "icp:hire6:enrich": "node src/enrich-hire-crossyear.js --conc 3 --search-fallback",
     "icp:hire6:harvest": "node src/harvest-icp-hire6.js",
-    "icp:hire6": "node src/build-icp-hire6-500.js"
+    "icp:hire6": "node src/build-icp-hire6-500.js",
+    "icp:hire6:wide": "node src/harvest-icp-wide.js --emp-min 1 --emp-max 1000000 --conc 6",
+    "icp:hire6:gakujo": "node src/harvest-gakujo-icp.js --conc 5",
+    "icp:nooverlap": "node src/build-icp-hire6-500.js --exclude-past --emp-min 50 --emp-max 3000 --out data/leads-icp-nooverlap-130.csv"
   },
   "dependencies": {
     "cheerio": "^1.1.0",

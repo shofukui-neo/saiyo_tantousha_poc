@@ -30,7 +30,7 @@ const { readCsv, toCsv } = require('./csv');
 const { scoreMochica, parseEmployees } = require('./mochica-fit');
 const { isExcludedIndustry } = require('./icp-rules');
 const { normalizeJpPhone } = require('./phone');
-const { buildExclusion, mkey, EMP_MIN, EMP_MAX } = require('./build-icp-fresh-1000');
+const { buildExclusion, mkey, EMP_MIN: EMP_MIN_DEF, EMP_MAX: EMP_MAX_DEF } = require('./build-icp-fresh-1000');
 
 const ROOT = path.resolve(__dirname, '..');
 const getArg = (n, d) => { const i = process.argv.indexOf('--' + n); return i >= 0 && process.argv[i + 1] && !process.argv[i + 1].startsWith('--') ? process.argv[i + 1] : d; };
@@ -39,12 +39,21 @@ const REPORT = OUT.replace(/\.csv$/, '') + '-report.md';
 const TARGET = parseInt(getArg('target', '500'), 10);
 const HIRE_MIN = parseInt(getArg('min', '6'), 10);
 const LEDGER = path.resolve(ROOT, getArg('ledger', 'data/hire-count.json'));
+// 規模帯（既定はICPの100〜2000名。--emp-min/--emp-max で広げられる）
+const EMP_MIN = parseInt(getArg('emp-min', String(EMP_MIN_DEF)), 10);
+const EMP_MAX = parseInt(getArg('emp-max', String(EMP_MAX_DEF)), 10);
+// 「過去に渡したリスト」と1社も被らせない（--exclude-past。ユーザー指定 2026-08-20: 対象はすべての納品物）
+const EXCLUDE_PAST = process.argv.includes('--exclude-past');
+const PAST_FILES = ['data/leads-icp-fresh-perfect-1000.csv', 'data/leads-icp-perfect-named-1000.csv',
+  'data/leads-icp-fresh-10000.csv', 'data/leads-icp-fresh-named-1000.csv', 'data/leads-icp-hire6-500.csv'];
 // 入力は「先に書いてあるものを優先」（納品済1000件は氏名エンリッチ済なので最優先）
 const INPUTS = [
   ['data/leads-icp-fresh-perfect-1000.csv', '納品済1000(氏名エンリッチ済)'],
   ['data/icp-legacy-verified.csv', 'v1検証済プール'],
   ['data/icp-fresh-pool.csv', 'v2新規発掘プール'],
   ['data/icp-hire6-pool-27.csv', '27卒コーパス新規発掘(採用6名以上で発掘)'],
+  ['data/icp-wide-pool.csv', '規模帯拡張の再探索(HTTP実取得)'],
+  ['data/icp-gakujo-pool.csv', 'あさがくナビ新母集団'],
 ];
 
 const log = (m) => console.log(`[${new Date().toISOString()}] ${m}`);
@@ -93,6 +102,17 @@ function run() {
     log(`  NG企業（アプローチ禁止）: ${ng.size}社`);
   }
 
+  // 過去に渡したリスト（統合マスタに入っていない直近の納品物）
+  const pastNames = new Set();
+  if (EXCLUDE_PAST) {
+    for (const rel of PAST_FILES) {
+      const f = path.join(ROOT, rel);
+      if (!fs.existsSync(f)) continue;
+      try { for (const r of readCsv(fs.readFileSync(f, 'utf8')).records) { const k = mkey(r['企業名']); if (k) pastNames.add(k); } } catch (e) {}
+    }
+    log(`  過去に渡したリスト（除外対象）: ${pastNames.size}社`);
+  }
+
   const kept = [];
   const why = {};
   const seenKey = new Set(), seenCorp = new Set();
@@ -109,6 +129,7 @@ function run() {
     // ① 完全新規
     if (excl.names.has(k)) { drop('既存(マスタ/CRM)に存在'); continue; }
     if (ng.has(k)) { drop('アプローチ禁止企業'); continue; }
+    if (pastNames.has(k)) { drop('過去に渡したリストに既出'); continue; }
     // ② 新卒インテント（マイナビ掲載を実取得している行だけ）
     const m0 = scoreMochica(r);
     if (!m0.flags.verifiedIntent) { drop('新卒インテント未確認'); continue; }
@@ -130,7 +151,9 @@ function run() {
     //    実測で 3) が 2) を上回って過大表示になる社があったため（Bフードサイエンス 自由文40名／実際は24～40名）、
     //    3) は 1)2) がどちらも無い社の参考値に降格し、判定には使わない。
     const led = (corp && ledger[corp]) || {};
-    const rec = num(led.実績人数);      // ① 実績（直近年）
+    // ① 実績（直近年）。台帳に無くても、発掘層が構造化ブロックから書いた列があればそれを使う
+    //    （あさがくナビ「採用予定人数／実績」など、媒体側の表から取った値。自由文ではない）。
+    const rec = num(led.実績人数) || num(r['採用実績人数']);
     const plan = num(led.人数);         // ② 募集人数コース合算の下限和
     const loose = num(r['採用予定人数']); // ③ 自由文の単発読み（参考）
     if (!rec && !plan) { drop(loose ? '採用人数の裏取り無し(自由文のみ)' : '採用人数が不明(媒体に記載なし)'); continue; }
@@ -139,8 +162,8 @@ function run() {
     const useRec = rec >= plan;
     const hireKind = useRec ? `実績(${led.実績年 || ''}年)` : '募集予定';
     const hireSrc = useRec
-      ? (led.実績根拠 || 'マイナビ会社概要 過去3年間の新卒採用者数')
-      : (led.根拠 || 'マイナビ採用データ 募集人数コース合算');
+      ? (led.実績根拠 || String(r['検証'] || '') || 'マイナビ会社概要 過去3年間の新卒採用者数')
+      : (led.根拠 || String(r['検証'] || '') || 'マイナビ採用データ 募集人数コース合算');
     const hireRange = useRec ? `${rec}名` : (led.レンジ || `${hire}名`);
 
     seenKey.add(k); if (corp) seenCorp.add(corp);
@@ -192,7 +215,7 @@ function run() {
     if (isExcludedIndustry(r['業種'])) w.push('IT/ソフト');
     if (!has(r['業種'])) w.push('業種空欄');
     if (!normalizeJpPhone(String(r['電話番号'] || ''))) w.push('電話無効');
-    if (!/マイナビ/.test(String(r['掲載媒体'] || ''))) w.push('新卒媒体掲載なし');
+    if (!/マイナビ|あさがくナビ/.test(String(r['掲載媒体'] || ''))) w.push('新卒媒体掲載なし');
     if (num(r['年間新卒採用人数']) < HIRE_MIN) w.push(`採用${HIRE_MIN}名未満`);
     if (excl.names.has(k)) w.push('既存に存在');
     if (w.length) bad.push({ 企業名: r['企業名'], 理由: w.join('/') });

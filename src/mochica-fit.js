@@ -112,7 +112,7 @@ function scoreIntent(rec) {
 
   // 採用媒体での掲載を実取得できたか（マイナビ/リクナビ/キャリタス/ワンキャリアいずれか）。
   // scrape-pages 層が 掲載媒体 列に実掲載を刻む＝“本当に新卒採用している”の最強裏取り。
-  const MEDIA_RE = /マイナビ|リクナビ|キャリタス|ワンキャリア|ONE ?CAREER/i;
+  const MEDIA_RE = /マイナビ|リクナビ|キャリタス|ワンキャリア|ONE ?CAREER|あさがくナビ|Ｒｅ就活|Re就活/i;
   const mynaviHit = truthy(rec['マイナビ掲載']) || truthy(rec['新卒掲載確認']) ||
     truthy(rec['キャリタス掲載']) || truthy(rec['リクナビ掲載']) || truthy(rec['ワンキャリア掲載']) ||
     MEDIA_RE.test(String(rec['掲載媒体'] || '')) || MEDIA_RE.test(String(rec['発見媒体'] || ''));

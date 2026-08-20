@@ -1,0 +1,22 @@
+従業員 => 従業員数 | 1,550名（本社グループ550名、ASAHI KOSEI(M) SDN.BHD.1000名） | 本社所在地 | 〒577-0835　大
+採用予定 => (なし)
+採用人数 => (なし)
+募集人数 => (なし)
+電話 => (なし)
+設立 => 設立以来ずっと黒字経営を続けてきた当社！社員の働きやすさや、業務の効率化などを日々考え、常に最先端を進んでいます。また、男女ともに長く活躍で
+資本金 => 資本金 | 16億円（グループ全体） | 売上高 | 267億円（グループ全体） | 従業員数 | 1,550名（本社グループ550名、ASAHI KOSEI(
+本社 => 本社 | &#x5927;&#x962A;&#x5E9C; | 働き方の特徴 | &#x5E74;&#x9593;&#x4F11;&#x65E5;120
+所在地 => 所在地 | 〒577-0835　大阪府東大阪市柏田西2-17-35 | 事業内容 | 精密ダイカスト製造・精密金型 | 精密切削（精密機械部品・一般産業機器
+業種 => 業種 | &#x7CBE;&#x5BC6;&#x6A5F;&#x5668;&#x30FB;&#x8A08;&#x6E2C;&#x6A5F;&#x
+初任給 => (なし)
+過去 => (なし)
+
+[リンク]
+https://www.gakujo.ne.jp/campus/company/baseinfo/148/
+/campus/new/student/company/css/cmp_master.css?v=mL7zESb-AIKkLlGacasaTWIeBOGFRqOAADsi6Q4DljQ
+/campus/new/student/company/css/cmp_common.css?v=hqW9GWYfZavvmoY9ySwrTUsFq6aG7vOFSjd4A8pOfrs
+/campus/new/student/company/css/CmpBaseInfo.css?v=JRT26zTgcSKtEgsAkTVcTM_C2xjoBwPVa1E-IYS584Y
+/campus/new/student/company/css/CmpEntryButton.css?v=or_HQoKT-Old5dlLWl_NsWOpOND71lknZ_xPrdDBo_E
+/campus/company/baseinfo/148/
+/campus/company/employ/148/
+/campus/company/cmp_seminar?p1=148&amp;p2=&amp;p5=1&amp;sitemode=recruit
