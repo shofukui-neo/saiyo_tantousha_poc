@@ -20,6 +20,7 @@
     "gchain:web": "node src/gchain/server.js",
     "leads": "node src/app.js",
     "score": "node src/score-list.js",
+    "score:sf": "node src/score-sf-leads.js",
     "target": "node src/build-target-list.js",
     "new-list": "node src/build-new-icp-list.js",
     "new-list:from-raw": "node src/build-new-icp-list.js --skip-harvest",
