@@ -608,3 +608,46 @@ node src/build-boshudan-list.js --min-score 90 --limit 200   # 上澄みだけ�
 | `data/bales-母集団課題-根拠.csv` | 架電者が読むレビュー用。**優先度／スコア／ニーズ強度／ニーズ分類／根拠（実際の記録の抜粋）／名指し可否／接点区分／失注理由**などを1行に |
 
 > 取込用CSVは**原本を書き換えません**（顧客の課題感などのCRM値を上書きしない）。根拠は必ずレビュー用CSV側で確認してください。個人情報を含むため取り扱いは [SECURITY.md](SECURITY.md) に従い、**納品時はダウンロードフォルダへ移動**します。
+
+---
+
+# 利用ATS判定（エントリーページURL → 採用管理システム）
+
+エントリーページのURLから、その企業が使っている **ATS（採用管理システム）** を判定します。判定ロジックは [`src/ats.js`](src/ats.js)（純ロジック・ネットワーク不要）、CLIは [`src/enrich-ats.js`](src/enrich-ats.js)。詳細は [docs/ats-detection.md](docs/ats-detection.md)。
+
+```bash
+npm run ats -- --url "https://www.career-cloud.asia/27/form/entry?id=16849397703997"
+# → ATS: 採用一括かんりくん / ベンダー: HRクラウド / 営業メモ: 競合ATS導入済み＝リプレイス提案
+
+npm run ats -- --in data/leads.csv --out data/leads-ats.csv        # 一括（URLのみで判定）
+npm run ats:live -- --in data/leads.csv --out data/leads-ats.csv   # 決まらない行だけページ取得（robots遵守）
+npm run ats:all                                                     # 全社スイープ（公式サイト→採用ページ→エントリー導線）
+npm run ats:lists                                                   # 利用中ATS別のリストを一括生成
+npm run test:ats                                                    # 単体テスト（test:all にも組込済み）
+```
+
+| URLのホスト | 判定 |
+|---|---|
+| `career-cloud.asia` | 採用一括かんりくん（管理くん・HRクラウド） |
+| `job.axol.jp` / `mail.axol.jp` | アクセスオンライン AOL/AOLC（マイナビ） |
+| `hrmos.co` | HRMOS採用（ハーモス・ビズリーチ） |
+| `sonar-ats.jp` / `i-web.jp` / `jobsuite.jp` / `ats.jobcan.jp` ほか | 各競合ATS |
+| `job.rikunabi.com` / `job.mynavi.jp` ほか | ナビ媒体（ATSではない＝未導入の可能性） |
+| Googleフォーム / formrun / Contact Form 7 | 汎用フォーム＝**ATS未導入シグナル** |
+| `mochica.jp` | MOCHICA（自社）＝既存顧客として除外 |
+
+判定は **①URLホスト（確度0.95）→ ②リダイレクト後URL（0.90）→ ③HTML内の埋め込み iframe/script/form action（0.85）→ ④本文マーカー（0.60）** の順。自社サイトにフォームを埋め込む構成はURLに出ないため③が要です。サブドメインは一致扱い、部分文字列一致は誤検知になるため弾きます（`career-cloud.asia.evil.com` は不一致）。
+
+## 全企業スイープ（`npm run ats:all`）
+
+エントリーURLが分かっていない企業も含め、手元の**全社**（統合マスタ＋ターゲット＋BALESをホストで名寄せして実測11,232社）を公式サイトから辿って判定します（[src/enrich-ats-all.js](src/enrich-ats-all.js)）。1社あたり **最大3取得**で、①URLホストだけで決まるなら取得しない ②起点ページのHTML内埋め込み ③採用ページへ1hop ④採用ページ内の「エントリー/応募」リンクを1つだけ追う（外部ホストならURLだけで判定＝取得しない）。
+
+1社1行の追記専用ジャーナル（`data/ats-scan/journal.jsonl`）に逐次書くので、**途中で止めても成果は残り、再実行で続きから走ります**（`npm run ats:all:rebuild` で取得せずCSVだけ再生成）。出力の `CRMとの一致` 列でCRMの手入力値との食い違いを監査できます（媒体リンクはATSの証拠にならないので、一致/不一致を出すのはATS種別が取れた時だけ）。
+
+## 管理ツール別リスト（`npm run ats:lists`）
+
+BALES既存リードを**使っている管理ツールごとに切り分けて**リスト化します（[src/build-ats-lists.js](src/build-ats-lists.js)）。CRMの `カスタム情報：利用中ATS` は手入力で `sonarATS`／`SONAR`、`採用一括かんりくん`／`管理くん` と表記が割れているため、`normalizeAtsName()` で名寄せしてから束ねます。`--enrich` にエントリーURL判定の結果を渡すと、CRMが空の行だけを補完します（**実測値は上書きしない**）。
+
+除外・名寄せ・採点の基準は母集団課題リストと同じ（アプローチ禁止／架電拒否／電話なし／商談進行中／MOCHICA既存顧客／IT業種／従業員100名未満）。出力は `data/ats-lists/` にツールごとの **取込用CSV（BALES原本列）** と **根拠つきレビューCSV**、加えて `_全ツール横断-根拠.csv` と `_ATS別サマリ.csv`。
+
+出力列は `ATS` `ATSベンダー` `ATS種別` `ATS確度` `ATS根拠` `ATS併用` `営業メモ` `ATS判定日`。手入力で空が多い `カスタム情報：利用中ATS` を埋めたい場合は `--fill-col "カスタム情報：利用中ATS"`（**空セルのみ補完・既存値は上書きしない**）。ベンダー追加はコードを触らず `data/ats-registry.json` で可能です。

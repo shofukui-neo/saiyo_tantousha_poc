@@ -36,13 +36,24 @@ const ROOT = path.resolve(__dirname, '..');
 
 // --- 同業・不適合の辞書 -----------------------------------------------------
 // 求人媒体・ATSベンダー・RPOは「MOCHICAの買い手」ではなく競合/提携先。名指しで落とす。
-const MEDIA_ATS_RE = /(マイナビ|リクルート|ディップ|エン・?ジャパン|パーソル|アルバイトタイムス|学情|文化放送キャリアパートナーズ|ジョブカン|sonar|DONUTS|ネオキャリア|ポート株式会社)/i;
+const MEDIA_ATS_RE = /(マイナビ|リクルート|ディップ|エン・?ジャパン|パーソル|アルバイトタイムス|学情|文化放送キャリアパートナーズ|ジョブカン|sonarATS|DONUTS|ネオキャリア)/i;
+// 部分一致だと巻き込み事故を起こす社名は完全一致で持つ（例「ポート株式会社」は
+// 「広電エアサポート株式会社」に含まれてしまい、無関係の企業を同業として落とす）。
+const MEDIA_ATS_EXACT = new Set(['株式会社ポート', 'ポート株式会社'].map(normCompanyName));
 // 人材紹介・派遣・研修は自社でも新卒を採るが、提携/競合の見極めが要る。落とさずスコアで沈める。
 const HR_VENDOR_RE = /(人材|紹介|派遣|研修|キャリア|ヒューマンリソース|HR)/i;
 // 法人実体が薄い先（屋号・個人）。フリーメール＋法人格なしの合わせ技でだけ効かせる。
 const FREE_MAIL_RE = /@(gmail|yahoo|outlook|hotmail|icloud|nifty|ezweb|docomo|eonet|ocn|so-net|plala)\./i;
 const CORP_FORM_RE = /(株式会社|有限会社|合同会社|医療法人|社会福祉法人|学校法人|公益財団|一般社団|協同組合|農業協同組合)/;
 const MOBILE_RE = /^0[789]0/;
+// 自治体・公的機関＝公務員試験による一括採用＋調達は入札。民間ATSの購買主体ではない。
+const PUBLIC_HARD_RE = /(市役所|区役所|町役場|村役場|県庁|都庁|府庁|警察本部|消防局|消防本部|独立行政法人|地方独立行政法人)/;
+// 公立の大学/病院/施設。採用主体ではあるが調達ルールが違うので落とさずスコアで沈める。
+const PUBLIC_SOFT_RE = /(国立大学法人|公立大学法人|県立|市立|町立|村立|都立|府立|公益財団法人|財団法人|損害保険料率算出機構)/;
+// グループ/持株の総称表記。実体法人（採用主体）が特定できていない＝そのままでは架電先にならない。
+const GROUP_RE = /(グループ|ホールディングス|ＨＤ|総本部|連合会)$/;
+// 単一事業所/店舗の表記。法人全体ではなく1拠点＝規模フロア未満になりやすい。
+const SITE_RE = /(店|園|ホーム|支店|営業所|製造所|工場|センター)$/;
 
 // --- 列名ゆれ ---------------------------------------------------------------
 const COL = {
@@ -64,9 +75,13 @@ function parseHireRange(s) {
   const m = t.match(/(\d+)/);
   return m ? parseInt(m[1], 10) : null;
 }
-// 「300～500人未満」→{lo:300,hi:500} / 「1千～2千人未満」→{lo:1000,hi:2000} / 「不明」→null
+// 「300～500人未満」→{lo:300,hi:500} / 「1千～2千人未満」→{lo:1000,hi:2000} /
+// 「5千～1万人未満」→{lo:5000,hi:10000} / 「1万人以上」→{lo:10000,hi:null} / 「不明」→null
+// ※万→千の順で展開する。逆にすると「1万」の1だけを拾って“従業員1名”になり、大企業が規模フロアで落ちる。
 function parseEmpRange(s) {
-  const t = String(s || '').replace(/[～~－-]/g, '~').replace(/(\d+)千/g, (_, d) => String(parseInt(d, 10) * 1000));
+  const t = String(s || '').replace(/[～~－-]/g, '~')
+    .replace(/(\d+)万/g, (_, d) => String(parseInt(d, 10) * 10000))
+    .replace(/(\d+)千/g, (_, d) => String(parseInt(d, 10) * 1000));
   if (!t || /不明/.test(t)) return null;
   const m = t.match(/(\d[\d,]*)\s*~\s*(\d[\d,]*)/);
   if (m) return { lo: parseInt(m[1].replace(/,/g, ''), 10), hi: parseInt(m[2].replace(/,/g, ''), 10) };
@@ -84,6 +99,16 @@ function prefOfPhone(phone) {
   if (!d || MOBILE_RE.test(d) || /^0120|^0800|^0570/.test(d)) return '';
   const code = matchAreaCode(d);
   return code ? AREA_CODES[code] : '';
+}
+// 突合用に社名を整える。「A株式会社/本社/総務部/人事チーム」「〜本社」「〜東京営業所」のような
+// 部署・拠点の後置はマスタ側に無く、そのままだと突合が丸ごと空振りする（＝既存企業が新規に見える）。
+// 表示は原文のまま、キーだけを削る。
+function cleanCompanyName(raw) {
+  let s = String(raw || '').trim().split(/[\/／]/)[0].trim();
+  s = s.replace(/[\s　]+/g, '');
+  // 末尾の拠点・部署（企業本体を指す語だけ。支店/営業所は company-match 側が別名キーで吸収する）
+  for (let i = 0; i < 3; i++) s = s.replace(/(本社|本部|本所|総本部|総務部|人事部|人事チーム|人事課)$/, '');
+  return s || String(raw || '').trim();
 }
 function arg(name, dflt) {
   const i = process.argv.indexOf('--' + name);
@@ -194,6 +219,8 @@ function loadMasters() {
 // --- 1社の判定 --------------------------------------------------------------
 function judge(lead, M) {
   const warn = [];
+  const key = cleanCompanyName(lead.name);   // 突合キー（表示は lead.name のまま）
+  if (key !== String(lead.name).trim()) warn.push(`突合キーを整形: ${lead.name} → ${key}`);
 
   // ① リードID直結 → ② 社名突合（同名他社の疑いを電話の市外局番で見る）
   const leadPref = prefOfPhone(lead.phone);
@@ -201,7 +228,7 @@ function judge(lead, M) {
   let sfVia = sf ? 'リードID' : '';
   let sameNameRisk = false;
   if (!sf) {
-    const cand = indexGet(M.sfName, lead.name) || null;
+    const cand = indexGet(M.sfName, key) || null;
     if (cand) {
       const p2 = prefOfPhone(pick(cand, COL.phone));
       // 社名突合は同名他社を掴む事故が起きる（例: サンテック株式会社＝愛知/大阪）。
@@ -210,13 +237,15 @@ function judge(lead, M) {
         sameNameRisk = true; sfVia = '突合なし(同名他社)';
         warn.push(`SF社名突合を棄却(入力${leadPref}/SF${p2})＝同名他社`);
       } else {
-        sf = cand; sfVia = '社名突合';
-        // 入力のリードIDがSFエクスポートに無い＝別リード/別スナップショット。属性は同名の別レコード由来。
-        warn.push('入力のリードIDがSF側に無く社名で突合（属性は別リード由来）');
+        sf = cand;
+        // 電話が無い入力では市外局番での地域照合ができない＝同名他社かどうかを検証できていない。
+        // 「社名が一致した」だけであることが後から分かるよう、突合経路の値そのものに刻む。
+        sfVia = leadPref ? '社名突合' : '社名突合(地域未照合)';
+        if (lead.id) warn.push('入力のリードIDがSF側に無く社名で突合（属性は別リード由来）');
       }
     }
   }
-  let b = indexGet(M.bales, lead.name) || {};
+  let b = indexGet(M.bales, key) || {};
   if (b.phone || b.pref) {
     const p2 = b.pref || prefOfPhone(b.phone);
     if (leadPref && p2 && leadPref !== p2) {
@@ -225,11 +254,11 @@ function judge(lead, M) {
       b = {};
     }
   }
-  const cRaw = indexGet(M.cons, lead.name) || {};
+  const cRaw = indexGet(M.cons, key) || {};
   // 統合マスタは電話を持たない行が多く地域照合できない。同名他社の疑いが出た社では採らない。
   const c = sameNameRisk ? {} : cRaw;
   if (sameNameRisk && (cRaw.emp != null || cRaw.hire != null)) warn.push('統合マスタも同名他社の疑いのため不採用');
-  const k = indexGet(M.known, lead.name) || {};
+  const k = indexGet(M.known, key) || {};
 
   const sfInd = sf ? (sf['業種'] || '').trim() : '';
   const sfEmp = sf ? parseEmpRange(sf['従業員数レンジ(ランスケ）'] || sf['従業員数レンジ(ランスケ)']) : null;
@@ -256,21 +285,33 @@ function judge(lead, M) {
 
   // --- ハード除外 -----------------------------------------------------------
   const hard = [];
-  const exLabel = M.excl.matchLabel(lead.name);
+  const exLabel = M.excl.matchLabel(key);
   if (exLabel) hard.push(exLabel);
   if (b.ban) hard.push('アプローチ禁止:' + b.ban);
-  if (MEDIA_ATS_RE.test(lead.name)) hard.push('求人媒体/ATSベンダー＝同業');
-  if (isExcludedIndustry(industry)) hard.push(`IT・ソフト(${industry})＝ICP絶対除外`);
+  if (MEDIA_ATS_RE.test(lead.name) || MEDIA_ATS_EXACT.has(normCompanyName(key))) hard.push('求人媒体/ATSベンダー＝同業');
+  if (PUBLIC_HARD_RE.test(lead.name)) hard.push('自治体/公的機関＝公務員採用・調達は入札');
+  // icp-rules の除外語「セキュリティ」は情報セキュリティを指すが、CRMの業種ラベルでは
+  // 警備会社（ALSOK/セコム系）にも同じ札が付く。社名が警備を名乗る先はIT除外から外す。
+  const guardIsPhysicalSecurity = /セキュリティ/.test(industry) && /(警備|ALSOK|アルソック|セコム|綜合警備)/i.test(lead.name);
+  if (guardIsPhysicalSecurity) warn.push(`業種[${industry}]は警備業と判断しIT除外を適用せず`);
+  else if (isExcludedIndustry(industry)) hard.push(`IT・ソフト(${industry})＝ICP絶対除外`);
   if (empHi != null && empHi < ICP.EMP_MIN) hard.push(`従業員${empLabel}名<${ICP.EMP_MIN}（規模フロア未満）`);
   if (hire != null && hire < ICP.HIRE_MIN) hard.push(`新卒${hire}名<${ICP.HIRE_MIN}（採用フロア未満・出所${hireSrc}）`);
-  if (!lead.phone && !lead.mail) hard.push('連絡先なし');
+  // 入力に連絡先列がある前提のときだけ効かせる（社名だけのリストを全滅させない）
+  if (M.hasContact && !lead.phone && !lead.mail) hard.push('連絡先なし');
 
   // --- ソフト（mochica-fit で採点） -----------------------------------------
+  // 入力が社名だけのときも、CRMに電話があるなら「架電できる」ので到達性に算入する（出所は残す）。
+  const sfPhone = sf ? pick(sf, COL.phone) : '';
+  const phone = lead.phone || sfPhone || b.phone || '';
+  const phoneSrc = lead.phone ? '入力' : (sfPhone ? 'SF' : (b.phone ? 'BALES' : ''));
   const rec = {
     '会社名': lead.name,
     '採用担当者名': lead.person,
-    '電話番号': lead.phone,
-    '業種': industry,
+    '電話番号': phone,
+    // mochica-fit 側も同じ除外語で総合点を12に固定するため、警備業と判断した先は
+    // 採点用ラベルだけ差し替える（表示・監査は元ラベルのまま残す）。
+    '業種': guardIsPhysicalSecurity ? '警備' : industry,
     '従業員数': emp == null ? '' : emp,
     '採用予定人数': hire == null ? '' : hire,
     'エントリー数': entry == null ? '' : entry,
@@ -285,7 +326,10 @@ function judge(lead, M) {
   if (HR_VENDOR_RE.test(lead.name) && !MEDIA_ATS_RE.test(lead.name)) { score -= 10; why.push('人材/研修系の社名＝提携・競合の見極め要'); }
   if (FREE_MAIL_RE.test(lead.mail) && !CORP_FORM_RE.test(lead.name)) { score -= 8; why.push('フリーメール×法人格なし＝法人実体が薄い疑い'); }
   else if (FREE_MAIL_RE.test(lead.mail)) { score -= 4; why.push('担当者がフリーメール＝小規模/個人窓口'); }
-  if (MOBILE_RE.test(String(lead.phone).replace(/[^0-9]/g, ''))) { score -= 3; why.push('携帯番号のみ＝代表回線不明'); }
+  if (MOBILE_RE.test(String(phone).replace(/[^0-9]/g, ''))) { score -= 3; why.push('携帯番号のみ＝代表回線不明'); }
+  if (PUBLIC_SOFT_RE.test(lead.name)) { score -= 8; why.push('公立/公的法人＝調達ルールが民間と別'); }
+  if (GROUP_RE.test(String(lead.name).trim())) { score -= 6; warn.push('グループ/持株の総称表記＝採用主体の実体法人を特定する必要あり'); }
+  else if (SITE_RE.test(String(lead.name).trim()) && emp == null) { score -= 5; warn.push('単一事業所/店舗の表記＝法人全体か1拠点かの確認が必要'); }
   if (b.ats && b.ats !== '無し') why.push('他社ATS導入:' + b.ats);
   if (b.kento) { score += 3; why.push('検討開始時期:' + b.kento); }
   if (b.lost) why.push('失注理由:' + b.lost);
@@ -317,9 +361,12 @@ function judge(lead, M) {
     判定: rank,
     スコア: score,
     確信度: fit.confidence,
+    原文: lead.raw || lead.name,
     会社名: lead.name,
     担当者名: lead.person,
-    電話番号: lead.phone,
+    突合キー: key,
+    電話番号: phone,
+    電話出所: phoneSrc,
     メール: lead.mail,
     リードID: lead.id,
     業種: industry,
@@ -349,13 +396,16 @@ function main() {
   const outFile = arg('out', path.join(ROOT, 'data', 'leads-sf-scored.csv'));
   if (!inFile || !fs.existsSync(inFile)) { console.error('--in <leads.csv> が必要です'); process.exit(1); }
 
-  const { records } = readCsv(fs.readFileSync(inFile, 'utf8'));
+  const { headers, records } = readCsv(fs.readFileSync(inFile, 'utf8'));
   const leads = records.map((r) => ({
     name: pick(r, COL.name), person: pick(r, COL.person),
     phone: pick(r, COL.phone), mail: pick(r, COL.mail), id: pick(r, COL.id),
+    raw: (r['原文'] || '').trim(),
   })).filter((l) => l.name);
 
   const M = loadMasters();
+  // 入力そのものが連絡先列を持つか。持たないリストで「連絡先なし」を除外理由にはしない。
+  M.hasContact = headers.some((h) => COL.phone.includes(h) || COL.mail.includes(h));
   console.log(`マスタ: SF全リード${M.stats.sfRows}件 / BALES${M.stats.balesRows}行 / 統合${M.stats.consRows}社 / 除外索引${M.excl.size}キー`);
 
   const rows = leads.map((l) => judge(l, M));
