@@ -26,6 +26,7 @@
  *   node src/build-ats-lists.js --min 5                 # 5社未満のツールはファイルを作らない
  *   node src/build-ats-lists.js --include-none          # 「無し（ATS未導入）」層のリストも出す
  *   node src/build-ats-lists.js --enrich data/leads-ats.csv   # URL判定の結果も合流
+ *   node src/build-ats-lists.js --ats-only              # 採用管理システムだけ（媒体/フォームのバケットを出さない）
  *   node src/build-ats-lists.js --keep-it --keep-small  # ICP除外を外す（母数を見たい時）
  *   node src/build-ats-lists.js --outdir data/ats-lists
  */
@@ -61,6 +62,7 @@ const MIN_ROWS = parseInt(getArg('--min', '1'), 10) || 1;
 const INCLUDE_NONE = has('--include-none');
 const KEEP_IT = has('--keep-it');
 const KEEP_SMALL = has('--keep-small');
+const ATS_ONLY = has('--ats-only');   // 採用管理システムのバケットだけに絞る（媒体/フォームを出さない）
 const TODAY = new Date();
 
 const g = (r, k) => (r[k] == null ? '' : String(r[k]).trim());
@@ -177,17 +179,26 @@ const cand = [];
 let atsNamed = 0, atsNone = 0, atsEmpty = 0;
 
 for (const rec of records) {
-  // ① 利用中ATSの確定（CRM優先・空ならURL判定）
+  // ① 利用中ATSの確定
+  //    CRMにツール名があればそれが最優先（人が聞き取った事実）。
+  //    CRM未記入      → URL判定をそのまま採用。
+  //    CRM「無し」    → **実ATSが取れた時だけ**上書き（媒体/フォームのリンクは「無し」を覆す証拠にならない）。
+  //                     実測685社が「CRMは無しだがURLではATS」＝CRMが古いパターン。
   let norm = normalizeAtsName(g(rec, C.ats));
   let source = 'CRM（利用中ATS）';
-  if (norm.status === 'empty' && enrich) {
+  if (enrich && norm.status !== 'known') {
     const e = enrich.lookup(g(rec, C.name));
-    if (e) { norm = normalizeAtsName(e.ats); source = 'エントリーURL判定'; }
+    const u = e ? normalizeAtsName(e.ats) : null;
+    if (u && (u.status === 'known' || u.status === 'unknown')) {
+      if (norm.status === 'empty') { norm = u; source = 'エントリーURL判定'; }
+      else if (norm.status === 'none' && u.kind === 'ats') { norm = u; source = 'エントリーURL判定（CRMは「無し」）'; }
+    }
   }
   if (norm.status === 'empty') { atsEmpty++; continue; }
   if (norm.status === 'none') { atsNone++; if (!INCLUDE_NONE) continue; }
   else atsNamed++;
   if (norm.own) { bump('MOCHICA利用中（自社顧客）'); continue; }
+  if (ATS_ONLY && norm.kind && norm.kind !== 'ats') { bump(`${KIND_LABEL[norm.kind] || norm.kind}のみ（--ats-only）`); continue; }
 
   // ② 除外（架電不能・アプローチ不可・ICP不適合）
   if (g(rec, C.banned)) { bump('アプローチ禁止'); continue; }
@@ -212,6 +223,9 @@ for (const rec of records) {
 }
 
 // ── 1社1行に名寄せ（同一社の複数リードは最良の1件を残す）──────────
+// CRMにツール名がある行を最優先する。同じ会社に「CRM:sonar」と「CRM無し→URL:AOL」の2リードが
+// ある時、スコアだけで選ぶと**どのバケットに入るか**が変わってしまうため（人が聞いた事実を優先）。
+const rankLead = (x) => (x.norm.status === 'known' && x.source === 'CRM（利用中ATS）' ? 1000 : 0) + x.sc.score;
 const best = new Map();
 const bucketIdx = createMatchIndex();
 for (const x of cand) {
@@ -220,7 +234,7 @@ for (const x of cand) {
   const key = hitDetail.matched ? hitDetail.label : (normCompanyName(name) || ('id:' + g(x.rec, C.id)));
   if (!hitDetail.matched) bucketIdx.addName(name, key);
   const prev = best.get(key);
-  if (!prev || x.sc.score > prev.sc.score || (x.sc.score === prev.sc.score && x.recency > prev.recency)) best.set(key, x);
+  if (!prev || rankLead(x) > rankLead(prev) || (rankLead(x) === rankLead(prev) && x.recency > prev.recency)) best.set(key, x);
 }
 const rows = [...best.values()].sort((a, b) => b.sc.score - a.sc.score || b.recency - a.recency);
 const dupeMerged = cand.length - rows.length;

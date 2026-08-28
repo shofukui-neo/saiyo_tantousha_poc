@@ -40,6 +40,7 @@ const DATA = path.join(ROOT, 'data');
 const OUTDIR = path.resolve(String(getArg('outdir', path.join(DATA, 'ats-scan'))));
 const JOURNAL = path.join(OUTDIR, 'journal.jsonl');
 const OUT = path.join(OUTDIR, 'ats-scan-all.csv');
+const AUDIT = path.join(OUTDIR, 'ats-scan-要確認-CRM不一致.csv');
 const CONC = Math.max(1, getIntArg('conc', 12));
 const LIMIT = getIntArg('limit', 0);
 const RESUME = !getArg('no-resume', false);
@@ -216,7 +217,11 @@ function loadJournal() {
   return rows;
 }
 function writeCsv(rows) {
-  atomicWrite(OUT, '﻿' + toCsv(HEADERS, [...rows.values()]));
+  const all = [...rows.values()];
+  atomicWrite(OUT, '﻿' + toCsv(HEADERS, all));
+  // CRMの手入力とURL判定が食い違う分だけを別出し（CRM更新の作業リストになる）
+  const audit = all.filter((r) => /^要確認/.test(r['CRMとの一致'] || ''));
+  atomicWrite(AUDIT, '﻿' + toCsv(HEADERS, audit));
 }
 
 // ── 既知クラッシュの握りつぶし ───────────────────────────────────
@@ -303,6 +308,7 @@ function summarize(rows) {
   console.log(`\n[ats-scan] CRMとURL判定の食い違い ${mismatch.length}社（CRMが古い可能性・監査対象）`);
   for (const r of mismatch.slice(0, 10)) console.log(`    ${r.企業名}：${r.CRMとの一致}`);
   console.log(`\n[ats-scan] 出力 ${OUT}`);
+  console.log(`  CRM要確認の抽出 ${AUDIT}`);
   console.log(`  ジャーナル ${JOURNAL}（再開可能。--rebuild でCSVだけ作り直し）`);
 }
 
