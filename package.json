@@ -130,7 +130,9 @@
     "icp:hire6:gakujo": "node src/harvest-gakujo-icp.js --conc 5",
     "icp:nooverlap": "node src/build-icp-hire6-500.js --exclude-past --emp-min 50 --emp-max 3000 --out data/leads-icp-nooverlap-130.csv",
     "fresh:verify": "node src/verify-fresh-hire.js --conc 6",
-    "fresh:2000": "node src/build-fresh-top2000.js"
+    "fresh:2000": "node src/build-fresh-top2000.js",
+    "mochica:research": "node src/research-mochica-customers.js",
+    "mochica:wins": "node src/analyze-mochica-wins.js"
   },
   "dependencies": {
     "cheerio": "^1.1.0",
