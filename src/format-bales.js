@@ -23,6 +23,7 @@ const path = require('path');
 const { readCsv, toCsv, parseCsv } = require('./csv');
 const { loadLedger, isDelivered, appendRecords, DEFAULT_LEDGER } = require('./delivered-ledger');
 const { createMatchIndex } = require('./company-match');
+const { isGovernmentOrg } = require('./icp-rules');
 
 const ROOT = path.resolve(__dirname, '..');
 const args = process.argv.slice(2);
@@ -131,6 +132,9 @@ const { records: src } = readCsv(fs.readFileSync(IN, 'utf8'));
 const g = (row, k) => (row[k] == null ? '' : String(row[k]).trim());
 
 function want(row) {
+  // 官公庁（県庁・市役所系）はスコープ・オプションを問わず架電リストに出さない（3出口ブロック / 2026-08-27）。
+  // 外郭（公社・事業団・独法・社協・共済組合）は対象に残す＝公的・協同組合系はむしろ勝ち筋。
+  if (isGovernmentOrg(g(row, '企業名'), g(row, '業種'))) return false;
   if (EXCLUDE_REP && isRepName(row)) return false;      // 代表者名の流用は除外（本物の採用担当者名のみ）
   if (ICP_ONLY && g(row, '呼べる条件') !== 'OK') return false; // ICPハード条件合致のみ
   const overlap = g(row, '既存被り');

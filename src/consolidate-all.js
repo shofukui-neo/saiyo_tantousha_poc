@@ -192,7 +192,8 @@ function main() {
     const hire = hireM ? parseInt(hireM[0], 10) : null;
     const sc = scoreMochica(rec, { now });
     const tier = proposalTier(emp);
-    const q = qualifiesForList({ contactName: rec['採用担当者名'], phone: rec['電話番号'], hire, emp, industry: rec['業種'] });
+    const entryM = String(rec['エントリー数'] || rec['エントリー人数'] || '').match(/\d+/);
+    const q = qualifiesForList({ company: rec['企業名'], contactName: rec['採用担当者名'], phone: rec['電話番号'], hire, emp, entry: entryM ? parseInt(entryM[0], 10) : null, industry: rec['業種'] });
     // 既存被り（法人番号→正規化社名→農協コアの順で判定。company-match に集約）
     const overlap = excl.matchLabel(rec);
     // BALESサプレッション（負シグナル）

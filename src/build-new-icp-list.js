@@ -223,7 +223,7 @@ function phaseMap() {
     const hire = intOf(g(r, '採用予定人数'));
     const emp = intOf(g(r, '従業員数'));
     const pos = g(r, '役職');
-    const q = qualifiesForList({ contactName: recruiter, phone, hire, emp, industry: '' });
+    const q = qualifiesForList({ company: name, contactName: recruiter, phone, hire, emp, entry: intOf(g(r, 'エントリー数')), industry: '' });
     if (!q.pass) { dropQual++; continue; }
     if (REP.test(pos)) { dropQual++; continue; }
     if (NAME_IT_RE.test(name)) { dropIT++; continue; } // IT・ソフトは絶対除外（enrichを省いても効く）

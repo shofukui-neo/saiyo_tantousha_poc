@@ -17,7 +17,7 @@
  *   タイミング: 28卒の媒体選定・採用設計期 を最優先（＝いま動く相手）
  *   到達性  : テレアポで“担当者名指し”で繋ぐため、電話＋採用担当者名を重視
  *
- * ── アポ取得期待値 = Σ(dim × weight) − ペナルティ ± 業種補正 ─────────
+ * ── 【v4遺産／総合点には未使用】6次元の加重和 = Σ(dim × weight) − ペナルティ ± 業種補正 ──
  *   A 新卒インテント  0.30  実在性で階級化（マイナビ実取得＞新卒フラグ＞採用中＞代理）
  *   F 採用ファネル    0.16  エントリー数×採用人数×歩留まり＝MOCHICAが最も刺さるICPの核
  *   B 規模フィット    0.22  300-500名=100。100-2000名を有効域とし、<50名/1万名超を減点
@@ -34,12 +34,35 @@
  * 0-100で可視化し、上位リストの何割が検証済みシグナルで裏打ちされているかを言い切れるようにする。
  *
  * 純ロジック・ネットワーク/APIキー不要。担当者マスタ1レコード(オブジェクト)を入力に取る。
+ *
+ * ═════════════════════════════════════════════════════════════════════
+ * ★ v5（2026-08-27）: 総合点は「2段の期待値モデル」に置き換わった
+ * ═════════════════════════════════════════════════════════════════════
+ *   total = 目盛り( p(接触) × p(アポ|接触) )                        … src/icp-score-v5.js
+ *     p(接触)      = 19.6% × 組織型 × 到達性 × 業種 × 規模
+ *     p(アポ|接触) = 4.68% × 組織型 × 年間新卒採用人数
+ *   ここで実際に総合点へ入るのは C到達性 / B規模 / G業種(負リフト群か) / F採用人数 / 組織型 の5つだけ。
+ *
+ *   上の6次元加重和（A新卒インテント・D タイミング・E継続信用・歩留まり等）は **総合点には入らない**。
+ *   ── 理由: 新卒有無・利用媒体・検討時期は「話が通った会社ほど点が高い」循環で、コールド架電の
+ *      順番決めには役に立たない。ただし捨てずに hot_signals として残し、追いかけはICP順の上に固定する
+ *      （scoreMochica の flags.hot / hotSignals / sortKey）。
+ *   dims.* は診断・CSV可視化のために従来どおり出力する（v4遺産。並べ替えの根拠ではない）。
+ *
+ *   ゲート（点の高低ではなく出口ブロック）は src/icp-rules.js に集約:
+ *     IT・ソフト=12点で頭打ち / 官公庁(県庁・市役所系)=0点ブロック / エントリー50名未満(判明済)=0点 /
+ *     DNC・架電拒否 −100 / 既存顧客 −70。
+ *   v4から撤回: 規模上限2000名の罰・1000名超 −20・競合ATS −45（実測でどちらも全体を上回っていた）。
  */
 const { truthy, normCompanyName } = require('./csv');
 const { normalizeJpPhone } = require('./phone');
-const { isExcludedIndustry, proposalTier } = require('./icp-rules');
+const {
+  isExcludedIndustry, isGovernmentOrg, classifyOrgType, passesEntryFloor, proposalTier, ICP,
+} = require('./icp-rules');
+const { scoreV5 } = require('./icp-score-v5');
 
-// ── 既定の重み（合計1.0）。MOCHICA_W_* env で上書き可 ─────────────
+// ── 【v4遺産】6次元の重み。総合点には使わない（dims の可視化と後方互換のため残置） ──
+// MOCHICA_W_* env で上書き可
 const flt = (v, d) => (v !== undefined && v !== '' && !Number.isNaN(parseFloat(v)) ? parseFloat(v) : d);
 const intEnv = (v, d) => (v !== undefined && v !== '' && Number.isFinite(parseInt(v, 10)) ? parseInt(v, 10) : d);
 const DEFAULT_WEIGHTS = {
@@ -332,16 +355,42 @@ function scoreFunnel(rec) {
 }
 
 // =====================================================================
-// ペナルティ（アポにならない／取ってはいけない相手を沈める）
+// ペナルティ（取ってはいけない相手を沈める）── v5で2つだけに絞り込み
 // =====================================================================
+// v4で入れていた「競合ATS導入 −45」「1000名超 −20」は撤回した：実測でどちらも全体平均を
+// 上回っており、沈めると勝ち筋（500-1000名 ×1.18 / 1000+ ×1.12）を自分で捨てることになる。
 function penalties(rec, sizeEmp) {
   let penalty = 0; const reasons = [];
   if (truthy(rec['除外フラグ']) || truthy(rec['DNC']) || truthy(rec['架電拒否'])) { penalty += 100; reasons.push('除外/DNC'); }
   if (truthy(rec['既存顧客'])) { penalty += 70; reasons.push('既存顧客'); }
-  if (truthy(rec['競合ATS導入'])) { penalty += 45; reasons.push('競合ATS導入済み'); }
-  // 大企業は自前/競合ATS濃厚 → サイズ減点に加え、商談長期化ぶんを上乗せで沈める
-  if (sizeEmp != null && sizeEmp > 1000) { penalty += 20; reasons.push('大企業=自前ATS/長期商談'); }
+  // 競合ATSは“情報”としては残すが減点しない（v5で撤回）
+  if (truthy(rec['競合ATS導入'])) reasons.push('競合ATS導入済み(減点なし/v5で撤回)');
   return { penalty, reasons };
+}
+
+// =====================================================================
+// hot_signals（架電メモ由来の熱量）── 総合点には入れず、並び順の“上に固定”する
+// =====================================================================
+// 新卒有無・利用媒体・検討時期・辞退などは「話が通った会社ほど点が高い」循環になるため
+// 第1段にも第2段にも入れない。ただし追いかけの価値は高いので、旗として残し sortKey で先頭に寄せる。
+function hotSignalsOf(rec) {
+  const hot = [];
+  if (truthy(rec['辞退シグナル'])) hot.push('辞退発生');
+  if (truthy(rec['来期検討']) || String(rec['検討時期'] || '').trim()) hot.push('検討時期のヒアリング済み');
+  if (truthy(rec['出稿増'])) hot.push('出稿増');
+  if (truthy(rec['採用ページ更新'])) hot.push('採用ページ更新');
+  if (String(rec['利用媒体'] || '').trim()) hot.push('利用媒体をヒアリング済み');
+  if (String(rec['再架電日'] || rec['次回架電日'] || '').trim()) hot.push('再架電予定あり');
+  return hot;
+}
+
+/**
+ * 並べ替えキー。追いかけ（hot_signals あり）をICP順の“上に固定”するための2段キー。
+ * 使い方: rows.sort((a,b) => sortKey(b.s) - sortKey(a.s))
+ */
+function sortKey(scored) {
+  const hot = scored && scored.flags && scored.flags.hot ? 1000 : 0;
+  return hot + (scored ? scored.total : 0);
 }
 
 // 優先度バンド
@@ -369,7 +418,6 @@ function getWeights() {
  */
 function scoreMochica(rec, opt = {}) {
   const now = opt.now || new Date();
-  const w = getWeights();
 
   const A = scoreIntent(rec);
   const B = scoreSize(rec);
@@ -380,39 +428,54 @@ function scoreMochica(rec, opt = {}) {
   const G = scoreIndustry(rec);
   const P = penalties(rec, B.emp);
 
-  const raw = A.score * w.intent + F.score * w.funnel + B.score * w.size +
-    C.score * w.reach + D.score * w.timing + E.score * w.trust;
-  // 業種補正: 実成約率の高い/低い業種を ±12 で加減点（重み体系は崩さない）
-  let total = Math.max(0, Math.min(100, Math.round(raw + G.adj - P.penalty)));
-
-  // ── ハード除外（仮説H4）: IT・ソフトウェアは経路・規模を問わず成約率6%前後で構造的に不適合。
-  //    従来の -12 は強intentで打ち消され上位に浮上しうるため、絶対ルールとして強制フロアで沈める。
-  //    ICP_EXCLUDE_IT=false で無効化可（isExcludedIndustry が false を返す）。
   const industryRaw = String(rec['業種'] || rec['industry'] || '').trim();
-  const hardExclude = isExcludedIndustry(industryRaw);
-  if (hardExclude) { total = Math.min(total, 12); G.reasons.push(`業種[${industryRaw}]=IT/ソフト=絶対除外(H4)`); }
+  const company = String(rec['企業名'] || rec['会社名'] || rec['company'] || '').trim();
 
-  // 提案プラン/セグメント（仮説H6の tier routing）
+  // ── ★v5 本体: total = 目盛り( p(接触) × p(アポ|接触) ) ──────────────
+  // 総合点に入るのは 組織型 / 到達性C / 業種(負リフト群か) / 規模 / 年間新卒採用人数 の5つだけ。
+  const V = scoreV5({
+    company,
+    reachScore: C.score,   // C90+（電話妥当＋担当者名）で ×1.05
+    industry: industryRaw,
+    emp: B.emp,
+    hire: F.hire,          // 年間新卒採用人数（不明は ×0.93）
+  });
+  let total = Math.max(0, Math.min(100, Math.round(V.total - P.penalty)));
+
+  // ── ゲート①: IT・ソフトウェアは経路・規模を問わず構造的に不適合 → 12点で頭打ち ──
+  const hardExclude = isExcludedIndustry(industryRaw);
+  if (hardExclude) { total = Math.min(total, 12); G.reasons.push(`業種[${industryRaw}]=IT/ソフト=絶対除外(12点headroom)`); }
+
+  // ── ゲート②: 官公庁（県庁・市役所系）はリスト作成・架電・架電リストの3出口ともブロック ──
+  //    外郭（公社・事業団・独法・社協・共済組合）は含まない＝公的・協同組合系として厚遇される側。
+  const govExcluded = isGovernmentOrg(company, industryRaw);
+  if (govExcluded) { total = 0; P.reasons.push('官公庁(県庁・市役所系)=絶対除外'); }
+
+  // ── ゲート③: エントリー人数50名以上。50名未満と“分かっている”ときだけ除外（未取得は通す）──
+  const entryGate = passesEntryFloor(F.entry);
+  if (!entryGate.pass) { total = 0; P.reasons.push(`${entryGate.reason}=絶対除外(ICP_ENTRY_MIN=${ICP.ENTRY_MIN})`); }
+
+  // 提案プラン/セグメント（規模帯のルーティング。罰ではない）
   const tier = proposalTier(B.emp);
 
-  // 確信度＝各次元の確信度を「スコアへの寄与（重み×スコア）」で加重平均。
-  // “上位の何割が検証済みシグナルで裏打ちされているか”を言い切るための指標。
+  // 確信度＝“v5に実際に入った入力”がどれだけ実データで裏打ちされているかの加重平均。
+  // （到達性/規模/採用人数/業種。組織型は社名から必ず決まるので常に高確信）
   const contrib = [
-    { c: A.confidence, x: A.score * w.intent },
-    { c: F.confidence, x: F.score * w.funnel },
-    { c: B.confidence, x: B.score * w.size },
-    { c: C.confidence, x: C.score * w.reach },
-    { c: D.confidence, x: D.score * w.timing },
-    { c: E.confidence, x: E.score * w.trust },
+    { c: C.confidence, x: 0.35 },  // 到達性: 第1段で最も効く
+    { c: B.confidence, x: 0.25 },  // 規模
+    { c: F.confidence, x: 0.25 },  // 採用人数（第2段の唯一の軸）
+    { c: G.confidence, x: 0.15 },  // 業種（負リフト群かの判定）
   ];
   const cw = contrib.reduce((s, p) => s + p.x, 0) || 1;
   const confidence = Math.round(contrib.reduce((s, p) => s + p.c * p.x, 0) / cw);
 
   const dims = { intent: A.score, funnel: F.score, size: B.score, reach: C.score, timing: D.score, trust: E.score };
-  const priority = priorityOf(total);
+  const hotSignals = hotSignalsOf(rec);
+  const priority = (govExcluded || !entryGate.pass) ? '除外' : priorityOf(total);
 
   // ── 「なぜ今・なぜこの企業」一行サマリ（営業がそのまま読める） ──
   const whyParts = [];
+  if (V.orgType === 'public') whyParts.push(`${V.orgLabel}(接触2.1倍・アポ4.4倍)`); // v5で最大の効き
   whyParts.push(A.reasons[0]);                 // 新卒の根拠
   // 採用ファネルが強シグナル（実数値でヒット）なら最優先で見せる
   if (F.score >= 70 && F.hitCount >= 1) whyParts.push(F.reasons.find(r => /★|エントリー|採用\d|歩留/.test(r)) || F.reasons[0]);
@@ -423,6 +486,7 @@ function scoreMochica(rec, opt = {}) {
   const why = whyParts.filter(Boolean).join('｜');
 
   const reasons = []
+    .concat(V.reasons.map(r => 'V5:' + r))     // 総合点の内訳（2段の期待値モデル）
     .concat(A.reasons.map(r => 'INT:' + r))
     .concat(F.reasons.map(r => 'FUNNEL:' + r))
     .concat(B.reasons.map(r => 'SIZE:' + r))
@@ -441,13 +505,25 @@ function scoreMochica(rec, opt = {}) {
     funnelFit: F.hitCount >= 2,                    // エントリー/採用/歩留まりのうち2つ以上が目安内
     bigFunnel: F.entryHit && F.hireHit,            // エントリー100+ × 採用10+ の大型採用
     hardExclude,                                   // IT・ソフトウェア=絶対除外（母集団から落とすべき）
+    govExcluded,                                   // 官公庁(県庁・市役所系)=3出口ブロック
+    entryExcluded: !entryGate.pass,                // エントリー50名未満が判明済＝除外
+    blocked: govExcluded || !entryGate.pass,       // いずれかのゲートで出口ブロック
+    publicOrg: V.orgType === 'public',             // 公的・協同組合系（v5で最大の効き）
+    hot: hotSignals.length > 0,                    // 追いかけ対象（ICP順の上に固定する）
   };
 
-  return { total, dims, priority, confidence, why, reasons, flags, hardExclude, segment: tier.segment, plan: tier.plan };
+  return {
+    total, dims, priority, confidence, why, reasons, flags, hardExclude,
+    segment: tier.segment, plan: tier.plan,
+    // v5 の内訳（監査・キャリブレーション用）
+    expectedPct: V.expectedPct, pContact: V.pContact, pAppt: V.pAppt,
+    orgType: V.orgType, orgLabel: V.orgLabel, hotSignals,
+  };
 }
 
 module.exports = {
   scoreMochica, scoreIntent, scoreSize, scoreReach, scoreTiming, scoreTrust, scoreFunnel, scoreIndustry,
   priorityOf, getWeights, parseEmployees, parsePercent, DEFAULT_WEIGHTS, FUNNEL_TH, INDUSTRY_LIFT,
-  isExcludedIndustry, proposalTier,
+  isExcludedIndustry, proposalTier, hotSignalsOf, sortKey,
+  isGovernmentOrg, classifyOrgType, passesEntryFloor, scoreV5,
 };
