@@ -27,6 +27,7 @@
     "ats:lists": "node --max-old-space-size=4096 src/build-ats-lists.js",
     "test:ats": "node test/ats.test.js",
     "score:sf": "node src/score-sf-leads.js",
+    "call-sheet": "node src/build-call-sheet.js",
     "target": "node src/build-target-list.js",
     "new-list": "node src/build-new-icp-list.js",
     "new-list:from-raw": "node src/build-new-icp-list.js --skip-harvest",
