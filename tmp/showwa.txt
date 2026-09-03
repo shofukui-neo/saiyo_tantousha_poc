@@ -1,0 +1,10 @@
+[公式LINE判定] 昭和グループ <https://www.show-wa.co.jp/>
+  判定: 無（確度78） 用途: - ID: - 
+  根拠: 検査5ページで証跡なし
+  トーク: LINE未使用。LINEを主語にせず母集団/歩留まりを主語に（LINE推しは逆効果）
+  検査: 5ページ成功 / 0失敗 / 23702ms
+    - [トップ] 証跡0 https://www.show-wa.co.jp/
+    - [採用] 証跡0 https://www.show-wa.co.jp/recipe_entry
+    - [採用] 証跡0 https://www.show-wa.co.jp/recruit
+    - [問合せ] 証跡0 https://www.show-wa.co.jp/contact
+    - [お知らせ] 証跡0 https://www.show-wa.co.jp/news
