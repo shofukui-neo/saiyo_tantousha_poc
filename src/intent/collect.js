@@ -24,6 +24,16 @@ const { registrableDomain } = require('../fetch');
 const { normCompanyName } = require('../csv');
 const { fingerprint } = require('./store');
 const { INTERN_WORDS, EXPO_WORDS, countOccurrences } = require('./signals');
+const { validUrl } = require('./opportunity-signals');
+
+function addDocument(ev, doc) {
+  if (!doc || typeof doc !== 'object' || !validUrl(doc.url) || !String(doc.text || '').trim()) return;
+  ev.インテント資料 ||= [];
+  if (!ev.インテント資料.some(d => d.url === doc.url && d.text === doc.text && d.date === doc.date)) {
+    ev.インテント資料.push({ text: String(doc.text).slice(0, 200000), url: validUrl(doc.url),
+      date: String(doc.date || ''), title: String(doc.title || ''), source: doc.source || 'csv' });
+  }
+}
 
 const UA = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36';
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
@@ -70,18 +80,26 @@ function fromRow(rec) {
     corpID: String(rec.corpID || '').trim(),
     卒年,
     採用実績系列: 実績,
-    採用予定人数: String(rec['採用予定人数'] || rec['年間新卒採用人数'] || '').replace(/[^0-9]/g, '') || '',
+    採用予定人数: String(rec['採用予定人数'] ?? rec['年間新卒採用人数'] ?? ''),
     メール: [],
     掲載本文: '', インターン本文: '', インターン件数: null, 合説出展: null,
     LINE: null, 採用ページ: null,
     公式URL: String(rec['公式URL'] || '').trim(),
     掲載URL: page,
-    取得ソース: ['csv'], エラー: [],
+    取得ソース: ['csv'], エラー: [], インテント資料: [],
   };
   if (mail && /@/.test(mail)) {
     const dom = ev.公式URL ? registrableDomain(safeHost(ev.公式URL)) : '';
     ev.メール.push({ email: mail, ownDomain: dom ? registrableDomain(mail.split('@')[1] || '') === dom : false });
   }
+  if (rec['インテント資料JSON']) {
+    try {
+      const docs = JSON.parse(rec['インテント資料JSON']);
+      if (!Array.isArray(docs)) throw new Error('array required');
+      for (const doc of docs.slice(0, 50)) addDocument(ev, doc);
+    } catch (_) { ev.エラー.push('csv:インテント資料JSON不正'); }
+  }
+  addDocument(ev, { text: rec['インテント本文'], url: rec['インテント根拠URL'], date: rec['インテント発生日'], source: 'csv' });
   return ev;
 }
 function safeHost(u) { try { return new URL(u).hostname; } catch (_) { return ''; } }
@@ -140,6 +158,7 @@ async function collectMynavi(rec, ev, { delay = 150, pages = ['outline', 'sem', 
     if (!html) continue;
     const t = stripMynaviChrome(toText(html));
     if (t.length < 300) continue;              // 404テンプレは本文が薄い
+    addDocument(ev, { text: t, url, source: 'mynavi' }); // ページ更新日は課題の発生日と同一視しない
     if (p === 'outline') {
       ev.掲載URL = url;
       const upd = (t.match(/最終更新日[：:]\s*([0-9]{4}\/[0-9]{1,2}\/[0-9]{1,2})/) || [])[1] || '';
@@ -236,6 +255,7 @@ async function collectSite(rec, ev, { maxPages = 2 } = {}) {
   }
   if (page) {
     const text = String(page.text || '').replace(/\s+/g, ' ');
+    addDocument(ev, { text: toText(page.html), url: page.url, source: 'site' });
     recruitPage = { url: page.url, hash: fingerprint(text), 長さ: text.length };
     ev.掲載本文 = (ev.掲載本文 + '\n' + text).trim().slice(0, 200000);
     ev.インターン本文 = (ev.インターン本文 + '\n' + text).trim().slice(0, 100000);
@@ -309,12 +329,17 @@ async function collectHrJobs(rec, ev, { queries = ['人事', '採用担当'] } =
     if (!r || r.blocked || r.error || !r.html) { ev.エラー.push(`jobs:${(r && (r.reason || r.error)) || 'fail'}`); continue; }
     for (const c of parseJobCards(r.html, JOBBOX.名称)) {
       const n = normCompanyName(c.企業名 || '');
-      if (!n || !(n === target || n.includes(target) || target.includes(n))) continue; // 社名一致のみ
+      if (!n || n !== target) continue; // 社名の正規化後完全一致のみ
       if (!cards.some((x) => x.url === c.url)) cards.push(c);
     }
     if (cards.length) break; // 1クエリで見つかれば十分（無駄な取得をしない）
   }
   ev.求人カード = cards;
+  for (const c of cards) {
+    // 社名の部分一致でグループ会社・人材紹介会社の課題を取り込まない。
+    if (normCompanyName(c.企業名) !== target) continue;
+    addDocument(ev, { text: `${c.職種} ${c.本文}`, url: c.url, source: 'jobs' });
+  }
   ev.取得ソース.push('jobs');
   return ev;
 }
@@ -336,5 +361,5 @@ async function collectCompany(rec, opts = {}) {
 module.exports = {
   collectCompany, fromRow, collectMynavi, collectSite, collectHrJobs,
   parseJobCards, pickRecruitLink, mynaviBase, defaultGradYear, toText, fetchUrl, JOBBOX,
-  stripMynaviChrome, mynaviEntries,
+  stripMynaviChrome, mynaviEntries, addDocument,
 };

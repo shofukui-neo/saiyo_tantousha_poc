@@ -28,9 +28,11 @@ function sanitizeCell(v) {
     .trim();
 }
 function writeMasterCsv(outPath, records, headers = cfg.MASTER_HEADERS) {
+  // 【架電禁止ガード】禁止リスト掲載企業はマスタCSVにも一切書かない（ng-guard.js）。
+  const recs = require('./ng-guard').guardRecords(headers, records, { where: outPath });
   const esc = (v) => { const s = sanitizeCell(v); return /[",]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s; };
   const lines = [headers.join(',')];
-  for (const rec of records) lines.push(recordToRow(rec, headers).map(esc).join(','));
+  for (const rec of recs) lines.push(recordToRow(rec, headers).map(esc).join(','));
   fs.writeFileSync(outPath, '﻿' + lines.join('\r\n'), 'utf8'); // BOM+CRLF で Excel 日本語の文字化け/改行崩れも回避
   return outPath;
 }
@@ -93,8 +95,8 @@ async function writeMasterSheet(c, records) {
     if (!map.has(k)) order.push(k);
     map.set(k, recordToRow(rec, H));
   }
-  // 新規をマージ
-  for (const rec of records) {
+  // 新規をマージ（【架電禁止ガード】禁止企業はシートにも書かない）
+  for (const rec of require('./ng-guard').guardRecords(H, records, { where: 'スプレッドシート' })) {
     const k = keyOfRecord(rec);
     if (!map.has(k)) order.push(k);
     map.set(k, recordToRow(rec, H));

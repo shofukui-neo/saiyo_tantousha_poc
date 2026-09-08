@@ -21,6 +21,8 @@ const path = require('path');
 const { execFileSync } = require('child_process');
 const { readCsv, toCsv, mergeKey, parseCsv } = require('./csv');
 const { isExcludedIndustry, isGovernmentOrg, passesIcpFloor, classifyOrgType } = require('./icp-rules');
+const { TARGET_COLS } = require('./intent/target-fit');
+const { SIGNAL_LIST } = require('./intent/signals');
 
 const ROOT = path.resolve(__dirname, '..');
 const getArg = (n, d) => { const i = process.argv.indexOf('--' + n); return i >= 0 && process.argv[i + 1] && !process.argv[i + 1].startsWith('--') ? process.argv[i + 1] : d; };
@@ -68,7 +70,7 @@ const COLS = ['No', '経路', '企業名', '法人番号', '採用担当者名',
   '業種', '都道府県', '従業員数', '新卒採用人数', 'ICP根拠',
   'ATS判定', 'ATS確度', 'entry_type', 'entry_host', 'エントリー動線', 'ATSトーク指針', 'ATS根拠', 'ATS検査日',
   'インテントスコア', 'インテント階層', '推奨アクション', '最有力シグナル', 'シグナル強度', '検知シグナル', 'なぜ今', '根拠', '推奨トーク',
-  'アポ期待度', '総合優先度', '既存被り', '採用ページURL', '観測日'];
+  'アポ期待度', '総合優先度', '既存被り', '採用ページURL', '観測日', ...TARGET_COLS, ...SIGNAL_LIST.map(s => s.列)];
 
 const drop = { ATS未判定: 0, ATS導入済: 0, ATS要確認: 0, ATS不明: 0, インテントなし: 0, ICP不適合: 0, 重複: 0, 電話なし: 0 };
 const dropReasons = {};
@@ -79,6 +81,7 @@ for (const file of INS) {
   const route = path.basename(file, '.csv').replace(/^_tmp-/, '');
   const { records } = readCsv(fs.readFileSync(file, 'utf8'));
   for (const r of records) {
+    if (r.MOCHCA適合判定 === '対象外') { drop.ICP不適合++; continue; }
     const ats = g(r, 'ATS判定');
     if (!ats) { drop.ATS未判定++; continue; }
     if (ats !== '未導入') { drop['ATS' + ats] = (drop['ATS' + ats] || 0) + 1; continue; }

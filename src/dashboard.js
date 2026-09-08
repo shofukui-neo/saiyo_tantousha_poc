@@ -32,7 +32,9 @@ function loadLeads() {
     console.error(`  → 先に node src/consolidate-all.js を実行してください。`);
     process.exit(1);
   }
-  const { records } = readCsv(fs.readFileSync(MASTER, 'utf8'));
+  const parsed = readCsv(fs.readFileSync(MASTER, 'utf8'));
+  // 【架電禁止ガード】古い/手編集されたCSVを読んでも架電禁止企業は画面に出さない。
+  const records = require('./ng-guard').guardRecords(parsed.headers, parsed.records, { where: 'ダッシュボード' });
   const leads = [];
   for (const r of records) {
     const phone = g(r, '電話番号');

@@ -15,6 +15,7 @@
  *   D 待機           … 10点未満。層1の適合だけで動かす対象
  */
 const { SIGNALS } = require('./signals');
+const { OPPORTUNITY_TALK, GROUP_CAPS } = require('./opportunity-signals');
 
 const TIERS = [
   { tier: 'A', min: 40, 行動: '即架電（今週中）' },
@@ -26,7 +27,7 @@ const TIERS = [
 // 検知からの経過日で減衰。半減期はシグナルごと（signals.js の 半減期日）。
 function decayFactor(hit, now = new Date()) {
   const half = hit.半減期日 || SIGNALS[hit.signal] && SIGNALS[hit.signal].半減期日 || 60;
-  const d = new Date(hit.検知日);
+  const d = new Date(hit.詳細 && (hit.詳細.発生日 || hit.詳細.初回根拠確認日) || hit.検知日);
   if (!Number.isFinite(d.getTime())) return 1;
   const days = Math.max(0, (now.getTime() - d.getTime()) / 86400000);
   return Math.pow(0.5, days / half);
@@ -40,16 +41,33 @@ function decayFactor(hit, now = new Date()) {
  */
 function scoreIntent(hits, opts = {}) {
   const now = opts.now ? new Date(opts.now) : new Date();
-  const 内訳 = (hits || []).map((h) => {
+  const unique = new Map();
+  for (const h of hits || []) {
+    if (!h || !SIGNALS[h.signal] || !Number.isFinite(h.weight) || !Number.isFinite(h.strength)) continue;
+    const old = unique.get(h.signal);
+    if (!old || h.strength * decayFactor(h, now) > old.strength * decayFactor(old, now)) unique.set(h.signal, h);
+  }
+  const 内訳 = [...unique.values()].map((h) => {
     const decay = decayFactor(h, now);
     return {
       signal: h.signal, 名称: h.名称, 列: h.列, level: h.level, 根拠: h.根拠,
-      strength: h.strength, weight: h.weight, 検知日: h.検知日,
+      strength: h.strength, weight: h.weight, 検知日: h.検知日, 詳細: h.詳細 || {},
       減衰: Math.round(decay * 100) / 100,
-      点数: Math.round(h.weight * h.strength * decay * 10) / 10,
+      点数: Math.round(h.weight * Math.max(0, Math.min(1, h.strength)) * decay * 10) / 10,
     };
   }).sort((a, b) => b.点数 - a.点数);
 
+  // 同じ課題群の言い換えで順位が膨らむのを防ぐ。既存8軸の重みは維持。
+  const used = {};
+  for (const d of 内訳) {
+    const group = SIGNALS[d.signal].group;
+    d.調整前点数 = d.点数;
+    if (group && GROUP_CAPS[group]) {
+      d.点数 = Math.round(Math.min(d.点数, Math.max(0, GROUP_CAPS[group] - (used[group] || 0))) * 10) / 10;
+      used[group] = (used[group] || 0) + d.点数;
+    }
+  }
+  内訳.sort((a, b) => b.点数 - a.点数);
   const raw = 内訳.reduce((a, x) => a + x.点数, 0);
   const スコア = Math.min(100, Math.round(raw * 10) / 10);
   const t = TIERS.find((x) => スコア >= x.min) || TIERS[TIERS.length - 1];
@@ -73,6 +91,7 @@ function combineWithFit(intentScore, アポ期待度) {
 
 // ---- シグナル別の一言トーク（架電の入り口。line-official.js の lineTalkGuide と同じ役割）----
 const TALK = {
+  ...OPPORTUNITY_TALK,
   MIDCAREER_HR_JOB: '人事・採用ご担当の中途募集を拝見しました。採用のオペレーションが人手に寄っているタイミングかと思い、'
     + '採用担当を増やす前に応募者対応の自動化で持たせている事例をご紹介したくご連絡しました。',
   SECONDARY_RECRUIT: '追加募集（秋採用）のご案内を拝見しました。この時期の追加募集は歩留まりの取りこぼしが響くので、'

@@ -30,7 +30,9 @@ const path = require('path');
 const { readCsv, toCsv } = require('./csv');
 const { collectCompany } = require('./intent/collect');
 const { detectAll, SIGNAL_LIST } = require('./intent/signals');
-const { scoreIntent, combineWithFit, talkGuide, whyNow } = require('./intent/score');
+const { scoreIntent, talkGuide, whyNow } = require('./intent/score');
+const { targetFit, TARGET_COLS } = require('./intent/target-fit');
+const ngGuard = require('./ng-guard');
 const store = require('./intent/store');
 
 const ROOT = path.resolve(__dirname, '..');
@@ -51,6 +53,7 @@ const TOP = parseInt(getArg('top', '80'), 10);
 const SOURCES = (hasFlag('offline') ? 'csv' : getArg('sources', 'csv,mynavi')).split(',').map((s) => s.trim()).filter(Boolean);
 const SEED = getArg('seed', '');
 const NO_STORE = hasFlag('no-store');
+const QUALIFIED_ONLY = hasFlag('qualified-only');
 
 const log = (m) => console.log('[' + new Date().toISOString() + '] ' + m);
 const NOW = new Date();
@@ -61,17 +64,21 @@ const BASE_COLS = ['No', '企業名', '架電宛名', '採用担当者名', '電
   'なぜ今', '根拠', '推奨トーク', 'アポ期待度', '総合優先度'];
 const SIG_COLS = SIGNAL_LIST.map((s) => s.列);
 const TAIL_COLS = ['採用実績(直近3年)', '採用ページURL', '公式URL', 'corpID', '法人番号', '取得ソース', '観測日', '観測回数'];
-const COLS = [...BASE_COLS, ...SIG_COLS, ...TAIL_COLS];
+const PASS_COLS = ['ATS判定', 'ATS確度', 'ATS根拠', 'ATS検査日', 'ATSトーク指針', 'entry_type', 'entry_host', 'エントリー動線',
+  '年間新卒採用人数', '採用予定人数', 'エントリー人数', '応募者数', '既存被り', '既存顧客', 'DNC', '架電拒否', '除外フラグ', '役職', '部署'];
+const COLS = [...BASE_COLS, ...SIG_COLS, ...TAIL_COLS, ...TARGET_COLS, ...PASS_COLS];
 
 function safeWrite(abs, content) {
   fs.mkdirSync(path.dirname(abs), { recursive: true });
   const tmp = abs + '.tmp';
   fs.writeFileSync(tmp, content);
   try { fs.renameSync(tmp, abs); return; } catch (_) {}
-  try { fs.writeFileSync(abs, content); if (fs.existsSync(tmp)) fs.unlinkSync(tmp); } catch (_) {}
+  fs.writeFileSync(abs, content);
+  if (fs.existsSync(tmp)) fs.unlinkSync(tmp);
 }
 
 function buildRow(rec, ev, res, 観測回数) {
+  const fit = targetFit(rec, ev, res);
   const o = {
     企業名: ev.企業名 || rec['企業名'] || '',
     架電宛名: rec['架電宛名'] || 'ご採用ご担当者様',
@@ -82,7 +89,7 @@ function buildRow(rec, ev, res, 観測回数) {
     卒年: rec['卒年'] || '',
     インテントスコア: String(res.スコア),
     インテント階層: res.階層,
-    推奨アクション: res.行動,
+    推奨アクション: fit.action,
     最有力シグナル: res.最有力 || '—',
     シグナル強度: res.最有力レベル || '',
     検知シグナル: res.検知シグナル || '',
@@ -90,7 +97,15 @@ function buildRow(rec, ev, res, 観測回数) {
     根拠: res.根拠 || '',
     推奨トーク: talkGuide(res),
     アポ期待度: rec['アポ期待度'] || '',
-    総合優先度: String(combineWithFit(res.スコア, rec['アポ期待度'])),
+    総合優先度: String(fit.priority),
+    MOCHCA適合判定: fit.status,
+    MOCHCA適合根拠: fit.reasons,
+    要確認項目: fit.missing,
+    提案ルート: fit.route,
+    優先度モデル: 'intent-v2（営業仮説・受注確率ではない）',
+    根拠URL一覧: [...new Set(res.内訳.map(d => d.詳細 && d.詳細.url).filter(Boolean))].join(' '),
+    インテント資料JSON: JSON.stringify(ev.インテント資料 || []),
+    シグナル内訳JSON: JSON.stringify(res.内訳),
     '採用実績(直近3年)': ev.採用実績系列 || rec['採用実績(直近3年)'] || '',
     採用ページURL: (ev.採用ページ && ev.採用ページ.url) || rec['採用ページURL'] || '',
     公式URL: ev.公式URL || '',
@@ -100,6 +115,7 @@ function buildRow(rec, ev, res, 観測回数) {
     観測日: TODAY,
     観測回数: String(観測回数 || 1),
   };
+  for (const c of PASS_COLS) o[c] = rec[c] ?? '';
   for (const s of SIGNAL_LIST) o[s.列] = '';
   for (const d of res.内訳) o[d.列] = `${d.level}(${d.点数})`;
   return o;
@@ -113,6 +129,10 @@ function writeReport(rows, stats) {
   L.push(`- 生成: ${new Date().toISOString()}`);
   L.push(`- 入力: ${path.relative(ROOT, IN)} ／ 取得系統: ${SOURCES.join('+')} ／ 処理 ${stats.処理}社`);
   L.push(`- シグナル検知: ${stats.検知}社（A:${stats.A} B:${stats.B} C:${stats.C} D:${stats.D}）`);
+  L.push(`- 分析軸: ${SIGNAL_LIST.length}種類（従来8種類）。総合優先度は適合ゲート付きの営業仮説であり、受注確率ではありません。`);
+  L.push(`- 出力内の適合: ${rows.filter(r => r.MOCHCA適合判定 === '適合').length}社／要確認: ${rows.filter(r => r.MOCHCA適合判定 === '要確認').length}社／対象外: ${rows.filter(r => r.MOCHCA適合判定 === '対象外').length}社`);
+  L.push(`- 追加8軸の資料あり: ${stats.資料あり}社。資料がない企業は未検知であり、課題がないことを意味しません。`);
+  L.push('- 使用範囲: 入力CSVと指定した取得系統のみ。公開記載を評価し、市場全体の網羅性や受注率向上は未検証です。');
   L.push('');
   L.push('## シグナル別の検知数');
   L.push('');
@@ -129,7 +149,10 @@ function writeReport(rows, stats) {
     L.push(`### ${i + 1}. ${r['企業名']}　［${r['インテント階層']}／${r['インテントスコア']}点］`);
     L.push(`- 電話: ${r['電話番号'] || '—'}　宛名: ${r['採用担当者名'] || r['架電宛名']}　従業員: ${r['従業員数'] || '—'}名　業種: ${r['業種'] || '—'}`);
     L.push(`- なぜ今: ${r['なぜ今']}`);
+    L.push(`- MOCHCA適合: ${r.MOCHCA適合判定}／総合優先度:${r.総合優先度}／${r.MOCHCA適合根拠}`);
+    L.push(`- 次の対応: ${r.推奨アクション}／${r.提案ルート}／要確認:${r.要確認項目 || 'なし'}`);
     L.push(`- 根拠: ${r['根拠']}`);
+    if (r.根拠URL一覧) L.push(`- 根拠URL: ${r.根拠URL一覧}`);
     if (r['推奨トーク']) L.push(`- トーク: ${r['推奨トーク']}`);
     L.push('');
   }
@@ -139,7 +162,8 @@ function writeReport(rows, stats) {
 async function main() {
   if (!fs.existsSync(IN)) { log('入力が見つかりません: ' + IN); process.exitCode = 1; return; }
   const { records } = readCsv(fs.readFileSync(IN, 'utf8'));
-  const batch = LIMIT > 0 ? records.slice(0, LIMIT) : records;
+  const allowed = records.filter(r => !ngGuard.hit(r.企業名));
+  const batch = LIMIT > 0 ? allowed.slice(0, LIMIT) : allowed;
   log(`入力 ${records.length}社 → 処理 ${batch.length}社 ／ 取得系統: ${SOURCES.join('+')} ／ 並列${CONC}`);
 
   // 判定ルールを変えた後は台帳を捨てて採り直す。
@@ -157,7 +181,7 @@ async function main() {
   log(`観測台帳: 既知 ${既知社数}社（${store.OBS}）`);
 
   const out = [];
-  const stats = { 処理: 0, 検知: 0, A: 0, B: 0, C: 0, D: 0, signals: {} };
+  const stats = { 処理: 0, 検知: 0, 資料あり: 0, A: 0, B: 0, C: 0, D: 0, signals: {} };
   let idx = 0;
 
   const worker = async () => {
@@ -181,10 +205,12 @@ async function main() {
       const res = scoreIntent(scoreHits, { now: NOW });
 
       stats.処理++;
+      if ((ev.インテント資料 || []).length) stats.資料あり++;
       if (res.内訳.length) stats.検知++;
       stats[res.階層] = (stats[res.階層] || 0) + 1;
       for (const d of res.内訳) stats.signals[d.signal] = (stats.signals[d.signal] || 0) + 1;
-      if (res.スコア >= MIN_SCORE) out.push(buildRow(rec, ev, res, (state.companies[key] || {}).観測回数));
+      const row = buildRow(rec, ev, res, (state.companies[key] || {}).観測回数);
+      if (res.スコア >= MIN_SCORE && (!QUALIFIED_ONLY || row.MOCHCA適合判定 === '適合')) out.push(row);
 
       if (stats.処理 % 50 === 0) {
         log(`  …${stats.処理}/${batch.length} 検知${stats.検知}社（A${stats.A} B${stats.B} C${stats.C}）`);

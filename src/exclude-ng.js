@@ -45,8 +45,9 @@ function mustRead(fp) {
   return fs.readFileSync(abs, 'utf8');
 }
 
-function writeBom(fp, headers, recs) {
-  fs.writeFileSync(resolveP(fp), '﻿' + toCsv(headers, recs).replace(/\n/g, '\r\n'), 'utf8');
+// opts.ngGuard=false … 架電禁止ガードを外す（除外明細そのものを書く用途）
+function writeBom(fp, headers, recs, opts = {}) {
+  fs.writeFileSync(resolveP(fp), '﻿' + toCsv(headers, recs, Object.assign({ where: fp }, opts)).replace(/\n/g, '\r\n'), 'utf8');
 }
 
 function main() {
@@ -78,7 +79,7 @@ function main() {
   const outExcl = `${base}.ng-excluded.csv`;
 
   writeBom(outKept, list.headers, kept);
-  writeBom(outExcl, [...list.headers, 'NG一致名'], excluded);
+  writeBom(outExcl, [...list.headers, 'NG一致名'], excluded, { ngGuard: false }); // 明細＝禁止企業そのもの
 
   if (APPLY) {
     const bak = `${base}.bak.csv`;

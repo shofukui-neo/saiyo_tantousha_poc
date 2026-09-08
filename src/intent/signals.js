@@ -22,6 +22,7 @@
  *   - 強度(strength 0..1)と重み(weight)を分離。重み＝シグナルの効き、強度＝その社での確からしさ。
  */
 const { normCompanyName } = require('../csv');
+const { OPPORTUNITY_SIGNALS, detectOpportunitySignals } = require('./opportunity-signals');
 
 // ---- シグナル定義（weight＝効く順そのもの。半減期＝そのシグナルの賞味期限）----
 const SIGNALS = {
@@ -66,6 +67,7 @@ const SIGNALS = {
     説明: '母集団形成に外部投資を始めた＝応募者管理の負荷が跳ねる',
   },
 };
+Object.assign(SIGNALS, OPPORTUNITY_SIGNALS);
 const SIGNAL_LIST = Object.values(SIGNALS).sort((a, b) => a.順位 - b.順位);
 
 // ---- テキスト共通ヘルパ ----
@@ -183,7 +185,7 @@ function detectHrMidCareerJob(cards, opts = {}) {
     if (target) {
       const n = normCompanyName(c.企業名 || '');
       if (!n) continue;
-      if (!(n === target || n.includes(target) || target.includes(n))) continue;
+      if (n !== target) continue;
     }
     if (!HR_TITLE_RE.test(職種)) continue;                                     // 職種が人事/採用ロールでない
     if (NEWGRAD_LISTING_RE.test(職種)) continue;                                // その社の新卒求人そのもの
@@ -534,6 +536,7 @@ function detectAll(ev = {}, prev = null, opts = {}) {
   push(detectLineRecruit({ line: ev.LINE || null, prev: p.LINE || null, 検知日 }));
   push(detectInternship({ text: ev.インターン本文 || '', 件数: ev.インターン件数, prev: p.インターン || null, 検知日 }));
   push(detectExpo({ text: (ev.インターン本文 || '') + '\n' + (ev.掲載本文 || ''), prev: p.合説 || null, 検知日 }));
+  hits.push(...detectOpportunitySignals(ev, { now, 検知日 }));
   return hits;
 }
 

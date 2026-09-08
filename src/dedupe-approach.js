@@ -60,8 +60,9 @@ const OUT_EXCL  = getArg('out-excluded', `${listBase}-excluded.csv`);
 function resolveP(fp) { return path.isAbsolute(fp) ? fp : path.resolve(process.cwd(), fp); }
 function exists(fp) { return fp && fs.existsSync(resolveP(fp)); }
 function readText(fp) { return fs.readFileSync(resolveP(fp), 'utf8'); }
-function writeBom(fp, headers, recs) {
-  fs.writeFileSync(resolveP(fp), '﻿' + toCsv(headers, recs).replace(/\n/g, '\r\n'), 'utf8');
+// opts.ngGuard=false … 架電禁止ガードを外す（除外明細そのものを書く用途）
+function writeBom(fp, headers, recs, opts = {}) {
+  fs.writeFileSync(resolveP(fp), '﻿' + toCsv(headers, recs, Object.assign({ where: fp }, opts)).replace(/\n/g, '\r\n'), 'utf8');
 }
 
 // レコード（CSV由来 or JSONオブジェクト）から論理項目を、列名揺れを吸収して取り出す
@@ -264,7 +265,7 @@ function main() {
   }
 
   writeBom(OUT_CLEAN, list.headers, clean);
-  writeBom(OUT_EXCL, exclHeaders, excluded);
+  writeBom(OUT_EXCL, exclHeaders, excluded, { ngGuard: false }); // 明細＝除外企業そのもの
 
   const total = list.records.length;
   const uniqExcl = excluded.length;

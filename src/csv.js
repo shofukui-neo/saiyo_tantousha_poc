@@ -46,9 +46,14 @@ function csvEscape(v) {
 }
 
 // レコード配列＋ヘッダ → CSVテキスト
-function toCsv(headers, records) {
+// 【架電禁止ガード】社名列を持つ出力からは、禁止リスト（data/ng-companies.txt）掲載企業を
+// 無条件で落とす。src配下のCSV出力はほぼ全てここを通るため、ここが最終防波堤。
+//   opts.ngGuard === false … ガードを外す（NG明細そのものを書き出す用途のみ）
+//   opts.where            … ログ表示用ラベル（出力先ファイル名など）
+function toCsv(headers, records, opts = {}) {
+  const recs = require('./ng-guard').guardRecords(headers, records, opts); // 遅延require（循環回避）
   const lines = [headers.map(csvEscape).join(',')];
-  for (const rec of records) lines.push(headers.map((h) => csvEscape(rec[h])).join(','));
+  for (const rec of recs) lines.push(headers.map((h) => csvEscape(rec[h])).join(','));
   return lines.join('\n');
 }
 

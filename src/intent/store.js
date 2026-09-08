@@ -94,15 +94,21 @@ function mergeSignals(prevSignals, hits, { now = new Date(), weakFloor = 0.06 } 
   const today = now.toISOString().slice(0, 10);
   for (const [id, s] of Object.entries(prevSignals || {})) {
     const half = s.半減期日 || 60;
-    const days = Math.max(0, (now.getTime() - new Date(s.最終検知日 || s.初回検知日 || today).getTime()) / 86400000);
+    const days = Math.max(0, (now.getTime() - new Date(s.詳細 && (s.詳細.発生日 || s.詳細.初回根拠確認日) || s.最終検知日 || s.初回検知日 || today).getTime()) / 86400000);
     if (Math.pow(0.5, days / half) < weakFloor) continue; // 賞味期限切れ
     out[id] = { ...s, 継続: false };
   }
   for (const h of hits || []) {
     const prev = out[h.signal];
+    const details = { ...h.詳細 };
+    if (details.group && details.発生日不明) {
+      const original = prevSignals && prevSignals[h.signal];
+      const same = original && original.詳細 && original.詳細.url === details.url && original.詳細.引用 === details.引用;
+      details.初回根拠確認日 = same ? original.詳細.初回根拠確認日 || original.初回検知日 : h.検知日;
+    }
     out[h.signal] = {
       signal: h.signal, 名称: h.名称, 列: h.列, weight: h.weight, 半減期日: h.半減期日,
-      level: h.level, strength: h.strength, 根拠: h.根拠, 詳細: h.詳細,
+      level: h.level, strength: h.strength, 根拠: h.根拠, 詳細: details,
       初回検知日: (prev && prev.初回検知日) || h.検知日,
       最終検知日: h.検知日,
       検知回数: ((prev && prev.検知回数) || 0) + 1,
