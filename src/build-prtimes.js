@@ -14,8 +14,8 @@ const path = require('path');
 const cheerio = require('cheerio');
 const { politeGet } = require('./polite');
 const { toCsv, readCsv, normCompanyName } = require('./csv');
-const { isPlausiblePersonName } = require('./jp-names');
 const { extractPressContact } = require('./press-contact');
+const { parseCompanyProfile } = require('./prtimes-parse');
 
 function getArg(name, def) {
   const i = process.argv.indexOf('--' + name);
@@ -61,38 +61,15 @@ const KEYWORDS = ['新卒採用', '採用', '中途採用', '人事', '採用強
 function log(m) { console.log(`[${new Date().toISOString()}] ${m}`); }
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
-// PR TIMES「代表者名」ラベル直後の値を整形。ラベル付き＝人名確定なので、isPlausiblePersonNameの
-// 厳格ゲート（姓辞書/全漢字/≤6字）に頼らず、末尾の制度語を剥がし軽く検証して受ける（珍姓・かな名・代表取締役肩書きも許容）。
-function cleanRepName(raw) {
-  let s = String(raw || '').replace(/[ 　]/g, '');
-  // 末尾に貼り付く制度語・肩書きを除去
-  s = s.replace(/(上場.*|未上場.*|資本金.*|設立.*|電話.*|代表取締役社?長?|代表取締|取締役社?長?|CEO|社長|会長|理事長|院長|店長|園長|代表)$/g, '');
-  s = s.replace(/^(代表取締役社?長?|代表取締|取締役|CEO|社長|会長|理事長|代表)/g, '');
-  if (s.length < 2 || s.length > 8) return '';
-  if (/[A-Za-z0-9０-９@.\/、。（）()]/.test(s)) return '';
-  if (/採用|人事|総務|担当|事業|株式|有限|会社|部$|課$|室$|営業|本社|支店/.test(s)) return '';
-  if (/^(東京|大阪|名古屋|横浜|本社|当社|同社|弊社)/.test(s)) return '';
-  if (!/^[一-龥々ぁ-んァ-ヶ]+$/.test(s)) return '';
-  return s;
-}
-
 // リリースHTMLの会社概要ブロックから企業レコードを構造抽出。
 function parseRelease(html) {
   const $ = cheerio.load(html);
   const rec = { 企業名: '', 公式URL: '', 業種: '', 都道府県: '', 電話番号: '', 代表者名: '', 上場: '', 設立: '', 取得元: 'PR TIMES' };
   rec.企業名 = (($('title').text() || '').split(/[|｜]/).slice(-1)[0] || '').replace(/のプレスリリース.*$/, '').trim();
   const t = $('body').text().replace(/[ \t　]+/g, ' ');
-  // 会社概要ブロック（ラベル連結）。会社名〜設立/資本金の範囲を作業領域に。
-  const seg = (t.match(/会社名[\s\S]{0,500}?(?:設立|資本金|関連リンク|プレスリリース詳細)/) || [t])[0];
-  const pick = (re) => { const m = seg.match(re); return m ? m[1].trim() : ''; };
-  rec.公式URL = pick(/URL\s*(https?:\/\/[a-zA-Z0-9.\-\/_%?=&#~]+)/);
-  rec.業種 = pick(/業種\s*([^\s：:]{2,14}?)(?:本社|所在地|電話|代表|URL)/);
-  rec.都道府県 = (seg.match(/(北海道|東京都|京都府|大阪府|.{2,3}県)/) || [''])[0];
-  rec.電話番号 = pick(/電話番号\s*([0-9０-９][\d０-９\-－]{7,})/);
-  // 代表者名: ラベル直後の連結値を広めに取り、cleanRepName で整形（珍姓・かな名も拾う）。
-  rec.代表者名 = cleanRepName(pick(/代表者(?:名)?[：:\s]*([一-龥々ぁ-んァ-ヶ]{2,12}(?:[ 　][一-龥々ぁ-んァ-ヶ]{1,8})?)/));
-  rec.上場 = pick(/上場\s*(未上場|東証[^\s]{0,6}|名証[^\s]{0,4}|上場)/);
-  rec.設立 = (seg.match(/設立\s*((?:19|20)\d{2})\s*年/) || [, ''])[1];
+  // 会社概要（ラベル連結）の抽出は prtimes-parse に集約。
+  // 代表者名の肩書き/上場区分の貼り付き・都道府県の貪欲一致（「地福岡県」）を1箇所で直すため。
+  Object.assign(rec, parseCompanyProfile(t));
   // 追加レバー: 本文末尾の「お問い合わせ先 担当：氏名」を拾う（採用系リリースは人事/採用担当のことが多い）。
   // 実測歩留まりは低い（PR TIMESは問合せをボタン化しており本文露出は稀）が、取れた時はラベル付き＝高確度。
   const bodyText = ($('article').first().text() || $('main').first().text() || $('body').text()).replace(/[ \t　]+/g, ' ');

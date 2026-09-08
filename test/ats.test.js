@@ -121,7 +121,9 @@ eq('名前で分からなければ値で探す', pickUrlColumn(['企業名', '�
 eq('URLらしき列が無ければ空', pickUrlColumn(['企業名', '電話番号'], [{ 企業名: 'A', 電話番号: '03-1234-5678' }]), '');
 const cols = toColumns(detectAts('https://job.axol.jp/27/s/x/entry'), '2026-08-28');
 eq('出力列: ATS名', cols.ATS, 'アクセスオンライン（AOL/AOLC）');
-eq('出力列: 確度は小数2桁', cols.ATS確度, '0.95');
+// 確度は「新卒でそのATSを使っている確からしさ」。確定＝1.00（要件: 100%でなければ載せない）
+eq('出力列: 確度は確定なら1.00', cols.ATS確度, '1.00');
+eq('出力列: 判定グレード', cols.判定グレード, '確定');
 eq('出力列: 判定日', cols.ATS判定日, '2026-08-28');
 ok('出力列は OUT_COLS と一致', OUT_COLS.every((c) => c in cols) && Object.keys(cols).length === OUT_COLS.length);
 const miss = toColumns({ found: false, others: [], error: 'robots-disallow' }, '2026-08-28');
@@ -165,10 +167,10 @@ ok('別ATSなら要確認', /^要確認：不一致/.test(crmCompare('i-web', 's
 ok('CRM「無し」なのにATS検出 → 要確認', /^要確認/.test(crmCompare('無し', '採用一括かんりくん', 'ats')));
 ok('CRM「無し」×媒体のみ → 整合（要確認にしない）', !/要確認/.test(crmCompare('無し', 'マイナビ', 'media')));
 ok('CRMにATSあり×媒体のみ → 不一致にしない', !/不一致/.test(crmCompare('i-web', 'マイナビ', 'media')));
-ok('CRM未記入×ATS検出 → 判明として出る', /判明/.test(crmCompare('', 'HRMOS採用（ハーモス）', 'ats')));
+ok('CRM未記入×ATS検出 → 新卒利用の確認として出る', /確認/.test(crmCompare('', 'HRMOS採用（ハーモス）', 'ats')));
 eq('CRM未記入×検出なし → 空', crmCompare('', '', ''), '');
-eq('CRM「無し」×検出なし', crmCompare('無し', '', ''), 'CRM「無し」・URLでも検出なし');
-eq('CRMのみ（URL未検出）', crmCompare('sonarATS', '', ''), 'CRMのみ（URLでは未検出）');
+eq('CRM「無し」×検出なし', crmCompare('無し', '', ''), 'CRM「無し」・新卒ATSは未確認');
+eq('CRMのみ（URL未検出）', crmCompare('sonarATS', '', ''), 'CRMのみ（新卒での利用は未確認）');
 
 console.log(`\n合計: ${pass} pass / ${fail} fail`);
 if (fail) { console.log('失敗:'); fails.forEach((f) => console.log('  - ' + f)); process.exitCode = 1; }

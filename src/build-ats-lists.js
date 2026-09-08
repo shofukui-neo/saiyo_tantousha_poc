@@ -142,10 +142,14 @@ function loadEnrichIndex(file) {
   const idx = createMatchIndex();
   const byKey = new Map();
   const { records } = readCsv(fs.readFileSync(path.resolve(file), 'utf8'));
-  let n = 0;
+  let n = 0, skipped = 0;
   for (const r of records) {
     const name = r['企業名'] || r['会社名'] || r['会社情報：会社名'] || '';
     const ats = String(r['ATS'] || '').trim();
+    // 「判定グレード」列がある新スキーマでは**確定のみ**採用する。
+    // 中途採用のATSや証拠不十分（旧ロジックの誤判定の中身）を営業リストに載せないため。
+    const grade = String(r['判定グレード'] || '').trim();
+    if (grade && grade !== '確定') { skipped++; continue; }
     if (!name || !ats) continue;
     const key = normCompanyName(name);
     if (!key || byKey.has(key)) continue;
@@ -153,7 +157,7 @@ function loadEnrichIndex(file) {
     byKey.set(key, { ats, kind: r['ATS種別'] || '', evidence: r['ATS根拠'] || '' });
     n++;
   }
-  return { lookup: (name) => { const h = idx.matchDetail({ 企業名: name }); return h.matched ? byKey.get(h.label) : null; }, size: n };
+  return { lookup: (name) => { const h = idx.matchDetail({ 企業名: name }); return h.matched ? byKey.get(h.label) : null; }, size: n, skipped };
 }
 
 // ── メイン ───────────────────────────────────────────────────────
@@ -170,6 +174,7 @@ let enrich = null;
 if (ENRICH) {
   enrich = loadEnrichIndex(ENRICH);
   console.log(`[ats-lists] URL判定の合流元 ${enrich.size}社を読込（${path.basename(ENRICH)}）`);
+  if (enrich.skipped) console.log(`[ats-lists]   うち ${enrich.skipped}社は判定グレードが「確定」でないため不採用（中途利用・証拠不十分）`);
 }
 
 const drop = {};

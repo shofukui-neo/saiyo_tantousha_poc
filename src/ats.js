@@ -44,26 +44,26 @@ const REGISTRY = [
     aliases: ['AOL', 'AOLC', 'アクセスオンライン', 'axol', 'アクセスオンラインキャリア'],
     note: 'マイナビ運営。job.axol.jp がマイページ、mail.axol.jp が送信元' },
   { id: 'hrmos', name: 'HRMOS採用（ハーモス）', vendor: 'ビズリーチ', kind: 'ats',
-    hosts: ['hrmos.co'], htmlMarkers: ['hrmos.co'],
+    hosts: ['hrmos.co'], htmlMarkers: ['hrmos.co'], tenantPath: /^\/pages\/[^/]+/,
     aliases: ['HRMOS', 'HARMOS', 'ハーモス', 'HRMOS採用', 'ハーモス採用'],
     note: '求人一覧は hrmos.co/pages/{企業ID}/jobs' },
   { id: 'iweb', name: 'i-web', vendor: 'ヒューマネージ', kind: 'ats',
-    hosts: ['i-web.jp'], htmlMarkers: ['i-web.jp'],
+    hosts: ['i-web.jp'], htmlMarkers: ['i-web.jp'], tenantHost: true,
     aliases: ['i-web', 'iweb', 'アイウェブ', 'i-web NEXT'],
     note: '大手・大量応募向け。大企業比率が高い' },
   { id: 'sonar', name: 'sonar ATS', vendor: 'Thinkings（ソフトバンクG）', kind: 'ats',
-    hosts: ['sonar-ats.jp'], htmlMarkers: ['sonar-ats.jp', 'sonar ATS'],
+    hosts: ['sonar-ats.jp'], htmlMarkers: ['sonar-ats.jp', 'sonar ATS'], tenantHost: true,
     aliases: ['sonar', 'sonarATS', 'sonar ATS', 'SONAR', 'ソナー'],
     note: '新卒・中途一元。導入社数が多い主要競合' },
   { id: 'jobsuite', name: 'JobSuite（FRESHERS/CAREER）', vendor: '株式会社ステラス', kind: 'ats',
     hosts: ['jobsuite.jp'], htmlMarkers: ['jobsuite.jp', 'JobSuite'],
     aliases: ['JobSuite', 'ジョブスイート', 'JobSuite FRESHERS', 'ジョブスイートフレッシャーズ'], note: '' },
   { id: 'jobcan', name: 'ジョブカン採用管理', vendor: '株式会社DONUTS', kind: 'ats',
-    hosts: ['jobcan.jp', 'jobcan.ne.jp'], htmlMarkers: ['ats.jobcan.jp'],
+    hosts: ['jobcan.jp', 'jobcan.ne.jp'], htmlMarkers: ['ats.jobcan.jp'], tenantHost: true,
     aliases: ['ジョブカン', 'jobcan', 'ジョブカン採用管理'],
     note: '中小・アルバイト併用が多い。エントリーは ats.jobcan.jp' },
   { id: 'herp', name: 'HERP Hire', vendor: '株式会社HERP', kind: 'ats',
-    hosts: ['herp.careers', 'herp.cloud'], htmlMarkers: ['herp.careers'],
+    hosts: ['herp.careers', 'herp.cloud'], htmlMarkers: ['herp.careers'], tenantPath: /^\/x\/[^/]+/,
     aliases: ['HERP', 'ハープ', 'HERP Hire'], note: '中途・IT寄り' },
   { id: 'talentio', name: 'Talentio', vendor: '株式会社タレンティオ', kind: 'ats',
     hosts: ['talentio.com'], htmlMarkers: ['talentio.com'], aliases: ['Talentio', 'タレンティオ'], note: '' },
@@ -176,12 +176,12 @@ function detectAtsByUrl(url) {
   const host = u.hostname.replace(/^www\./i, '').toLowerCase();
   for (const v of registry()) {
     for (const h of v.hosts || []) {
-      if (hostMatches(host, h)) return hit(v, 0.95, `URLホスト ${host}`, 'url');
+      if (hostMatches(host, h)) return hit(v, 0.95, `URLホスト ${host}`, 'url', u.toString());
     }
     // ホストだけでは決まらないもの（docs.google.com/forms/… 等）
     for (const p of v.pathHosts || []) {
       if (hostMatches(host, p.host) && new RegExp(p.path).test(u.pathname)) {
-        return hit(v, 0.95, `URL ${host}${u.pathname}`, 'url');
+        return hit(v, 0.95, `URL ${host}${u.pathname}`, 'url', u.toString());
       }
     }
   }
@@ -192,9 +192,53 @@ function detectAtsByUrl(url) {
 // src / href / action / data-src の絶対URLを拾う（iframe・script・formいずれも同じ属性名）
 const RESOURCE_ATTR_RE = /\b(?:src|href|action|data-src)\s*=\s*["']([^"']+)["']/gi;
 
+// ── ヒットの「周辺文脈」を取る ───────────────────────────────────
+// 新卒か中途かは、そのリンクが**どの見出しの下にあるか**でほぼ決まる。
+//   <h2>中途採用</h2> … <a href="https://hrmos.co/pages/x/jobs">応募する</a>
+// を「中途のHRMOS」と読めるように、一致位置の前後テキストと直前の見出しを添える。
+const TAG_RE = /<[^>]*>/g;
+const HEADING_RE = /<(h[1-6]|dt|th|legend|summary|strong)\b[^>]*>([\s\S]{0,120}?)<\/\1>/gi;
+// リンクを含みがちな「見出し代わり」のクラス名（新卒/中途のタブやカード）
+const CLASS_HINT_RE = /class\s*=\s*["'][^"']*(shinsotsu|newgrad|new-grad|fresh|graduate|chuto|mid-?career|career)[^"']*["']/i;
+
+/** HTMLタグを落として空白を畳む（文脈判定用のラフなテキスト化）。 */
+function stripTags(html) {
+  return String(html || '').replace(/<(script|style|noscript)\b[\s\S]*?<\/\1>/gi, ' ')
+    .replace(TAG_RE, ' ').replace(/&nbsp;/g, ' ').replace(/\s+/g, ' ').trim();
+}
+
+/**
+ * 一致位置の周辺文脈を作る。「直前の見出し」＋「前後 span 文字」。
+ * @param {string} html 元HTML
+ * @param {number} index 一致位置
+ * @param {number} [span=600] 前後に見る生HTMLの文字数
+ */
+function contextAround(html, index, span = 600) {
+  const s = String(html || '');
+  const from = Math.max(0, index - span);
+  const near = stripTags(s.slice(from, Math.min(s.length, index + span)));
+  // 直前の見出し（一致位置より手前で最後に閉じたもの）
+  let heading = '';
+  HEADING_RE.lastIndex = 0;
+  let m;
+  while ((m = HEADING_RE.exec(s))) {
+    if (m.index > index) break;
+    heading = stripTags(m[2]);
+  }
+  // 一致タグ自身のclass（<a class="btn-shinsotsu"> 等）も文脈として効く
+  const tagStart = s.lastIndexOf('<', index);
+  const tagHtml = tagStart >= 0 ? s.slice(tagStart, index + 200) : '';
+  const cls = (tagHtml.match(CLASS_HINT_RE) || [''])[0];
+  return [heading, cls, near].filter(Boolean).join(' | ').slice(0, 1600);
+}
+
 /**
  * ページHTMLから外部埋め込みとマーカー文字列を見て判定する。
  * 自社サイトにATSのフォームをiframe/scriptで埋め込む構成はURL判定に出ないため、この経路が要。
+ *
+ * 戻り値の各候補には `url`（ATSホスト上の実URL）と `context`（周辺テキスト）が付く。
+ * この2つが無いと「新卒か中途か」を判定できず、ats-scope.gradeEvidence() が確定を出さない。
+ *
  * @param {string} html
  * @param {string} [baseUrl] 自ホスト判定用（自分自身への参照はノイズなので捨てる）
  * @returns {object[]} 確度降順の候補（同一ベンダーは1件に畳む）
@@ -204,34 +248,40 @@ function detectAtsByHtml(html, baseUrl) {
   if (!s) return [];
   const selfHost = hostOfUrl(baseUrl);
   const found = new Map();   // id -> 候補
-  const add = (v, conf, ev, src) => {
+  const add = (v, conf, ev, src, url, context) => {
     const cur = found.get(v.id);
-    if (!cur || cur.confidence < conf) found.set(v.id, hit(v, conf, ev, src));
+    if (!cur || cur.confidence < conf) found.set(v.id, hit(v, conf, ev, src, url, context));
   };
 
-  // 2-a) 埋め込みリソースのホスト（マーカーより確実）
-  const hosts = new Set();
+  // 2-a) 埋め込みリソースのホスト（マーカーより確実）。URLと出現位置を保持する。
+  const refs = [];   // { host, url, index }
   let m;
   RESOURCE_ATTR_RE.lastIndex = 0;
   while ((m = RESOURCE_ATTR_RE.exec(s))) {
     const raw = m[1];
     if (!/^(https?:)?\/\//i.test(raw)) continue;      // 相対・data:・mailto: は対象外
-    const h = hostOfUrl(raw.startsWith('//') ? 'https:' + raw : raw);
-    if (h && h !== selfHost) hosts.add(h);
+    const abs = raw.startsWith('//') ? 'https:' + raw : raw;
+    const h = hostOfUrl(abs);
+    if (h && h !== selfHost) refs.push({ host: h, url: abs, index: m.index });
   }
   for (const v of registry()) {
-    for (const h of hosts) {
-      if ((v.hosts || []).some((reg) => hostMatches(h, reg))) add(v, 0.85, `埋め込みリソース ${h}`, 'embed');
-      else if ((v.pathHosts || []).some((p) => hostMatches(h, p.host))) add(v, 0.75, `埋め込みリソース ${h}`, 'embed');
+    for (const r of refs) {
+      const exact = (v.hosts || []).some((reg) => hostMatches(r.host, reg));
+      const viaPath = !exact && (v.pathHosts || []).some((p) => hostMatches(r.host, p.host));
+      if (!exact && !viaPath) continue;
+      add(v, exact ? 0.85 : 0.75, `埋め込みリソース ${r.host}`, 'embed', r.url, contextAround(s, r.index));
     }
   }
 
-  // 2-b) 本文マーカー（クラス名・コピーライト等。確度は一段低い）
+  // 2-b) 本文マーカー（クラス名・コピーライト等）。
+  //      実URLが無いので **単独では確定にならない**（ats-scope 側で要確認に落ちる）。
+  //      HR系企業が記事内で製品名を書いているだけ、という誤爆がこの経路で起きていた。
   const lower = s.toLowerCase();
   for (const v of registry()) {
     if (found.has(v.id)) continue;
     for (const mk of v.htmlMarkers || []) {
-      if (lower.includes(String(mk).toLowerCase())) { add(v, 0.6, `HTML内マーカー "${mk}"`, 'marker'); break; }
+      const i = lower.indexOf(String(mk).toLowerCase());
+      if (i >= 0) { add(v, 0.6, `HTML内マーカー "${mk}"`, 'marker', '', contextAround(s, i)); break; }
     }
   }
   return [...found.values()].sort((a, b) => b.confidence - a.confidence);
@@ -239,7 +289,7 @@ function detectAtsByHtml(html, baseUrl) {
 
 // ---- 3) 統合 ------------------------------------------------------------
 const EMPTY = { found: false, id: '', name: '', vendor: '', kind: '', kindLabel: '', own: false,
-  note: '', confidence: 0, evidence: '', source: '', others: [] };
+  note: '', confidence: 0, evidence: '', source: '', url: '', context: '', others: [] };
 
 /**
  * URL（＋あればHTML・リダイレクト後URL）からATSを1つに決める。
@@ -254,7 +304,7 @@ function detectAts(url, opts = {}) {
   // リダイレクト後URL（自社ドメイン → ATS のパターン）。元URL一致より僅かに下げる
   if (opts.finalUrl && hostOfUrl(opts.finalUrl) !== hostOfUrl(url)) {
     const byFinal = detectAtsByUrl(opts.finalUrl);
-    if (byFinal) cands.push({ ...byFinal, confidence: 0.9, source: 'redirect', evidence: `リダイレクト先 ${hostOfUrl(opts.finalUrl)}` });
+    if (byFinal) cands.push({ ...byFinal, confidence: 0.9, source: 'redirect', url: opts.finalUrl, evidence: `リダイレクト先 ${hostOfUrl(opts.finalUrl)}` });
   }
   if (opts.html) cands.push(...detectAtsByHtml(opts.html, opts.finalUrl || url));
 
@@ -273,9 +323,75 @@ function detectAts(url, opts = {}) {
 // ATS > フォーム > 媒体 > SNS。媒体タグが同居していても、入っているATSを主判定にする。
 function kindRank(kind) { return ({ ats: 3, form: 2, media: 1, sns: 0 })[kind] || 0; }
 
-function hit(v, confidence, evidence, source) {
+function hit(v, confidence, evidence, source, url, context) {
   return { id: v.id, name: v.name, vendor: v.vendor, kind: v.kind, kindLabel: KIND_LABEL[v.kind] || v.kind,
-    own: !!v.own, note: v.note || '', confidence, evidence, source };
+    own: !!v.own, note: v.note || '', confidence, evidence, source,
+    url: url || '', context: context || '' };
+}
+
+// ---- ATSの「確認しに行けるページURL」を作る -----------------------------
+// 埋め込みで拾えるのは `https://hrmos.co/pages/xxxx/embed.js` のような**アセット**のことが多い。
+// これを取得しても新卒か中途かは読めないので、人が見る求人ページのURLへ寄せる。
+const ASSET_RE = /\.(js|mjs|css|png|jpe?g|gif|svg|webp|ico|woff2?|ttf|map|json)$/i;
+// ベンダーごとの「一覧ページ」の作り方。ここに無いベンダーはディレクトリまで戻すだけ。
+const PAGE_RULES = [
+  { host: 'hrmos.co', from: /^\/pages\/([^/]+)/, to: (m) => `/pages/${m[1]}/jobs` },
+  { host: 'herp.careers', from: /^\/x\/([^/]+)/, to: (m) => `/x/${m[1]}` },
+  { host: 'en-gage.net', from: /^\/([^/]+)/, to: (m) => `/${m[1]}` },
+];
+
+/**
+ * ATSのURL（アセットでも可）→ 中身を読める公開ページのURL。
+ * @param {string} url
+ * @returns {string} 取得に向くURL（作れなければ元のURL）
+ */
+function atsPageUrl(url) {
+  const u = toUrl(url);
+  if (!u) return String(url || '');
+  const host = u.hostname.replace(/^www\./i, '').toLowerCase();
+  for (const r of PAGE_RULES) {
+    if (!hostMatches(host, r.host)) continue;
+    const m = u.pathname.match(r.from);
+    if (m) return u.origin + r.to(m);
+  }
+  if (ASSET_RE.test(u.pathname)) {
+    const dir = u.pathname.replace(/\/[^/]*$/, '/');
+    return u.origin + (dir === '/' ? '' : dir);
+  }
+  return u.origin + u.pathname + u.search;
+}
+
+// ---- ベンダー自身のサイト vs 顧客のテナントページ -----------------------
+// `https://hrmos.co/ats/` は**HRMOSの製品紹介ページ**であって、どこかの企業の求人ページではない。
+// HR系の会社が製品ページへリンクしているだけで「この会社はHRMOSを使っている」と誤判定していた
+// （実測: 株式会社リクルートマネジメントソリューションズ）。
+// 顧客のページは必ずテナント識別子を持つ（hrmos.co/pages/<企業ID>/、<企業>.sonar-ats.jp）ので、
+// それが無いURLは証拠として使わない。
+const VENDOR_SITE_SEG = new Set(['ats', 'lp', 'service', 'services', 'product', 'products', 'price',
+  'pricing', 'plan', 'plans', 'about', 'company', 'contact', 'document', 'documents', 'download',
+  'media', 'column', 'columns', 'blog', 'news', 'case', 'cases', 'casestudy', 'seminar', 'event',
+  'events', 'support', 'help', 'faq', 'terms', 'privacy', 'law', 'feature', 'features', 'function']);
+
+/**
+ * そのURLは「ベンダー自身のサイト」か（＝顧客の採用ページではない）。
+ * @param {string} url
+ * @returns {boolean} true ならATS利用の証拠として使ってはいけない
+ */
+function isVendorOwnPage(url) {
+  const u = toUrl(url);
+  if (!u) return true;
+  const host = u.hostname.replace(/^www\./i, '').toLowerCase();
+  const segs = u.pathname.split('/').filter(Boolean);
+  for (const v of registry()) {
+    if (!(v.hosts || []).some((h) => hostMatches(host, h))) continue;
+    // テナントがサブドメインで切られるベンダー（xxx.sonar-ats.jp）は、素のドメイン＝ベンダー本体
+    if (v.tenantHost && (v.hosts || []).includes(host)) return true;
+    // テナントのURL形が分かっているベンダーは、その形でなければベンダー本体とみなす
+    if (v.tenantPath && !v.tenantPath.test(u.pathname)) return true;
+    break;
+  }
+  if (!segs.length) return true;                       // ドメイン直下＝ベンダーのトップ
+  return VENDOR_SITE_SEG.has(segs[0].toLowerCase());   // /ats/ /lp/ /column/ …
 }
 
 // ---- CRMの手入力表記 → 正規ベンダー ------------------------------------
@@ -349,4 +465,5 @@ function resetRegistry() { _cache = null; }
 module.exports = {
   detectAts, detectAtsByUrl, detectAtsByHtml, salesHint, normalizeAtsName, atsKey,
   hostMatches, hostOfUrl, toUrl, registry, resetRegistry, KIND_LABEL, REGISTRY,
+  stripTags, contextAround, atsPageUrl, isVendorOwnPage,
 };
