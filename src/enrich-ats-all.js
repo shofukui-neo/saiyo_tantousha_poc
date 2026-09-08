@@ -64,7 +64,7 @@ const REBUILD = !!getArg('rebuild', false);
 const KEEP_LEGACY = !!getArg('keep-legacy', false);   // 旧ロジック行を再スキャンしない
 const MAX_FETCH = getIntArg('max-fetch', 4);          // 1社あたりの取得上限（ATSページ確認の1回分を含む）
 const TARGETS = String(getArg('targets', '') || '');  // 母集団を差し替える（精度検証・部分再スキャン用）
-const SCHEMA = 5;                                     // 判定ロジックの版。上げると旧行は再スキャンされる（5=中途URLを避けて深掘りする探索）
+const SCHEMA = 6;                                     // 判定ロジックの版。上げると旧行は再スキャンされる（6=会社説明会を証拠から除外）
 // 本文をどこまで読むか。HRMOSの求人一覧は4万字級で、「2027年3月卒業見込み」のような
 // 決め手が後半に出る。2万字で切ると新卒の証拠を落として中途と誤判定するため広く取る。
 const TEXT_MAX = 200000;

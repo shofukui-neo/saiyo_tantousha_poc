@@ -32,6 +32,7 @@ const path = require('path');
 const { readCsv, toCsv, normCompanyName } = require('./csv');
 const { getArg, log, atomicWrite } = require('./cli-util');
 const { hostOfUrl, normalizeAtsName } = require('./ats');
+const { extractGradYears } = require('./ats-scope');
 const { createMatchIndex } = require('./company-match');
 
 const ROOT = path.resolve(__dirname, '..');
@@ -195,6 +196,22 @@ function toRow(s, hit, mhit) {
 /** 卒年セル（`27卒/28卒`）→ 2桁の配列。 */
 const yearsOf = (cell) => String(cell || '').split('/').map((y) => y.trim().replace(/卒$/, '')).filter(Boolean);
 
+/**
+ * その企業の卒年を1つに寄せる。**ATSのURLに卒年があればそれを最優先**。
+ *
+ * エントリーフォームは卒業年のプルダウン（2025年3月卒〜2029年3月卒）を持つことがあり、
+ * 本文から拾うと「25卒/26卒/27卒/28卒/29卒」のように全部並んでしまう
+ * （実測: 株式会社肥後銀行。実際は career-cloud.asia の 27 の窓口＝27卒）。
+ * URLの卒年は「その企業がその卒年で開けている窓口」そのものなので、こちらが正しい。
+ *
+ * @param {object} s スキャン結果の行
+ * @returns {string[]} 2桁の卒年（昇順）
+ */
+function resolveYears(s) {
+  const fromUrl = extractGradYears({ url: g(s, 'ATS URL'), atsHost: true });
+  return fromUrl.length ? fromUrl : yearsOf(g(s, '卒年'));
+}
+
 /** ファイル名に使えない文字を落とす（ATS名に `（）` `/` が入る）。 */
 const safeName = (s) => String(s).replace(/[\\/:*?"<>|]/g, '-').replace(/\s+/g, '');
 
@@ -227,10 +244,11 @@ function run() {
     const host = g(s, 'ホスト');
     if (host && seen.has(host)) continue;      // 1社1行
     if (host) seen.add(host);
-    const ys = yearsOf(g(s, '卒年'));
+    const ys = resolveYears(s);
     const hit = bales ? bales.lookup(host, g(s, '企業名')) : { rec: null, how: '' };
     const mhit = master ? master.lookup(host, g(s, '企業名')) : { rec: null, how: '' };
-    const row = toRow(s, hit, mhit);
+    // 卒年はURL優先で寄せ直したものを使う（本文のプルダウン全部並びを避ける）
+    const row = toRow({ ...s, 卒年: ys.map((y) => y + '卒').join('/') }, hit, mhit);
     if (!ys.length) unknownYear.push(row);
     else if (ys.some((y) => YEARS.includes(y))) wanted.push(row);
     else otherYear.push(row);
@@ -312,4 +330,4 @@ function run() {
 }
 
 if (require.main === module) run();
-module.exports = { toRow, callBlockReason, yearsOf, HEADERS };
+module.exports = { toRow, callBlockReason, yearsOf, resolveYears, HEADERS };
