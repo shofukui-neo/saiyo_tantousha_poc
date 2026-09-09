@@ -360,7 +360,11 @@ function detectHirePlanIncrease({ series, plan, prevPlan, floor = 6, 検知日 }
   const s = parseHireSeries(series);
   let cur = null; let prev = null; let 種別 = '';
   if (s.length >= 2) { cur = s[0]; prev = s[1]; 種別 = '採用実績'; }
-  const p = parseInt(plan, 10); const pp = parseInt(prevPlan, 10);
+  const count = v => {
+    const text = String(v ?? '').normalize('NFKC').trim().replace(/,/g, '');
+    return /^\d+\s*(?:名|人)?$/.test(text) ? parseInt(text, 10) : NaN;
+  };
+  const p = count(plan); const pp = count(prevPlan);
   if (!cur && Number.isFinite(p) && Number.isFinite(pp)) {
     cur = { 年: null, 人数: p }; prev = { 年: null, 人数: pp }; 種別 = '採用予定人数';
   }

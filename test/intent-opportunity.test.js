@@ -4,10 +4,10 @@ const fs = require('fs');
 const os = require('os');
 const path = require('path');
 const { execFileSync } = require('child_process');
-const { SIGNAL_LIST, detectAll, detectHrMidCareerJob } = require('../src/intent/signals');
+const { SIGNAL_LIST, detectAll, detectHrMidCareerJob, detectHirePlanIncrease } = require('../src/intent/signals');
 const { detectOpportunitySignals, OPPORTUNITY_SIGNALS } = require('../src/intent/opportunity-signals');
 const { scoreIntent, talkGuide } = require('../src/intent/score');
-const { fromRow, addDocument } = require('../src/intent/collect');
+const { fromRow, addDocument, evidenceText } = require('../src/intent/collect');
 const { mergeSignals, signalsToHits } = require('../src/intent/store');
 const { targetFit, exactCount } = require('../src/intent/target-fit');
 const { buildRow, COLS } = require('../src/intent-analyze');
@@ -93,10 +93,16 @@ t('CSVの採用人数の範囲を連結しない、ゼロは既知の値', () =>
   assert.strictEqual(exactCount('1,200人'), 1200);
   assert.strictEqual(exactCount('０名'), 0);
   assert.strictEqual(fromRow({ 採用予定人数: '10～20名' }).採用予定人数, '10～20名');
+  assert.strictEqual(detectHirePlanIncrease({ plan: '10～20名', prevPlan: '5名' }), null);
+});
+t('HTMLの強調タグは文脈を維持、段落・ナビは混ぜない', () => {
+  const text = evidenceText('<nav>新卒採用の選考辞退が増加して課題</nav><p>新卒の応募者情報を<strong>Excel</strong>で管理しています</p><p>中途の内定辞退が増加して課題です</p>');
+  const hits = detect([doc(text)]);
+  assert.deepStrictEqual(hits.map(h => h.signal), ['MANUAL_APPLICANT']);
 });
 t('適合しない企業はインテント満点でも順位0・架電不可', () => {
   for (const changes of [{ 業種: 'ソフトウェア' }, { 従業員数: '99' }, { 年間新卒採用人数: '0' },
-    { エントリー人数: '49' }, { DNC: '1' }, { 既存顧客: 'true' }, { 公式URL: 'https://www.city.example.jp' }]) {
+    { エントリー人数: '49' }, { DNC: '1' }, { DNC: '○' }, { 架電拒否: '✓' }, { 既存顧客: 'true' }, { 公式URL: 'https://www.city.example.jp' }]) {
     const f = targetFit({ ...good, ...changes }, {}, { スコア: 100 });
     assert.strictEqual(f.status, '対象外', JSON.stringify(changes));
     assert.strictEqual(f.priority, 0);

@@ -67,6 +67,14 @@ function toText(h) {
   return t.replace(/(\d)\s*名/g, '$1名').replace(/(\d)\s*%/g, '$1%');
 }
 
+// インラインの強調タグで一文を分断しない。段落境界は保持する。
+function evidenceText(html) {
+  const $ = cheerio.load(html || '');
+  $('script, style, nav, header, footer').remove();
+  $('p, li, div, section, article, h1, h2, h3, h4, tr, br').each((_, el) => $(el).after('\n'));
+  return $.root().text().replace(/[\t　 ]+/g, ' ').replace(/\n\s*\n+/g, '\n').trim();
+}
+
 // =====================================================================
 // ① 入力CSVが持っている事実（ネットワーク0）
 // =====================================================================
@@ -158,7 +166,7 @@ async function collectMynavi(rec, ev, { delay = 150, pages = ['outline', 'sem', 
     if (!html) continue;
     const t = stripMynaviChrome(toText(html));
     if (t.length < 300) continue;              // 404テンプレは本文が薄い
-    addDocument(ev, { text: t, url, source: 'mynavi' }); // ページ更新日は課題の発生日と同一視しない
+    addDocument(ev, { text: stripMynaviChrome(evidenceText(html)), url, source: 'mynavi', title: cheerio.load(html)('title').text() }); // 更新日≠課題発生日
     if (p === 'outline') {
       ev.掲載URL = url;
       const upd = (t.match(/最終更新日[：:]\s*([0-9]{4}\/[0-9]{1,2}\/[0-9]{1,2})/) || [])[1] || '';
@@ -255,7 +263,7 @@ async function collectSite(rec, ev, { maxPages = 2 } = {}) {
   }
   if (page) {
     const text = String(page.text || '').replace(/\s+/g, ' ');
-    addDocument(ev, { text: toText(page.html), url: page.url, source: 'site' });
+    addDocument(ev, { text: evidenceText(page.html), url: page.url, source: 'site', title: cheerio.load(page.html)('title').text() });
     recruitPage = { url: page.url, hash: fingerprint(text), 長さ: text.length };
     ev.掲載本文 = (ev.掲載本文 + '\n' + text).trim().slice(0, 200000);
     ev.インターン本文 = (ev.インターン本文 + '\n' + text).trim().slice(0, 100000);
@@ -361,5 +369,5 @@ async function collectCompany(rec, opts = {}) {
 module.exports = {
   collectCompany, fromRow, collectMynavi, collectSite, collectHrJobs,
   parseJobCards, pickRecruitLink, mynaviBase, defaultGradYear, toText, fetchUrl, JOBBOX,
-  stripMynaviChrome, mynaviEntries, addDocument,
+  stripMynaviChrome, mynaviEntries, addDocument, evidenceText,
 };

@@ -111,7 +111,7 @@
     "enrich:shinsotsu": "node src/enrich-shinsotsu-flag.js --file data/leads-mochica-target-enriched.csv",
     "enrich:crossref": "node src/enrich-crossref.js --file data/leads-mochica-target-enriched.csv",
     "test:fusion": "node test/name-fusion.test.js",
-    "test:all": "node test/name-fusion.test.js && node test/intent-signals.test.js && node test/line-official.test.js && node test/probe-social.test.js && node test/probe-site-deep.test.js && node test/selftest.js && npm run gchain:test",
+    "test:all": "node test/name-fusion.test.js && npm run test:intent && node test/line-official.test.js && node test/probe-social.test.js && node test/probe-site-deep.test.js && node test/selftest.js && npm run gchain:test",
     "encrypt:lists": "node scripts/encrypt-lists.js",
     "decrypt:lists": "node scripts/decrypt-lists.js",
     "secure:setup": "node scripts/setup-security.js",

@@ -1,6 +1,7 @@
 'use strict';
 const { isExcludedIndustry, isGovernmentOrg, passesIcpFloor } = require('../icp-rules');
 const { parseHireSeries } = require('./signals');
+const { truthy } = require('../csv');
 
 // 10～20名を1020名に変換しない。不明・範囲・連結/単体混在は確認に回す。
 function exactCount(value) {
@@ -9,14 +10,14 @@ function exactCount(value) {
   const n = Number(s.replace(/\s*(?:名|人)$/, ''));
   return Number.isSafeInteger(n) ? n : null;
 }
-const flagged = value => /^(?:1|true|yes|有|あり|対象|既存顧客|禁止|拒否)$/i.test(String(value ?? '').trim());
+const flagged = value => truthy(value) || /^(?:対象|既存顧客|禁止|拒否)$/i.test(String(value ?? '').trim());
 
 function targetFit(rec, ev = {}, res = {}) {
   const company = String(rec.企業名 || ev.企業名 || '');
   const industry = String(rec.業種 || '').trim();
   const emp = exactCount(rec.従業員数);
   const series = parseHireSeries(ev.採用実績系列 || rec['採用実績(直近3年)']);
-  const hire = series.length ? series[0].人数 : exactCount(rec.年間新卒採用人数) ?? exactCount(ev.採用予定人数 || rec.採用予定人数);
+  const hire = series.length ? series[0].人数 : exactCount(rec.年間新卒採用人数) ?? exactCount(ev.採用予定人数) ?? exactCount(rec.採用予定人数);
   const entry = exactCount(rec.エントリー人数 ?? rec.応募者数);
   const reasons = [];
   const missing = [];

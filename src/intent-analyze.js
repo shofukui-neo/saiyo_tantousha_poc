@@ -24,6 +24,7 @@
  *   --seed <csv>      観測台帳に baseline を敷く（初回から"新設"を言えるようにする）
  *   --reset-store     観測台帳を捨てて採り直す（判定ルールを変えた後は必須。誤検知が持ち越されるため）
  *   --no-store        台帳に書かない（試し打ち用）
+ *   --qualified-only MOCHCA適合が確認できた企業だけを出力（欠損・対象外は含めない）
  */
 const fs = require('fs');
 const path = require('path');
