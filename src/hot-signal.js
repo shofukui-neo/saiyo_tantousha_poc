@@ -160,6 +160,58 @@ const DELTA_SIGNALS = {
     heat: 4, issue: '採用目標の引き上げに母集団が追いつかない',
     opener: '{社名}様が採用予定人数を増やされているのを拝見してお電話しました',
   },
+  // ── ベースライン偏差（Bombora の Company Surge と同じ考え方）──────────
+  // 「前回より増えた」は1点ノイズで簡単に立つ。平常時の水準そのものを超えたかを見る。
+  求人ベースライン超過: {
+    heat: 5, issue: '平常時を超える採用量（明確な増員フェーズ）',
+    opener: '{社名}様の募集が平年より大きく増えているのを拝見しまして、母集団づくりのご状況を伺えればとお電話しました',
+  },
+  // ── 自社巡回で取れる第一者相当のシグナル（harvest-site-signals）──────
+  採用ページ更新: {
+    heat: 3, issue: '採用要項を今まさに動かしている（媒体検討の直前後）',
+    opener: '{社名}様の採用ページが更新されているのを拝見しまして、今期の母集団づくりのご状況を伺えればとお電話しました',
+  },
+  新着情報更新: {
+    heat: 2, issue: '企業活動は動いている（採用への波及を確認したい）',
+    opener: '{社名}様の最近のお知らせを拝見してお電話しました',
+  },
+};
+
+/**
+ * シグナルの「連鎖」に対する加点（Sequence）。
+ * 単発の出来事より、原因→結果の順に並んだ出来事の方が採用ニーズの確度が高い。
+ * 例: 資金調達 → 大量求人開始 は「予算が付いて枠が増えた」ことを2本で裏づける。
+ * keys が全て揃っている場合のみ bonus を加える（順序は問わない＝観測順は媒体都合で前後する）。
+ */
+const COMBOS = [
+  { keys: ['資金調達', '大量求人開始'], bonus: 10, label: '調達→採用強化の連鎖' },
+  { keys: ['新拠点開設', '大量求人開始'], bonus: 10, label: '拠点開設→採用強化の連鎖' },
+  { keys: ['新工場OPEN', '大量求人開始'], bonus: 10, label: '工場開設→採用強化の連鎖' },
+  { keys: ['新店舗OPEN', '大量求人開始'], bonus: 10, label: '出店→採用強化の連鎖' },
+  { keys: ['M&A・事業承継', '大量求人開始'], bonus: 8, label: '再編→採用強化の連鎖' },
+  { keys: ['採用担当者募集', '求人長期掲載'], bonus: 8, label: '採れていない＋体制不足の同時成立' },
+  { keys: ['求人長期掲載', '採用サイト刷新'], bonus: 6, label: '採れずに採用広報へ投資している' },
+  { keys: ['求人急増', '採用ページ更新'], bonus: 6, label: '枠の増加が採用要項にも出ている' },
+  { keys: ['事業拡大', '大量求人開始'], bonus: 6, label: '拡大→採用強化の連鎖' },
+];
+
+/**
+ * ソース別の信頼度係数（Identity / 抽出確度）。
+ * 同じ「大量求人開始」でも、企業の公式採用ページで読んだものと、
+ * プレスリリース本文の一文から正規表現で拾ったものでは確度が違う。
+ * ここを乗じないと、収集ソースを増やした瞬間に弱いソースが上位を占める。
+ */
+const SOURCE_CONFIDENCE = {
+  '公式サイト': 1.0,          // 自社巡回（企業の一次情報・社名/URL が確定している）
+  '採用ページ': 1.0,
+  '求人媒体スナップショット': 1.0,  // 差分は観測値そのもの
+  'PR TIMES': 0.85,           // 本文からの正規表現抽出（誤爆余地あり）
+  '': 1.0,                    // ソース不明は減点しない（既存の採点分布を勝手に動かさないため）
+};
+const confidenceOf = (src) => {
+  const k = String(src || '');
+  for (const [name, v] of Object.entries(SOURCE_CONFIDENCE)) if (name && k.includes(name)) return v;
+  return SOURCE_CONFIDENCE[''];
 };
 
 // 従業員数が不明なときの規模の代理指標（法人格）。ICPの規模フロア100名に届かない形態。
@@ -294,6 +346,64 @@ function detectDeltaSignals(prev, curr = {}, opt = {}) {
 }
 
 /**
+ * 観測履歴の**平常時ベースライン**と直近を比べて「平年より明らかに多い」を検出する。
+ * detectDeltaSignals が見ているのは「前回 vs 今回」の1点比較なので、
+ * 媒体側の掲載揺れ（週末に1件消える等）でも 求人増加 が立ってしまう。
+ * 平均同士の比較にすると、その揺れが均されて「本当に増えた社」だけが残る。
+ *
+ * @param {Array<{date:string,jobs:number|null,hire:number|null}>} history signal-store の履歴（古い順）
+ * @param {{asOf?:string, recentDays?:number, baseDays?:number, minObs?:number}} opt
+ *   recentDays … 直近ウィンドウ（既定21日＝3週）
+ *   baseDays   … ベースラインウィンドウ（既定84日＝12週。直近ぶんは含めない）
+ *   minObs     … 各ウィンドウに必要な最小観測点数（既定2。1点同士の比較は差分と変わらない）
+ * @returns {Array} 差分シグナル配列（該当なしなら空）
+ */
+function detectBaselineSignals(history = [], opt = {}) {
+  const recentDays = opt.recentDays == null ? 21 : opt.recentDays;
+  const baseDays = opt.baseDays == null ? 84 : opt.baseDays;
+  const minObs = opt.minObs == null ? 2 : opt.minObs;
+  const pts = history
+    .map((h) => ({ age: daysAgo(h.date, opt.asOf), jobs: numOrNull(h.jobs) }))
+    .filter((p) => p.age != null && p.jobs != null);
+  const recent = pts.filter((p) => p.age <= recentDays);
+  const base = pts.filter((p) => p.age > recentDays && p.age <= baseDays);
+  if (recent.length < minObs || base.length < minObs) return [];
+  const avg = (xs) => xs.reduce((s, p) => s + p.jobs, 0) / xs.length;
+  const r = avg(recent);
+  const b = avg(base);
+  // 1.5倍以上 かつ 実数で+2件以上（小さい母数で倍率だけが跳ねるのを防ぐ）
+  if (!(r >= b * 1.5 && r - b >= 2)) return [];
+  const d = DELTA_SIGNALS.求人ベースライン超過;
+  return [{
+    key: '求人ベースライン超過', heat: d.heat, issue: d.issue, days: 0,
+    evidence: `直近${recentDays}日の平均求人 ${r.toFixed(1)}件 / 平常時（〜${baseDays}日）${b.toFixed(1)}件（${(r / Math.max(b, 0.1)).toFixed(1)}倍）`,
+  }];
+}
+
+/**
+ * 巡回したページの**指紋の変化**からシグナルを作る（harvest-site-signals 用）。
+ * 採用ページが書き換わった＝採用活動が今動いている、という第一者に近い観測。
+ * 本文を保存せずハッシュだけ持つので、台帳が肥大しない。
+ *
+ * @param {{fp?:object}|null} prev 前回観測（{fp:{recruit,news}}）
+ * @param {{fp?:object}} curr 今回観測
+ * @returns {Array} 差分シグナル配列
+ */
+function detectSiteDiffSignals(prev, curr = {}) {
+  if (!prev || !prev.fp) return [];                 // 初回は「変化」が定義できない
+  const sigs = [];
+  const pf = prev.fp || {};
+  const cf = curr.fp || {};
+  const add = (key, evidence) => {
+    const d = DELTA_SIGNALS[key];
+    if (d) sigs.push({ key, heat: d.heat, issue: d.issue, evidence, days: 0 });
+  };
+  if (cf.recruit && pf.recruit && cf.recruit !== pf.recruit) add('採用ページ更新', `採用ページの内容が前回巡回（${prev.lastSeen || '前回'}）から更新されています`);
+  if (cf.news && pf.news && cf.news !== pf.news) add('新着情報更新', `お知らせ／ニュースが前回巡回（${prev.lastSeen || '前回'}）から更新されています`);
+  return sigs;
+}
+
+/**
  * シグナル群＋企業属性から HOT SCORE（0-100）とランクを算出する。
  *
  * 設計:
@@ -309,10 +419,27 @@ function scoreHotLead({ signals = [], emp = null, hire = null, industry = '', ph
   // 熱度の高い順・同熱度なら新しい順に並べ、逓減をかけて足す
   const sorted = [...signals].sort((a, b) => (b.heat - a.heat) || ((a.days == null ? 999 : a.days) - (b.days == null ? 999 : b.days)));
   let base = 0;
-  sorted.forEach((s, i) => { base += (HEAT_POINTS[s.heat] || 0) * recencyFactor(s.days) * stackFactor(i); });
+  // 熱度点 × 鮮度 × 逓減 × ソース信頼度。信頼度は「その観測をどれだけ信じてよいか」で、
+  // 出来事の強さ（熱度）とは別の軸として掛ける（強い出来事の弱い観測を満点にしない）。
+  sorted.forEach((s, i) => {
+    base += (HEAT_POINTS[s.heat] || 0) * recencyFactor(s.days) * stackFactor(i) * (s.conf != null ? s.conf : confidenceOf(s.source));
+  });
 
   const reasons = [];
   let adj = 0;
+
+  // ── 連鎖（Sequence）── 原因と結果が揃っている社を押し上げる
+  const hitKeys = new Set(sorted.map((s) => s.key));
+  for (const c of COMBOS) {
+    if (c.keys.every((k) => hitKeys.has(k))) { adj += c.bonus; reasons.push(`${c.label}(+${c.bonus})`); }
+  }
+  // ── 継続（Frequency）── 別々の日に複数回シグナルが出ている＝一過性の広報ではない
+  const days = sorted.map((s) => s.days).filter((d) => d != null);
+  const distinctDays = new Set(days).size;
+  if (sorted.length >= 3 && distinctDays >= 2) { adj += 5; reasons.push(`${sorted.length}本/${distinctDays}時点で継続観測(+5)`); }
+  // ── 多源（Identity confidence）── 別ソースが同じ社を指している
+  const srcs = new Set(sorted.map((s) => s.source).filter(Boolean));
+  if (srcs.size >= 2) { adj += 5; reasons.push(`${srcs.size}ソースで裏づけ(+5)`); }
   const e = numOrNull(emp);
   const h = numOrNull(hire);
   if (isExcludedIndustry(industry)) { adj -= 15; reasons.push('IT/ソフト=ICP絶対除外(-15)'); }
@@ -380,7 +507,8 @@ function talkOpener(sig, company) {
 }
 
 module.exports = {
-  SIGNALS, SIGNAL_BY_KEY, DELTA_SIGNALS, HEAT_POINTS,
-  detectSignals, detectDeltaSignals, scoreHotLead, talkOpener,
+  SIGNALS, SIGNAL_BY_KEY, DELTA_SIGNALS, HEAT_POINTS, COMBOS, SOURCE_CONFIDENCE,
+  detectSignals, detectDeltaSignals, detectBaselineSignals, detectSiteDiffSignals,
+  scoreHotLead, talkOpener, confidenceOf,
   whyNow, rankOf, daysAgo, recencyFactor, norm,
 };

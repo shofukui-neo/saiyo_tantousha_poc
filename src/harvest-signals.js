@@ -34,6 +34,7 @@ const { politeGet } = require('./polite');
 const { detectSignals } = require('./hot-signal');
 const { extractPressContact } = require('./press-contact');
 const { parseCompanyProfile, trimBoilerplate } = require('./prtimes-parse');
+const { appendAudit } = require('./signal-audit');
 const { log, getIntArg, getArg } = require('./cli-util');
 
 const ROOT = path.resolve(__dirname, '..');
@@ -180,6 +181,9 @@ async function run() {
   let hit = 0, done = 0;
   const tally = {};
   const rejected = {};
+  // 判定は1件ずつ監査ログにも残す。画面のサマリは流れて消えるが、監査ログは残るので
+  // 「規則をいじった結果、採択率がどう動いたか」を後から測れる（src/signal-audit.js）。
+  const audit = [];
   for (const u of urls) {
     if (hit >= a.target) break;
     const r = await politeGet(u, { render: 'static' }).catch(() => null);
@@ -188,20 +192,30 @@ async function run() {
     const rec = parseRelease(r.html, u);
     if (!rec.company) continue;
     const det = detectSignals({ title: rec.title, text: rec.text, company: rec.company, industry: rec.業種, date: rec.date, url: u });
-    if (!det.signals.length) { rejected[det.rejected] = (rejected[det.rejected] || 0) + 1; continue; }
+    if (!det.signals.length) {
+      rejected[det.rejected] = (rejected[det.rejected] || 0) + 1;
+      audit.push({ source: 'PR TIMES', url: u, company: rec.company, decision: 'reject', reason: det.rejected });
+      continue;
+    }
     // 鮮度フィルタ（--days）。日付不明は落とさない（PR TIMES は稀に取れない）。
     if (a.days > 0) {
       const d = det.signals[0].days;
-      if (d != null && d > a.days) { rejected['too-old'] = (rejected['too-old'] || 0) + 1; continue; }
+      if (d != null && d > a.days) {
+        rejected['too-old'] = (rejected['too-old'] || 0) + 1;
+        audit.push({ source: 'PR TIMES', url: u, company: rec.company, decision: 'reject', reason: 'too-old' });
+        continue;
+      }
     }
     delete rec.text;                                        // 本文は保存しない（根拠は evidence に凝縮済み）
     append({ ...rec, signals: det.signals, harvestedAt: today });
     hit++;
     for (const s of det.signals) tally[s.key] = (tally[s.key] || 0) + 1;
+    audit.push({ source: 'PR TIMES', url: u, company: rec.company, decision: 'accept', signals: det.signals.map((s) => s.key) });
     if (hit % 25 === 0) log(`  ${hit}/${a.target}本（判定 ${done}本）`);
   }
 
-  log(`収集完了: シグナル検出 ${hit}本 / 判定 ${done}本`);
+  appendAudit(audit);
+  log(`収集完了: シグナル検出 ${hit}本 / 判定 ${done}本（採択率 ${done ? (hit / done * 100).toFixed(1) : '0.0'}%）`);
   console.log('\n  シグナル別');
   for (const [k, v] of Object.entries(tally).sort((x, y) => y[1] - x[1])) console.log(`    ${String(v).padStart(4)}本  ${k}`);
   console.log('\n  不採用の内訳');

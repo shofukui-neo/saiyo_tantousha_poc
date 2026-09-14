@@ -4,8 +4,10 @@
 // 文面は PR TIMES の実リリース見出しの型を模したもの。asOf を固定して鮮度係数を再現可能にする。
 const assert = require('assert');
 const {
-  detectSignals, detectDeltaSignals, scoreHotLead, talkOpener, rankOf, daysAgo,
+  detectSignals, detectDeltaSignals, detectBaselineSignals, detectSiteDiffSignals,
+  scoreHotLead, talkOpener, rankOf, daysAgo,
 } = require('../src/hot-signal');
+const { extractDatedItems, fingerprint } = require('../src/site-signal');
 const { applySnapshot, toInt, toHire, normalizeRow } = require('../src/signal-store');
 
 let pass = 0;
@@ -304,6 +306,104 @@ t('マイナビ合説CSVの列名をそのまま読める', () => {
   assert.strictEqual(r.emp, 87);
   assert.strictEqual(r.name, '株式会社北里');
   assert.ok(r.key);
+});
+
+
+console.log('ベースライン偏差（平常時との比較）:');
+
+t('直近3週の平均が平常時の1.5倍以上なら「求人ベースライン超過」が出る', () => {
+  const h = [
+    { date: '2026-07-01', jobs: 3 }, { date: '2026-07-15', jobs: 4 }, { date: '2026-08-01', jobs: 3 },
+    { date: '2026-09-01', jobs: 9 }, { date: '2026-09-06', jobs: 11 },
+  ];
+  const s = detectBaselineSignals(h, { asOf: ASOF });
+  assert.strictEqual(s.length, 1, JSON.stringify(s));
+  assert.strictEqual(s[0].key, '求人ベースライン超過');
+});
+
+t('平常時と同水準なら出さない（掲載の揺れで誤爆させない）', () => {
+  const h = [
+    { date: '2026-07-01', jobs: 5 }, { date: '2026-07-20', jobs: 6 },
+    { date: '2026-09-01', jobs: 5 }, { date: '2026-09-06', jobs: 6 },
+  ];
+  assert.strictEqual(detectBaselineSignals(h, { asOf: ASOF }).length, 0);
+});
+
+t('観測点が足りなければ出さない（1点比較は差分シグナルの役目）', () => {
+  const h = [{ date: '2026-07-01', jobs: 2 }, { date: '2026-09-06', jobs: 20 }];
+  assert.strictEqual(detectBaselineSignals(h, { asOf: ASOF }).length, 0);
+});
+
+t('小さい母数で倍率だけ跳ねても出さない（1件→2件）', () => {
+  const h = [
+    { date: '2026-07-01', jobs: 1 }, { date: '2026-07-20', jobs: 1 },
+    { date: '2026-09-01', jobs: 2 }, { date: '2026-09-06', jobs: 2 },
+  ];
+  assert.strictEqual(detectBaselineSignals(h, { asOf: ASOF }).length, 0);
+});
+
+console.log('サイト巡回の差分（指紋の変化）:');
+
+t('採用ページの指紋が変われば「採用ページ更新」が出る', () => {
+  const s = detectSiteDiffSignals({ fp: { recruit: 'aaa' }, lastSeen: '2026-09-01' }, { fp: { recruit: 'bbb' } });
+  assert.deepStrictEqual(s.map((x) => x.key), ['採用ページ更新']);
+});
+
+t('初回巡回（前回なし）では差分を出さない', () => {
+  assert.strictEqual(detectSiteDiffSignals(null, { fp: { recruit: 'aaa' } }).length, 0);
+});
+
+t('指紋が同じなら何も出さない', () => {
+  assert.strictEqual(detectSiteDiffSignals({ fp: { recruit: 'a', news: 'b' } }, { fp: { recruit: 'a', news: 'b' } }).length, 0);
+});
+
+t('指紋は掲載日を無視する（日付だけが変わった再掲載で誤爆しない）', () => {
+  assert.strictEqual(
+    fingerprint('2026.09.01 お知らせ 新卒採用を開始しました'),
+    fingerprint('2026.09.08 お知らせ 新卒採用を開始しました'),
+  );
+});
+
+console.log('企業サイトの「日付つきの出来事」抽出:');
+
+t('新着情報を1件ずつに分解し、それぞれに日付が付く', () => {
+  const items = extractDatedItems('新着情報 2026.09.01 新卒採用を開始しました 2026.08.10 夏季休業のお知らせ');
+  assert.strictEqual(items.length, 2);
+  assert.strictEqual(items[0].date, '2026-09-01');
+  assert.ok(items[0].text.includes('新卒採用'));
+  assert.ok(!items[0].text.includes('夏季休業'), '次の項目を巻き込んでいる: ' + items[0].text);
+});
+
+t('沿革表の古い年も1件として切り出し、鮮度窓の外に出す', () => {
+  const items = extractDatedItems('沿革 1998年4月1日 設立 2004年10月1日 第二工場竣工、製造ライン増設');
+  assert.strictEqual(items.length, 1, '20xx年以外は拾わない: ' + JSON.stringify(items));
+  assert.strictEqual(items[0].date, '2004-10-01');
+  assert.ok(daysAgo(items[0].date, ASOF) > 365, '古い沿革は鮮度窓の外に出る');
+});
+
+console.log('連鎖・多源・ソース信頼度による補正:');
+
+t('資金調達→大量求人開始の連鎖で加点される', () => {
+  const one = scoreHotLead({ signals: [{ key: '大量求人開始', heat: 5, days: 5 }] });
+  const two = scoreHotLead({ signals: [{ key: '大量求人開始', heat: 5, days: 5 }, { key: '資金調達', heat: 4, days: 20 }] });
+  assert.ok(two.score > one.score + 10, `連鎖加点が効いていない: ${one.score} → ${two.score}`);
+  assert.ok(two.reasons.some((r) => r.includes('調達→採用強化')), two.reasons.join(' / '));
+});
+
+t('別ソースで裏づけられた社は加点される', () => {
+  const one = scoreHotLead({ signals: [{ key: '大量求人開始', heat: 5, days: 5, source: 'PR TIMES' }] });
+  const two = scoreHotLead({ signals: [
+    { key: '大量求人開始', heat: 5, days: 5, source: 'PR TIMES' },
+    { key: '採用ページ更新', heat: 3, days: 1, source: '採用ページ' },
+  ] });
+  assert.ok(two.reasons.some((r) => r.includes('ソースで裏づけ')), two.reasons.join(' / '));
+  assert.ok(two.score > one.score);
+});
+
+t('確度の低いソースは基礎点が割り引かれる（一次情報が上に来る）', () => {
+  const press = scoreHotLead({ signals: [{ key: '大量求人開始', heat: 5, days: 5, source: 'PR TIMES' }] });
+  const site = scoreHotLead({ signals: [{ key: '大量求人開始', heat: 5, days: 5, source: '採用ページ' }] });
+  assert.ok(site.score > press.score, `一次情報の方が高くなるはず: ${site.score} vs ${press.score}`);
 });
 
 console.log(`\n${pass}件のテストが通りました。`);

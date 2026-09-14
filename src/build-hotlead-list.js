@@ -5,8 +5,9 @@
  * 企業リストを上から架電するのをやめ、**採用ニーズが発生した企業だけ**を毎日抽出する。
  *
  * フロー:
- *   1) テキストシグナル … data/hot-signals/releases.jsonl（harvest-signals が収集）
- *   2) 差分シグナル     … signal-store の台帳（求人急増 / 長期掲載 / 新規掲載開始）
+ *   1) テキストシグナル … data/hot-signals/releases.jsonl（harvest-signals: PR TIMES）
+ *                         data/hot-signals/site-signals.jsonl（harvest-site-signals: 自社ICP企業の巡回）
+ *   2) 差分シグナル     … signal-store の台帳（求人急増 / 長期掲載 / 新規掲載 / ベースライン超過）
  *   3) 企業単位に集約   … company-match の正規化キーで1社1行に畳む
  *   4) 採点             … hot-signal.scoreHotLead（熱度×鮮度×ICP適合×架電可能性）
  *   5) 除外突合         … exclusion-index（MOCHICA顧客 / BALES / SF / 納品台帳）
@@ -16,6 +17,8 @@
  * 実行:
  *   npm run hot                          # 既存の収集済みシグナルからリスト生成
  *   npm run hot:harvest                  # PR TIMES を収集してからリスト生成
+ *   npm run hot:site && npm run hot      # 自社ICP企業を巡回してからリスト生成（ICP適合の主力）
+ *   node src/build-hotlead-list.js --no-site                 # 巡回シグナルを使わない
  *   node src/build-hotlead-list.js --limit 100 --min-score 65
  *   node src/build-hotlead-list.js --rank S,A --record       # 台帳へ記録（再出力を防ぐ）
  *   node src/build-hotlead-list.js --include-existing        # 既存CRM企業も残す（再アプローチ用）
@@ -31,17 +34,20 @@ const { toCsv } = require('./csv');
 const { looseKey } = require('./company-match');
 const { buildExclusionIndex } = require('./exclusion-index');
 const { appendRecords, DEFAULT_LEDGER } = require('./delivered-ledger');
-const { scoreHotLead, talkOpener, detectDeltaSignals, daysAgo } = require('./hot-signal');
+const { scoreHotLead, talkOpener, detectDeltaSignals, detectBaselineSignals, daysAgo } = require('./hot-signal');
 const { loadStore, ymd } = require('./signal-store');
 const { isExcludedIndustry, proposalTier } = require('./icp-rules');
 const { getArg, getIntArg, log } = require('./cli-util');
 const { JSONL } = require('./harvest-signals');
+const { JSONL: SITE_JSONL } = require('./harvest-site-signals');
 
 const ROOT = path.resolve(__dirname, '..');
 
 function parseArgs(argv) {
   const a = {
     in: String(getArg('in', JSONL)),
+    site: String(getArg('site', SITE_JSONL)),   // 自社ICP企業の巡回シグナル
+    noSite: argv.includes('--no-site'),
     limit: getIntArg('limit', 100),             // 「毎日100社」を既定にする
     minScore: getIntArg('min-score', 50),       // Bランク以上
     longDays: getIntArg('long-days', 90),       // 長期掲載とみなす日数
@@ -59,8 +65,12 @@ function parseArgs(argv) {
   return a;
 }
 
-/** releases.jsonl を読み、企業キー→レコードに畳む。 */
-function loadTextSignals(file) {
+/**
+ * シグナルJSONL（releases.jsonl / site-signals.jsonl）を読み、企業キー→レコードに畳む。
+ * @param {string} file JSONL のパス
+ * @param {string} label シグナル源の表示名。採点時のソース信頼度にもそのまま使う。
+ */
+function loadTextSignals(file, label = 'PR TIMES') {
   const byKey = new Map();
   if (!fs.existsSync(file)) return byKey;
   let broken = 0;
@@ -72,11 +82,18 @@ function loadTextSignals(file) {
     if (!name) continue;
     const k = looseKey(name);
     if (!k) continue;
-    const cur = byKey.get(k) || { name, key: k, signals: [], sources: new Set(), facts: {} };
+    const cur = byKey.get(k) || { name, key: k, signals: [], sources: new Set(), facts: {}, obs: {} };
     // 社名は最も長い表記を採る（略記より正式名の方が架電時に正しい）
     if (name.length > cur.name.length) cur.name = name;
-    for (const s of (j.signals || [])) cur.signals.push({ ...s, url: s.url || j.url, date: j.date });
-    cur.sources.add('PR TIMES');
+    // source は採点時の信頼度係数に効く。行側が持っていればそれを尊重する
+    // （同じ site-signals.jsonl でも「採用ページ」で読んだものは確度が高い）。
+    for (const s of (j.signals || [])) cur.signals.push({ ...s, source: s.source || label, url: s.url || j.url, date: j.date });
+    cur.sources.add(label);
+    // 巡回ソースは従業員数・採用人数を台帳から引き継いでいる（ICP補正に効く）
+    const emp = parseInt(String(j.従業員数 || '').replace(/[^0-9]/g, ''), 10);
+    const hire = parseInt(String(j.採用人数 || '').replace(/[^0-9]/g, ''), 10);
+    if (Number.isFinite(emp) && cur.obs.emp == null) cur.obs.emp = emp;
+    if (Number.isFinite(hire) && cur.obs.hire == null) cur.obs.hire = hire;
     // 企業属性は「先に埋まったものを保持」（同一社の後続リリースで空に上書きしない）
     for (const [f, v] of Object.entries({
       公式URL: j.公式URL, 業種: j.業種, 都道府県: j.都道府県, 電話番号: j.電話番号,
@@ -100,12 +117,16 @@ function loadDeltaSignals(longDays) {
     if (c.seen === false) continue;                       // 掲載が消えた企業は今日のホットではない
     const hist = c.history || [];
     const prev = hist.length >= 2 ? { jobs: hist[hist.length - 2].jobs, hire: hist[hist.length - 2].hire, seen: true } : null;
-    const signals = detectDeltaSignals(prev, c, { asOf: c.lastSeen, longDays });
+    // 前回比の差分 ＋ 平常時ベースラインとの比較（1点比較のノイズを均す）
+    const signals = [
+      ...detectDeltaSignals(prev, c, { asOf: c.lastSeen, longDays }),
+      ...detectBaselineSignals(hist, { asOf: c.lastSeen }),
+    ];
     if (!signals.length) continue;
     // 差分は「その観測日に起きたこと」。台帳の取り込みが止まれば古くなるので、
     // 最終観測日からの経過を鮮度として持たせる（days:0 のままだと万年ホットになる）。
     const age = daysAgo(c.lastSeen);
-    for (const s of signals) s.days = age == null ? 0 : Math.max(0, age);
+    for (const s of signals) { s.days = age == null ? 0 : Math.max(0, age); s.source = s.source || '求人媒体スナップショット'; }
     byKey.set(k, {
       name: c.name, key: k, signals, sources: new Set([c.source || '求人媒体スナップショット']),
       facts: { 公式URL: c.url || '', 業種: c.industry || '', 都道府県: c.pref || '', 電話番号: c.phone || '', 採用担当者名: c.contactName || '' },
@@ -154,13 +175,16 @@ function run() {
   const today = ymd();
 
   // ── 1) シグナルを集める ────────────────────────────────────
-  const text = loadTextSignals(path.resolve(a.in));
+  const press = loadTextSignals(path.resolve(a.in), 'PR TIMES');
+  const site = a.noSite ? new Map() : loadTextSignals(path.resolve(a.site), '公式サイト');
   const delta = a.noDelta ? new Map() : loadDeltaSignals(a.longDays);
+  const text = mergeSources(press, site);
   const merged = mergeSources(text, delta);
-  log(`シグナル保有企業 ${merged.size}社（テキスト ${text.size} / 差分 ${delta.size}）`);
+  log(`シグナル保有企業 ${merged.size}社（PR TIMES ${press.size} / 公式サイト巡回 ${site.size} / 差分 ${delta.size}）`);
   if (!merged.size) {
     console.error('\nシグナルが1件もありません。先に収集してください:');
     console.error('  npm run hot:harvest              # PR TIMES からテキストシグナルを収集');
+    console.error('  npm run hot:site                 # 自社ICP企業の公式サイトを巡回（ICP適合の主力）');
     console.error('  node src/signal-store.js ingest <求人CSV> --source mynavi   # 差分の元を貯める');
     process.exit(1);
   }
@@ -263,7 +287,7 @@ function run() {
   console.log('\n─────────────────────────────────────────────');
   console.log('[hotlead] 採用シグナル → ホットリード');
   console.log('─────────────────────────────────────────────');
-  console.log(`  シグナル保有        ${merged.size}社（テキスト ${text.size} / 差分 ${delta.size}）`);
+  console.log(`  シグナル保有        ${merged.size}社（PR TIMES ${press.size} / 公式サイト巡回 ${site.size} / 差分 ${delta.size}）`);
   console.log(`  既存マスタと一致    ${existing}社${a.includeExisting ? '（--include-existing のため残置）' : '（除外済み）'}`);
   console.log('\n[hotlead] 除外の内訳');
   for (const [k, v] of Object.entries(drop).sort((p, q) => q[1] - p[1])) console.log(`  ${String(v).padStart(4)}社  ${k}`);
