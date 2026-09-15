@@ -20,7 +20,11 @@ function heatBar(heat, max) {
 //   ranked: heat.rank() の出力 / cycle: ISO / stats: snapshot.stats
 function writeReports(ranked, { cycle, stats, outDir = DIR, top = 30 } = {}) {
   fs.mkdirSync(outDir, { recursive: true });
-  const list = ranked.slice(0, top);
+  // 【架電禁止ガード】禁止企業はランキング（Markdown/CSV とも）に載せない。
+  // top件を確保するため、切り出しの前に落とす。
+  const guard = require('../ng-guard');
+  const ranked2 = guard.guardRecords(['企業名'], ranked, { where: 'monitor/hottest' });
+  const list = ranked2.slice(0, top);
   const maxHeat = list.length ? list[0].heat : 0;
 
   // ---- Markdown ----

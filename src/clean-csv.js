@@ -33,7 +33,9 @@ for (const fn of files) {
   if (!rows.length) { console.log('（空）', fn); continue; }
   const width = rows[0].length;
   // 列数が一致する行だけ採用（壊れた行は除外）
-  const good = rows.filter((r, i) => i === 0 || r.length === width);
+  const good0 = rows.filter((r, i) => i === 0 || r.length === width);
+  // 【架電禁止ガード】修復ついでに禁止企業の行も落とす（ng-guard.js）
+  const good = require('./ng-guard').guardRows(good0, { where: fn });
   const dropped = rows.length - good.length;
   const out = good.map((r) => r.map(esc).join(',')).join('\r\n');
   fs.writeFileSync(fn, '﻿' + out, 'utf8');

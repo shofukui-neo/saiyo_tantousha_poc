@@ -20,7 +20,8 @@ const JOB_ENGINES = [
     // 求人ボックス.com（実体 xn--pckua2a7gp15o89zb.com）。静的HTMLで取得可（Playwright不要）。
     searchUrl: (q, page) => `https://xn--pckua2a7gp15o89zb.com/${encodeURIComponent(q)}の仕事?pg=${page || 1}`,
     cardSel: '.p-result_card',       // 求人カード（実DOM較正済 2026-06）
-    companySel: ['.p-result_company'], // カード内の企業名
+    // カード内の企業名。2026-09 の実DOMは .p-result_companyName（旧 .p-result_company は空振りする）
+    companySel: ['.p-result_companyName', '.p-result_company'],
     titleSel: '.p-result_name',       // カード内の職種名
   },
   {

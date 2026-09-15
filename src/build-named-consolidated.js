@@ -29,6 +29,9 @@ function loadBalesIndex() {
 // 採用人数（"6～10名"/"6名"/"8" → 6 の下限。不明は null）
 const HIRE_COLS = ['採用予定人数', '採用人数', '採用数', '採用予定数'];
 function pickHire(rec) { for (const c of HIRE_COLS) { const m = String(rec[c] || '').match(/\d+/); if (m) return parseInt(m[0], 10); } return null; }
+// エントリー人数（絶対条件のフロア判定用。未取得は null＝通す / icp-rules.js の passesEntryFloor）
+const ENTRY_COLS = ['エントリー数', 'エントリー人数', 'プレエントリー数', '応募者数', '応募数'];
+function pickEntry(rec) { for (const c of ENTRY_COLS) { const m = String(rec[c] || '').match(/\d+/); if (m) return parseInt(m[0], 10); } return null; }
 // マイナビ採用データでエンリッチした採用人数の上書きマップ。
 // enrich-hire-from-mynavi.js の journal（全処理を累積・キー=企業名）を優先的に読む。
 // journal は出力CSVと違い「キューから昇格した過去の成功」も保持し続けるため、再統合で取りこぼさない。
@@ -140,7 +143,8 @@ function main() {
     if (ov && !pickHire(rec)) { rec['採用予定人数'] = ov.採用予定人数; rec['採用予定人数レンジ'] = ov.レンジ; if (ov.コース) rec['募集コース数'] = ov.コース; }
     const hire = pickHire(rec);
     const emp = parseEmployees(rec['従業員数']);
-    const prim = { contactName: rec['採用担当者名'], phone: rec['電話番号'], hire, emp, industry: rec['業種'] };
+    // company/entry も渡す＝官公庁ブロック・エントリー50名フロア（icp-rules.js のゲート）を効かせる
+    const prim = { company: rec['企業名'], contactName: rec['採用担当者名'], phone: rec['電話番号'], hire, emp, entry: pickEntry(rec), industry: rec['業種'] };
     const q = qualifiesForList(prim);
 
     const sc = scoreMochica(rec, { now });

@@ -52,13 +52,23 @@ npm run deliver
 ```
 統合マスタを更新したら必ず再実行。生成物は決定論的（同じマスタ→同じ出力）。
 
-### 3-2. アプローチ禁止（NG）企業の反映
-新しいNGが来たら `data/ng-companies.txt` に社名を追記（旧社名可・自動展開）：
+### 3-2. 架電禁止（NG）企業の反映  ← **恒久ガード導入済み**
+禁止企業は `data/ng-companies.txt`（正リスト・現在7,191社）に載っている限り、
+**あらゆる成果物から自動で削除される**（出力の関所 `src/ng-guard.js`。詳細 → [ng-call-guard.md](ng-call-guard.md)）。
+手作業の除外は不要で、やることは「リストを最新にする」ことだけ。
+
 ```powershell
-npm run ng          # 影響社数の確認（ドライラン）
-npm run ng:apply    # 正リストから除外を適用
+npm run ng:sync -- "<新しい禁止リスト.csv>"   # 正リストへマージ取込（--replace で置換）
+npm run ng:sweep                              # 既存ファイルへの影響をドライラン確認
+npm run ng:sweep:apply                        # 既存ファイルからも削除（*.ng-bak に退避）
+npm run deliver                               # 成果物を再生成
 ```
-※ NG適用対象リストのパスは `package.json` の `ng` スクリプト参照。統合マスタに反映後 `npm run deliver`。
+
+**納品前チェック（必須）**: `npm run ng:check` が **0本 / 0行** であること。
+1社でも残っていれば `npm run ng:sweep:apply` を実行してから渡す。
+
+※ 旧コマンド `npm run ng` / `ng:apply`（`src/exclude-ng.js`）は単一CSVに対する明細付き除外として残置。
+　 通常運用では上記の sync/sweep だけでよい。
 
 ### 3-3. 既存被りの再判定（BALES/SF/MOCHICA顧客リストを更新したら）
 参照マスタ（`data/BALESCLOUDの既存リスト…`, `data/セールスフォース…`, `data/MOCHICAの既存顧客…`）

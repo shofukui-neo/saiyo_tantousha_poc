@@ -969,6 +969,8 @@ async function run() {
   failures += testTechSources();
   console.log('\n--- MOCHICA採点：採用ファネル(エントリー数×採用人数×歩留まり)次元 検証 ---');
   failures += testMochicaFunnel();
+  console.log('\n--- ICPスコア v5（2段の期待値モデル＋絶対条件ゲート）検証 ---');
+  failures += require('./icp-v5.test').testIcpV5();
 
   if (failures > 0) { console.error(`\nSELFTEST FAILED: ${failures} case(s)`); process.exit(1); }
   console.log('\nSELFTEST PASSED ✓  (抽出→検証→集計 ＋ スプレッドシートI/O ロジックが正常動作)');
