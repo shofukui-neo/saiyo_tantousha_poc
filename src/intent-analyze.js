@@ -25,14 +25,23 @@
  *   --reset-store     観測台帳を捨てて採り直す（判定ルールを変えた後は必須。誤検知が持ち越されるため）
  *   --no-store        台帳に書かない（試し打ち用）
  *   --qualified-only MOCHCA適合が確認できた企業だけを出力（欠損・対象外は含めない）
+ *   --evidence <mode> 根拠本文の置き場: auto（既定）|inline|sidecar|none
+ *                     auto は母集団が --evidence-auto-limit（既定3000社）を超えたら sidecar。
+ *                     inline は1社あたり実測11KBで、2万社だとCSVが200MB超になる。
+ *   --resume          作業ファイル（<out>.work.csv）に済みがある社を飛ばして続きから流す
+ *   --store-every N   観測台帳の途中保存の間隔（既定2000社。0で無効）。
+ *                     長時間実行が落ちてもその回の観測を失わないため。
  */
 const fs = require('fs');
 const path = require('path');
 const { readCsv, toCsv } = require('./csv');
 const { collectCompany } = require('./intent/collect');
 const { detectAll, SIGNAL_LIST } = require('./intent/signals');
-const { scoreIntent, talkGuide, whyNow } = require('./intent/score');
+const { scoreIntent, talkGuide, whyNow, TIERS, TOP_WEIGHT } = require('./intent/score');
 const { targetFit, TARGET_COLS } = require('./intent/target-fit');
+const { sortedFaces } = require('./intent/face-signals');
+const { buildReport } = require('./intent/report');
+const { finalizeFromWork } = require('./intent/finalize');
 const ngGuard = require('./ng-guard');
 const store = require('./intent/store');
 
@@ -55,8 +64,17 @@ const SOURCES = (hasFlag('offline') ? 'csv' : getArg('sources', 'csv,mynavi')).s
 const SEED = getArg('seed', '');
 const NO_STORE = hasFlag('no-store');
 const QUALIFIED_ONLY = hasFlag('qualified-only');
+// 根拠本文の置き場。inline は1社あたり実測11KBあり、2万社だと出力CSVが200MB超・
+// 全行メモリ保持で落ちる。大きい母集団では既定で sidecar（JSONL別ファイル）に逃がす。
+const EVIDENCE = getArg('evidence', 'auto');       // auto | inline | sidecar | none
+const EVIDENCE_AUTO_LIMIT = parseInt(getArg('evidence-auto-limit', '3000'), 10);
+const RESUME = hasFlag('resume');
+const STORE_EVERY = parseInt(getArg('store-every', '2000'), 10);   // 観測台帳の途中保存の間隔
+const WORK = OUT.replace(/\.csv$/i, '') + '.work.csv';
+const EVIDENCE_FILE = OUT.replace(/\.csv$/i, '') + '.evidence.jsonl';
 
 const log = (m) => console.log('[' + new Date().toISOString() + '] ' + m);
+const T0 = Date.now();
 const NOW = new Date();
 const TODAY = NOW.toISOString().slice(0, 10);
 
@@ -67,7 +85,32 @@ const SIG_COLS = SIGNAL_LIST.map((s) => s.列);
 const TAIL_COLS = ['採用実績(直近3年)', '採用ページURL', '公式URL', 'corpID', '法人番号', '取得ソース', '観測日', '観測回数'];
 const PASS_COLS = ['ATS判定', 'ATS確度', 'ATS根拠', 'ATS検査日', 'ATSトーク指針', 'entry_type', 'entry_host', 'エントリー動線',
   '年間新卒採用人数', '採用予定人数', 'エントリー人数', '応募者数', '既存被り', '既存顧客', 'DNC', '架電拒否', '除外フラグ', '役職', '部署'];
-const COLS = [...BASE_COLS, ...SIG_COLS, ...TAIL_COLS, ...TARGET_COLS, ...PASS_COLS];
+// 卒年面（S17〜S21の一次情報）を営業がそのまま読める列にする。
+// シグナルが立たなかった社でも「今年は何人募集で、選考が何段か」は架電の材料になる。
+const FACE_COLS = ['卒年面', '募集人数(最新卒年)', '募集人数(前卒年)', '選考段数', '面接回数', '応募受付経路',
+  '募集コース数', '初任給(大卒)', '掲載面更新日'];
+function faceCells(ev) {
+  const faces = sortedFaces(ev.卒年面);
+  if (!faces.length) return Object.fromEntries(FACE_COLS.map((c) => [c, '']));
+  const [next, prev] = faces;
+  const f = faces.find((x) => x.選考フロー) || next;
+  const e = faces.find((x) => x.エントリー) || next;
+  const c = faces.find((x) => x.募集コース) || next;
+  const p = faces.find((x) => x.初任給) || next;
+  return {
+    卒年面: faces.map((x) => x.gy + '卒').join('+'),
+    '募集人数(最新卒年)': next.募集人数 ? next.募集人数.表記 : '',
+    '募集人数(前卒年)': prev && prev.募集人数 ? prev.募集人数.表記 : '',
+    選考段数: f.選考フロー ? String(f.選考フロー.選考段数) : '',
+    面接回数: f.選考フロー ? String(f.選考フロー.面接回数) : '',
+    応募受付経路: e.エントリー ? ((e.エントリー.手作業 || []).join('・') || (e.エントリー.媒体経由 ? 'マイナビ経由のみ' : '')) : '',
+    募集コース数: c.募集コース ? String(c.募集コース.コース数) : '',
+    '初任給(大卒)': p.初任給 ? String(p.初任給.大卒月額) : '',
+    掲載面更新日: next.更新日 || '',
+  };
+}
+
+const COLS = [...BASE_COLS, ...SIG_COLS, ...FACE_COLS, ...TAIL_COLS, ...TARGET_COLS, ...PASS_COLS];
 
 function safeWrite(abs, content) {
   fs.mkdirSync(path.dirname(abs), { recursive: true });
@@ -116,48 +159,31 @@ function buildRow(rec, ev, res, 観測回数) {
     観測日: TODAY,
     観測回数: String(観測回数 || 1),
   };
+  Object.assign(o, faceCells(ev));
   for (const c of PASS_COLS) o[c] = rec[c] ?? '';
   for (const s of SIGNAL_LIST) o[s.列] = '';
   for (const d of res.内訳) o[d.列] = `${d.level}(${d.点数})`;
   return o;
 }
 
+// レポートの上位N社ぶんだけを読み直す。全行を開かないための小さな読み取り。
+function readTopRows(csvPath, n) {
+  const text = fs.readFileSync(csvPath, 'utf8');
+  let cut = 0;
+  for (let i = 0, q = false, seen = 0; i < text.length; i++) {
+    const c = text[i];
+    if (q) { if (c === '"') { if (text[i + 1] === '"') i++; else q = false; } }
+    else if (c === '"') q = true;
+    else if (c === '\n') { if (++seen > n) { cut = i; break; } }
+  }
+  return readCsv(cut ? text.slice(0, cut) : text).records;
+}
+
 function writeReport(rows, stats) {
-  const top = rows.slice(0, TOP);
-  const L = [];
-  L.push('# いま刺すべき企業（層2: タイミングシグナル）');
-  L.push('');
-  L.push(`- 生成: ${new Date().toISOString()}`);
-  L.push(`- 入力: ${path.relative(ROOT, IN)} ／ 取得系統: ${SOURCES.join('+')} ／ 処理 ${stats.処理}社`);
-  L.push(`- シグナル検知: ${stats.検知}社（A:${stats.A} B:${stats.B} C:${stats.C} D:${stats.D}）`);
-  L.push(`- 分析軸: ${SIGNAL_LIST.length}種類（従来8種類）。総合優先度は適合ゲート付きの営業仮説であり、受注確率ではありません。`);
-  L.push(`- 出力内の適合: ${rows.filter(r => r.MOCHCA適合判定 === '適合').length}社／要確認: ${rows.filter(r => r.MOCHCA適合判定 === '要確認').length}社／対象外: ${rows.filter(r => r.MOCHCA適合判定 === '対象外').length}社`);
-  L.push(`- 追加8軸の資料あり: ${stats.資料あり}社。資料がない企業は未検知であり、課題がないことを意味しません。`);
-  L.push('- 使用範囲: 入力CSVと指定した取得系統のみ。公開記載を評価し、市場全体の網羅性や受注率向上は未検証です。');
-  L.push('');
-  L.push('## シグナル別の検知数');
-  L.push('');
-  L.push('| # | シグナル | 重み | 検知社数 | 備考 |');
-  L.push('|---|---|---|---|---|');
-  for (const s of SIGNAL_LIST) {
-    L.push(`| ${s.順位} | ${s.名称} | ${s.weight} | ${stats.signals[s.id] || 0} | ${s.要履歴 ? '“新設”は履歴が要る（初回は保有止まり）' : s.説明} |`);
-  }
-  L.push('');
-  L.push(`## 上位${top.length}社`);
-  L.push('');
-  for (let i = 0; i < top.length; i++) {
-    const r = top[i];
-    L.push(`### ${i + 1}. ${r['企業名']}　［${r['インテント階層']}／${r['インテントスコア']}点］`);
-    L.push(`- 電話: ${r['電話番号'] || '—'}　宛名: ${r['採用担当者名'] || r['架電宛名']}　従業員: ${r['従業員数'] || '—'}名　業種: ${r['業種'] || '—'}`);
-    L.push(`- なぜ今: ${r['なぜ今']}`);
-    L.push(`- MOCHCA適合: ${r.MOCHCA適合判定}／総合優先度:${r.総合優先度}／${r.MOCHCA適合根拠}`);
-    L.push(`- 次の対応: ${r.推奨アクション}／${r.提案ルート}／要確認:${r.要確認項目 || 'なし'}`);
-    L.push(`- 根拠: ${r['根拠']}`);
-    if (r.根拠URL一覧) L.push(`- 根拠URL: ${r.根拠URL一覧}`);
-    if (r['推奨トーク']) L.push(`- トーク: ${r['推奨トーク']}`);
-    L.push('');
-  }
-  safeWrite(REPORT, L.join('\n'));
+  safeWrite(REPORT, buildReport(rows, stats, {
+    signalList: SIGNAL_LIST, tiers: TIERS, topWeight: TOP_WEIGHT,
+    入力: path.relative(ROOT, IN), 系統: SOURCES.join('+'), top: TOP,
+  }));
 }
 
 async function main() {
@@ -181,8 +207,40 @@ async function main() {
   }
   log(`観測台帳: 既知 ${既知社数}社（${store.OBS}）`);
 
-  const out = [];
-  const stats = { 処理: 0, 検知: 0, 資料あり: 0, A: 0, B: 0, C: 0, D: 0, signals: {} };
+  // 根拠本文の置き場を決める。1社あたり実測11KBあるため、母集団が大きいと
+  // inline は出力CSVが数百MBになり、全行をメモリに持つ最終ソートで落ちる。
+  const evidenceMode = EVIDENCE !== 'auto' ? EVIDENCE
+    : (batch.length > EVIDENCE_AUTO_LIMIT ? 'sidecar' : 'inline');
+  if (evidenceMode === 'sidecar') {
+    log(`根拠本文は別ファイルに出す（${batch.length}社 > ${EVIDENCE_AUTO_LIMIT}社）: ${path.relative(ROOT, EVIDENCE_FILE)}`);
+    log('  → CSVには根拠URLと引用だけが載る。本文を使う後段は --evidence inline で採り直すこと。');
+  }
+
+  // 完了した社はその場で作業ファイルに追記する。落ちても --resume で続きから再開でき、
+  // メモリには“並べ替えに必要な軽い行”しか持たない（最終CSVは作業ファイルから作る）。
+  const done = new Set();
+  if (RESUME && fs.existsSync(WORK)) {
+    for (const r of readCsv(fs.readFileSync(WORK, 'utf8')).records) {
+      const k = store.companyKey(r);
+      if (k) done.add(k);
+    }
+    log(`--resume: 作業ファイルに ${done.size}社ぶんの済みを確認（${path.relative(ROOT, WORK)}）`);
+  } else if (fs.existsSync(WORK)) {
+    fs.unlinkSync(WORK);
+  }
+  fs.mkdirSync(path.dirname(WORK), { recursive: true });
+  // toCsv は末尾に改行を付けない。ヘッダに改行を足さずに追記すると1行目が壊れる。
+  if (!fs.existsSync(WORK)) fs.appendFileSync(WORK, toCsv(COLS, [], { ngGuard: false }) + '\n');
+  if (evidenceMode === 'sidecar' && !RESUME && fs.existsSync(EVIDENCE_FILE)) fs.unlinkSync(EVIDENCE_FILE);
+
+  const appendRow = (row) => {
+    // ヘッダ無しの1行だけを足す。toCsv のヘッダ行を落として使う。
+    const body = toCsv(COLS, [row], { where: path.basename(WORK) }).split('\n').slice(1).join('\n');
+    if (body.trim()) fs.appendFileSync(WORK, body.endsWith('\n') ? body : body + '\n');
+  };
+
+  const stats = { 処理: 0, 検知: 0, 資料あり: 0, A: 0, B: 0, C: 0, D: 0, 書出: 0, 再開スキップ: 0,
+    卒年面あり: 0, 適合内訳: {}, signals: {} };
   let idx = 0;
 
   const worker = async () => {
@@ -192,6 +250,7 @@ async function main() {
       const rec = batch[i];
       const key = store.companyKey(rec);
       if (!key) continue;
+      if (done.has(key)) { stats.再開スキップ++; continue; }
       const prev = store.prevOf(state, key);
       let ev;
       try {
@@ -211,26 +270,51 @@ async function main() {
       stats[res.階層] = (stats[res.階層] || 0) + 1;
       for (const d of res.内訳) stats.signals[d.signal] = (stats.signals[d.signal] || 0) + 1;
       const row = buildRow(rec, ev, res, (state.companies[key] || {}).観測回数);
-      if (res.スコア >= MIN_SCORE && (!QUALIFIED_ONLY || row.MOCHCA適合判定 === '適合')) out.push(row);
+      if (evidenceMode !== 'inline') {
+        if (evidenceMode === 'sidecar' && (ev.インテント資料 || []).length) {
+          fs.appendFileSync(EVIDENCE_FILE, JSON.stringify({ key, 企業名: row.企業名, corpID: row.corpID, 資料: ev.インテント資料 }) + '\n');
+        }
+        // CSVには「どのURLのどの一文か」だけを残す。本文は sidecar 側にある。
+        row.インテント資料JSON = JSON.stringify((ev.インテント資料 || [])
+          .map(d => ({ url: d.url, source: d.source, date: d.date, title: String(d.title || '').slice(0, 120) })));
+      }
+      if (res.スコア >= MIN_SCORE && (!QUALIFIED_ONLY || row.MOCHCA適合判定 === '適合')) {
+        appendRow(row); stats.書出++;
+        // 全行ぶんの集計はここで貯める（最後に全行を開かないため）
+        stats.適合内訳[row.MOCHCA適合判定] = (stats.適合内訳[row.MOCHCA適合判定] || 0) + 1;
+        if (String(row['卒年面'] || '').includes('+')) stats.卒年面あり++;
+      }
 
-      if (stats.処理 % 50 === 0) {
-        log(`  …${stats.処理}/${batch.length} 検知${stats.検知}社（A${stats.A} B${stats.B} C${stats.C}）`);
-        flush();
+      // 観測台帳は実行の最後にしか書かないと、2万社の長時間実行が落ちた時に
+      // その回の観測が丸ごと消える。一定間隔で流しておく（19MB級なので毎回は書かない）。
+      if (!NO_STORE && STORE_EVERY > 0 && stats.処理 > 0 && stats.処理 % STORE_EVERY === 0) {
+        store.saveObservations(state);
+        log(`  観測台帳を保存（${stats.処理}社時点）`);
+      }
+      if (stats.処理 % 100 === 0) {
+        const 経過 = (Date.now() - T0) / 1000;
+        const 残 = batch.length - stats.再開スキップ - stats.処理;
+        log(`  …${stats.処理}/${batch.length - stats.再開スキップ} 検知${stats.検知}社（A${stats.A} B${stats.B} C${stats.C}）`
+          + ` ${(stats.処理 / 経過).toFixed(1)}社/秒 残り約${Math.round(残 / Math.max(0.01, stats.処理 / 経過) / 60)}分`);
       }
     }
   };
 
-  const flush = () => {
-    const sorted = out.slice().sort((a, b) => parseFloat(b['総合優先度']) - parseFloat(a['総合優先度']));
-    safeWrite(OUT, toCsv(COLS, sorted.map((r, i) => ({ ...r, No: String(i + 1) }))));
-  };
-
   await Promise.all(Array.from({ length: CONC }, () => worker()));
 
-  out.sort((a, b) => parseFloat(b['総合優先度']) - parseFloat(a['総合優先度'])
-    || parseFloat(b['インテントスコア']) - parseFloat(a['インテントスコア']));
-  out.forEach((r, i) => { r.No = String(i + 1); });
-  safeWrite(OUT, toCsv(COLS, out));
+  // 最終CSVは作業ファイルから作る。行をオブジェクトに開かずに並べ替えるので、
+  // 2万行でもピークが200MB前後で収まる（開くと実測1.9GB要り、取得90分の後にOOMしうる）。
+  log('作業ファイルを並べ替えて書き出し中…');
+  if (fs.existsSync(WORK)) {
+    const r = await finalizeFromWork(WORK, OUT);
+    log(`  ${r.行数}行を書き出し` + (r.除外 ? `（架電禁止 ${r.除外}行を除外）` : ''));
+  } else {
+    fs.writeFileSync(OUT, toCsv(COLS, []));
+  }
+  // レポートは上位のみ使うので、ここだけ改めて読み直す（全行は開かない）。
+  const out = readTopRows(OUT, Math.max(TOP, 1));
+  // 作業ファイルは中断時の再開用。最終CSVを書けた時点で役目が終わるので片付ける。
+  try { if (fs.existsSync(WORK)) fs.unlinkSync(WORK); } catch (_) {}
   if (!NO_STORE) {
     store.saveObservations(state);
     store.saveRun({ cycle: NOW.toISOString(), 入力: path.relative(ROOT, IN), 系統: SOURCES, 統計: stats });
@@ -238,7 +322,10 @@ async function main() {
   writeReport(out, stats);
 
   log('---- 結果 ----');
-  log(`処理 ${stats.処理}社／シグナル検知 ${stats.検知}社（${Math.round(stats.検知 / Math.max(1, stats.処理) * 100)}%）`);
+  log(`処理 ${stats.処理}社／出力 ${out.length}行`
+    + (stats.再開スキップ ? `／--resume で ${stats.再開スキップ}社をスキップ` : '')
+    + `／所要 ${Math.round((Date.now() - T0) / 60000)}分`);
+  log(`シグナル検知 ${stats.検知}社（${Math.round(stats.検知 / Math.max(1, stats.処理) * 100)}%）`);
   log(`階層 A(即架電) ${stats.A || 0} ／ B ${stats.B || 0} ／ C ${stats.C || 0} ／ D ${stats.D || 0}`);
   for (const s of SIGNAL_LIST) log(`  ${s.順位}. ${s.名称}: ${stats.signals[s.id] || 0}社`);
   log('出力: ' + OUT);

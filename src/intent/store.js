@@ -66,6 +66,37 @@ function fingerprint(text) {
   return crypto.createHash('sha1').update(s).digest('hex').slice(0, 16);
 }
 
+/**
+ * 数え方を変えた状態には「版」を刻む。
+ * 差分シグナルは前回値との比較で立つので、数え方を変えたのに古い値を残すと
+ * “変わっていないのに変わった”になる。実例: インターン件数の数え方を
+ * .box02カセット → プログラム見出し に直した時、旧ルールで0件と記録された
+ * 3,202社が一斉に「インターンを新規開始」に化けるところだった。
+ * 版が違う状態は「履歴なし」として扱い、次の観測から比較を始める。
+ */
+const INTERN_RULE = 2;   // 2: is.html のプログラム見出しを数える（2026-09-15〜）
+
+// 卒年面の“状態”だけを抜き出す。本文・引用は持たない（台帳を太らせない）。
+function summarizeFaces(faces) {
+  const keys = Object.keys(faces || {});
+  if (!keys.length) return null;
+  const out = {};
+  for (const gy of keys) {
+    const f = faces[gy];
+    if (!f) continue;
+    out[gy] = {
+      更新日: f.更新日 || '',
+      募集人数: f.募集人数 ? { 下限: f.募集人数.下限, 上限: f.募集人数.上限, 表記: f.募集人数.表記 } : null,
+      選考段数: f.選考フロー ? f.選考フロー.選考段数 : null,
+      面接回数: f.選考フロー ? f.選考フロー.面接回数 : null,
+      手作業応募: f.エントリー ? f.エントリー.手作業 : null,
+      コース数: f.募集コース ? f.募集コース.コース数 : null,
+      初任給: f.初任給 ? f.初任給.大卒月額 : null,
+    };
+  }
+  return Object.keys(out).length ? out : null;
+}
+
 // 前回観測（signals.detectAll の prev に渡す形）
 function prevOf(state, key) {
   const c = state.companies[key];
@@ -75,8 +106,10 @@ function prevOf(state, key) {
     採用予定人数: c.採用予定人数 != null ? c.採用予定人数 : null,
     採用ページ: c.採用ページ || null,
     LINE: c.LINE || null,
-    インターン: c.インターン || null,
+    // 旧ルールで数えた件数とは比べない（比べると全社が「新規開始」に化ける）
+    インターン: c.インターン && c.インターン.版 === INTERN_RULE ? c.インターン : null,
     合説: c.合説 || null,
+    卒年面: c.卒年面 || null,
     シグナル: c.シグナル || {},
     最終観測: c.最終観測 || null,
     観測回数: c.観測回数 || 0,
@@ -152,8 +185,11 @@ function record(state, key, ev, hits, { now = new Date() } = {}) {
     採用予定人数: ev.採用予定人数 != null && ev.採用予定人数 !== '' ? ev.採用予定人数 : (cur.採用予定人数 != null ? cur.採用予定人数 : null),
     採用ページ: ev.採用ページ || cur.採用ページ || null,
     LINE: ev.LINE || cur.LINE || null,
-    インターン: ev.インターン件数 != null ? { 件数: ev.インターン件数 } : (cur.インターン || null),
+    インターン: ev.インターン件数 != null ? { 件数: ev.インターン件数, 版: INTERN_RULE } : (cur.インターン || null),
     合説: ev.合説出展 != null ? { 出展: !!ev.合説出展 } : (cur.合説 || null),
+    // 卒年面は本文を持たず構造値だけを残す（募集人数・選考段数・初任給・更新日）。
+    // 次サイクルで「同じ卒年面の中で何が変わったか」を見るための最小の状態。
+    卒年面: summarizeFaces(ev.卒年面) || cur.卒年面 || null,
     シグナル: merged,
   };
   return merged;
@@ -187,6 +223,6 @@ function seedBaseline(state, rows, { source = 'seed', now = new Date() } = {}) {
 
 module.exports = {
   DIR, OBS, RUN_DIR,
-  loadObservations, saveObservations, saveRun,
+  loadObservations, saveObservations, saveRun, summarizeFaces,
   companyKey, prevOf, record, mergeSignals, signalsToHits, seedBaseline, fingerprint,
 };

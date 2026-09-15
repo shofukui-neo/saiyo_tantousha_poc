@@ -16,9 +16,30 @@
  */
 const { SIGNALS } = require('./signals');
 const { OPPORTUNITY_TALK, GROUP_CAPS } = require('./opportunity-signals');
+const { FACE_TALK, FACE_GROUP_CAP } = require('./face-signals');
 
+// 課題群ごとの合計上限。軸を足した群に上限を付け忘れると、その群だけが青天井で積み上がる。
+const CAPS = { ...GROUP_CAPS, ...FACE_GROUP_CAP };
+
+// 効く順①の重み（＝シグナル定義の最大重み）。単独昇格の判定に使う。
+const TOP_WEIGHT = Math.max(...Object.values(SIGNALS).map((s) => s.weight));
+
+// 階層の閾値は「絶対値」。母集団が変わっても同じ社は同じ階層に留まる（時系列で比較できる）。
+// ただし分析軸を足すと合計点の目盛りそのものが伸びるので、軸を増やした時は閾値を引き直す。
+//
+// 2026-09-15: 16軸→21軸で A(40点以上) が母集団の11%→25%に膨らんだ。
+// 「即架電（今週中）」は1週間で架電しきれる件数を指す運用ラベルなので、
+// 20,928社の25%＝5,200社では意味を失う。実測2,266社の分位から上位10%に戻す閾値に引き直した。
+// 45.4 は「face群の上限を適用した後」かつ「母集団全数（20,928社）」の分布から取った値。
+// 二度外している:
+//   1) 上限適用“前”の分位で決める → 上限のぶん点が下がって8%になる
+//   2) 母集団の先頭2,266社だけで決める → シグナル0の社(D階層)の比率が全数と違い7%になる
+//      （プールは採点優先度の降順なので、頭を切るとシグナルの濃い社に偏る。
+//        実測: 標本のD階層12% に対し全数は25%）
+// 分位は必ず「全数・上限適用後」で取ること。
+// 閾値を変えた後は npm run intent:rescore（取得し直さずに採点だけやり直す）。
 const TIERS = [
-  { tier: 'A', min: 40, 行動: '即架電（今週中）' },
+  { tier: 'A', min: 45.4, 行動: '即架電（今週中）' },
   { tier: 'B', min: 22, 行動: '今週中に着手' },
   { tier: 'C', min: 10, 行動: '監視（次サイクルで再判定）' },
   { tier: 'D', min: 0, 行動: '待機（層1の適合のみ）' },
@@ -62,15 +83,22 @@ function scoreIntent(hits, opts = {}) {
   for (const d of 内訳) {
     const group = SIGNALS[d.signal].group;
     d.調整前点数 = d.点数;
-    if (group && GROUP_CAPS[group]) {
-      d.点数 = Math.round(Math.min(d.点数, Math.max(0, GROUP_CAPS[group] - (used[group] || 0))) * 10) / 10;
+    if (group && CAPS[group]) {
+      d.点数 = Math.round(Math.min(d.点数, Math.max(0, CAPS[group] - (used[group] || 0))) * 10) / 10;
       used[group] = (used[group] || 0) + d.点数;
     }
   }
   内訳.sort((a, b) => b.点数 - a.点数);
   const raw = 内訳.reduce((a, x) => a + x.点数, 0);
   const スコア = Math.min(100, Math.round(raw * 10) / 10);
-  const t = TIERS.find((x) => スコア >= x.min) || TIERS[TIERS.length - 1];
+  let t = TIERS.find((x) => スコア >= x.min) || TIERS[TIERS.length - 1];
+  // 最上位の重みを持つシグナルが「確定」で立っていれば、合計点に関わらずA。
+  // 設計の約束（効く順①＝人事・採用担当の中途求人は、それ1本で即架電に値する）を
+  // 閾値の引き上げで失わないため。閾値を上げた分、単独では届かなくなるのを明示的に戻す。
+  // 重みを閾値に合わせて水増しするより、昇格条件として書くほうが後から読める。
+  if (t.tier !== 'A' && 内訳.some((d) => d.weight === TOP_WEIGHT && /^確定/.test(d.level || '') && d.減衰 >= 0.5)) {
+    t = TIERS[0];
+  }
   const top = 内訳[0] || null;
   return {
     スコア, 階層: t.tier, 行動: t.行動,
@@ -92,6 +120,7 @@ function combineWithFit(intentScore, アポ期待度) {
 // ---- シグナル別の一言トーク（架電の入り口。line-official.js の lineTalkGuide と同じ役割）----
 const TALK = {
   ...OPPORTUNITY_TALK,
+  ...FACE_TALK,
   MIDCAREER_HR_JOB: '人事・採用ご担当の中途募集を拝見しました。採用のオペレーションが人手に寄っているタイミングかと思い、'
     + '採用担当を増やす前に応募者対応の自動化で持たせている事例をご紹介したくご連絡しました。',
   SECONDARY_RECRUIT: '追加募集（秋採用）のご案内を拝見しました。この時期の追加募集は歩留まりの取りこぼしが響くので、'
@@ -121,4 +150,4 @@ function whyNow(res) {
   return `${top.名称}［${top.level}］${top.減衰 < 0.7 ? `※検知${top.検知日}のため減衰${top.減衰}` : ''}`.trim();
 }
 
-module.exports = { scoreIntent, combineWithFit, decayFactor, talkGuide, whyNow, TIERS, TALK };
+module.exports = { scoreIntent, combineWithFit, decayFactor, talkGuide, whyNow, TIERS, TALK, CAPS, TOP_WEIGHT };

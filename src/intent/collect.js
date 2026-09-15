@@ -25,6 +25,7 @@ const { normCompanyName } = require('../csv');
 const { fingerprint } = require('./store');
 const { INTERN_WORDS, EXPO_WORDS, countOccurrences } = require('./signals');
 const { validUrl } = require('./opportunity-signals');
+const { parseFace } = require('./mynavi-face');
 
 function addDocument(ev, doc) {
   if (!doc || typeof doc !== 'object' || !validUrl(doc.url) || !String(doc.text || '').trim()) return;
@@ -140,7 +141,22 @@ function stripMynaviChrome(text) {
   for (const c of MYNAVI_CHROME) t = t.split(c).join('\n');
   return t.replace(/\n\s*\n+/g, '\n');
 }
-// 説明会/インターンの「1件」は .box02 ブロック（2026-09 実DOMで確認）。
+/**
+ * インターン面（is.html）のプログラム数を数える。
+ * 説明会面（sem.html）と違って .box02 のカセットを持たない（2026-09 実DOMで確認: 0件）。
+ * プログラム1本につき必ず1回出る見出し「開催時期と実施日数」を数える。
+ * 実施していない社は約1,000字の定型ページが返り、この見出しは0回になるので区別できる。
+ *
+ * これを入れる前は sem 由来の .box02 だけを見ていて、9月（インターン最盛期）なのに
+ * S7（インターン新規開始）が200社中3社しか立っていなかった。
+ */
+const INTERN_PROGRAM_MARKERS = ['開催時期と実施日数', '体験できる職種', 'コース参加の選考'];
+function mynaviInternPrograms(text) {
+  const t = String(text || '');
+  return Math.max(...INTERN_PROGRAM_MARKERS.map((m) => t.split(m).length - 1));
+}
+
+// 説明会の「1件」は .box02 ブロック（2026-09 実DOMで確認）。
 // テキストの語数ではなく実エントリ数を数える＝「新規開始」「コース増」が意味を持つ。
 function mynaviEntries(html) {
   if (!html) return [];
@@ -153,16 +169,88 @@ function mynaviEntries(html) {
   return out;
 }
 
-async function collectMynavi(rec, ev, { delay = 150, pages = ['outline', 'sem', 'is', 'employment'] } = {}) {
+/**
+ * 卒年面（27卒面・28卒面…）を2面ぶん取る。
+ * corpID は卒年をまたいで安定しているので、同じ会社の隣の卒年面が同じURL体系で取れる。
+ * これが層2の「幅」の本体: 履歴が1回も無い初回でも
+ *   募集人数の増減／初任給の引き上げ／次年度面の始動
+ * を“今日の2面の差”として言える（従来は観測台帳が2周するまで言えなかった）。
+ */
+/**
+ * 1社の処理中に同じURLを二度取りに行かない。
+ * mynavi 系統と faces 系統は現行卒年の outline/employment が丸かぶりで、
+ * 素直に並べると1社あたり2本ぶん余計に叩く（相手サイトにも無駄な負荷になる）。
+ */
+async function fetchOnce(ev, url, delay) {
+  ev._page = ev._page || new Map();
+  if (ev._page.has(url)) return ev._page.get(url);
+  const html = await fetchUrl(url);
+  await sleep(delay);
+  ev._page.set(url, html);
+  return html;
+}
+
+async function collectMynaviFaces(rec, ev, { delay = 150, years = null } = {}) {
   const m = mynaviBase(rec, ev);
   if (!m) return ev;
+  const cur = parseInt(defaultGradYear(), 10);
+  const list = years || [String(cur).padStart(2, '0'), String(cur + 1).padStart(2, '0')];
+  ev.卒年面 = ev.卒年面 || {};
+  for (const gy of list) {
+    const base = `https://job.mynavi.jp/${gy}/pc/search/corp${m.id}/`;
+    const parts = [];
+    for (const p of ['outline', 'employment']) {
+      const url = base + p + '.html';
+      const html = await fetchOnce(ev, url, delay);
+      if (!html) continue;
+      const t = stripMynaviChrome(toText(html));
+      if (t.length < 300) continue;               // 404テンプレは本文が薄い
+      parts.push(t);
+      addDocument(ev, { text: stripMynaviChrome(evidenceText(html)), url, source: 'mynavi' });
+    }
+    if (!parts.length) continue;
+    const face = parseFace(parts.join('\n'), { 卒年: gy, url: base });
+    if (face) ev.卒年面[gy] = face;
+  }
+  // mynavi 系統とは別ラベルにする。どちらが動いたのかを行から読めるようにするため
+  // （両方 'mynavi' を積むと 取得ソース が csv+mynavi+mynavi になって意味を持たない）。
+  if (Object.keys(ev.卒年面).length) ev.取得ソース.push('faces');
+  return ev;
+}
+
+/**
+ * どのタブを「どの卒年面」から取るか。
+ * 実測（2026-09・各40社/15社）で確かめた結果:
+ *   outline     27卒 40/40   employment 27卒 40/40   sem 27卒 29/40
+ *   is（インターン） 27卒  0/40  ／ 28卒 10/15  ← 現行卒年の面には存在しない
+ *   obog（先輩情報） 27卒 13/40・平均1.8千字。追加8軸の検知には寄与せず、費用に見合わない
+ *
+ * インターンは「次の卒年の学生」に向けて開くものなので、is は次年度面から取る。
+ * ここを現行卒年から取っていたため、9月（インターン最盛期）なのに
+ * S7（インターン新規開始）が200社中3社しか立っていなかった。
+ */
+const MYNAVI_PAGES = [
+  { page: 'outline', year: 'cur' },
+  { page: 'employment', year: 'cur' },
+  { page: 'sem', year: 'cur' },       // 説明会・セミナー
+  { page: 'is', year: 'next' },       // インターンシップ＆キャリア（次年度面にしか無い）
+];
+
+async function collectMynavi(rec, ev, { delay = 150, pages = MYNAVI_PAGES } = {}) {
+  const m = mynaviBase(rec, ev);
+  if (!m) return ev;
+  const nextGy = String(parseInt(m.gy, 10) + 1).padStart(2, '0');
   const texts = [];
   const entries = [];
-  for (const p of pages) {
+  const internTexts = [];
+  let インターン件数 = 0;
+  for (const spec of pages) {
+    const p = typeof spec === 'string' ? spec : spec.page;
+    const gy = (typeof spec === 'string' ? 'cur' : spec.year) === 'next' ? nextGy : m.gy;
     // sem.html だけ /pc/corpNNN/ 配下（マイナビのURL体系がタブによって違う）
-    const url = p === 'sem' ? `https://job.mynavi.jp/${m.gy}/pc/corp${m.id}/sem.html` : m.base + p + '.html';
-    const html = await fetchUrl(url);
-    await sleep(delay);
+    const url = p === 'sem' ? `https://job.mynavi.jp/${gy}/pc/corp${m.id}/sem.html`
+      : `https://job.mynavi.jp/${gy}/pc/search/corp${m.id}/${p}.html`;
+    const html = await fetchOnce(ev, url, delay);
     if (!html) continue;
     const t = stripMynaviChrome(toText(html));
     if (t.length < 300) continue;              // 404テンプレは本文が薄い
@@ -174,15 +262,18 @@ async function collectMynavi(rec, ev, { delay = 150, pages = ['outline', 'sem', 
       if (hr && hr.系列 && hr.系列.length) ev.採用実績系列 = hr.系列.map((x) => x.年 + '年' + x.人数 + '名').join('/');
       ev.掲載面 = { url, 更新日: upd };
     }
-    if (p === 'sem' || p === 'is') entries.push(...mynaviEntries(html));
+    if (p === 'sem') entries.push(...mynaviEntries(html));
+    // インターン面はカセット構造を持たないので、プログラム見出しの数で数える
+    if (p === 'is') { インターン件数 += mynaviInternPrograms(t); internTexts.push(t); }
     texts.push(t);
   }
   if (!texts.length) { ev.エラー.push('mynavi:取得できず'); return ev; }
   const entryText = entries.join('\n');
   ev.掲載本文 = (ev.掲載本文 + '\n' + texts.join('\n')).trim().slice(0, 200000);
-  ev.インターン本文 = (ev.インターン本文 + '\n' + entryText).trim().slice(0, 100000);
-  // エントリ（説明会/仕事体験の1件）のうち、インターン系の語を含むものだけを数える
-  ev.インターン件数 = entries.filter((e) => INTERN_WORDS.some((w) => e.includes(w))).length;
+  ev.インターン本文 = (ev.インターン本文 + '\n' + entryText + '\n' + internTexts.join('\n')).trim().slice(0, 100000);
+  // インターン面のプログラム数＋説明会カセットのうちインターン系の語を含むもの
+  ev.インターン件数 = インターン件数
+    + entries.filter((e) => INTERN_WORDS.some((w) => e.includes(w))).length;
   ev.合説出展 = entries.some((e) => EXPO_WORDS.some((w) => e.includes(w)))
     || EXPO_WORDS.some((w) => ev.掲載本文.includes(w));
   if (!ev.採用ページ && ev.掲載面) {
@@ -360,14 +451,20 @@ async function collectHrJobs(rec, ev, { queries = ['人事', '採用担当'] } =
 async function collectCompany(rec, opts = {}) {
   const sources = new Set(opts.sources || ['csv', 'mynavi', 'site', 'jobs']);
   const ev = fromRow(rec);
+  // 卒年面（隣の卒年）は mynavi とは別系統。--sources に faces を入れた時だけ取る。
+  // mynavi より先に回すのは、現行卒年の outline/employment が両系統で丸かぶりだから。
+  // 先に取っておけば fetchOnce のキャッシュに載り、mynavi 側は取り直さない。
+  if (sources.has('faces')) { try { await collectMynaviFaces(rec, ev, { delay: opts.delay, years: opts.years }); } catch (e) { ev.エラー.push('faces:' + String(e && e.message || e).slice(0, 60)); } }
   if (sources.has('mynavi')) { try { await collectMynavi(rec, ev, { delay: opts.delay }); } catch (e) { ev.エラー.push('mynavi:' + String(e && e.message || e).slice(0, 60)); } }
   if (sources.has('site')) { try { await collectSite(rec, ev, { maxPages: opts.sitePages || 2 }); } catch (e) { ev.エラー.push('site:' + String(e && e.message || e).slice(0, 60)); } }
   if (sources.has('jobs')) { try { await collectHrJobs(rec, ev); } catch (e) { ev.エラー.push('jobs:' + String(e && e.message || e).slice(0, 60)); } }
+  delete ev._page;   // 取得済みHTMLは判定に使い終わっている。行に持ち越さない
+  ev.取得ソース = [...new Set(ev.取得ソース)];
   return ev;
 }
 
 module.exports = {
-  collectCompany, fromRow, collectMynavi, collectSite, collectHrJobs,
-  parseJobCards, pickRecruitLink, mynaviBase, defaultGradYear, toText, fetchUrl, JOBBOX,
-  stripMynaviChrome, mynaviEntries, addDocument, evidenceText,
+  collectCompany, fromRow, collectMynavi, collectMynaviFaces, collectSite, collectHrJobs,
+  parseJobCards, pickRecruitLink, mynaviBase, defaultGradYear, toText, fetchUrl, JOBBOX, MYNAVI_PAGES,
+  stripMynaviChrome, mynaviEntries, mynaviInternPrograms, addDocument, evidenceText,
 };

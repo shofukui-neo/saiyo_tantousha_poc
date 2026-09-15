@@ -23,6 +23,7 @@
  */
 const { normCompanyName } = require('../csv');
 const { OPPORTUNITY_SIGNALS, detectOpportunitySignals } = require('./opportunity-signals');
+const { FACE_SIGNALS, detectFaceSignals, crossYearHeadcount } = require('./face-signals');
 
 // ---- シグナル定義（weight＝効く順そのもの。半減期＝そのシグナルの賞味期限）----
 const SIGNALS = {
@@ -67,7 +68,7 @@ const SIGNALS = {
     説明: '母集団形成に外部投資を始めた＝応募者管理の負荷が跳ねる',
   },
 };
-Object.assign(SIGNALS, OPPORTUNITY_SIGNALS);
+Object.assign(SIGNALS, OPPORTUNITY_SIGNALS, FACE_SIGNALS);
 const SIGNAL_LIST = Object.values(SIGNALS).sort((a, b) => a.順位 - b.順位);
 
 // ---- テキスト共通ヘルパ ----
@@ -356,7 +357,7 @@ function parseHireSeries(input) {
  *   series … 採用“実績”の年系列（マイナビ会社概要が一次情報。予定より確か）
  *   plan / prevPlan … 採用“予定”人数の今回/前回観測（媒体の採用予定人数フィールドの年差分）
  */
-function detectHirePlanIncrease({ series, plan, prevPlan, floor = 6, 検知日 } = {}) {
+function detectHirePlanIncrease({ series, plan, prevPlan, floor = 6, 種別ラベル = '', 検知日 } = {}) {
   const s = parseHireSeries(series);
   let cur = null; let prev = null; let 種別 = '';
   if (s.length >= 2) { cur = s[0]; prev = s[1]; 種別 = '採用実績'; }
@@ -366,13 +367,14 @@ function detectHirePlanIncrease({ series, plan, prevPlan, floor = 6, 検知日 }
   };
   const p = count(plan); const pp = count(prevPlan);
   if (!cur && Number.isFinite(p) && Number.isFinite(pp)) {
-    cur = { 年: null, 人数: p }; prev = { 年: null, 人数: pp }; 種別 = '採用予定人数';
+    cur = { 年: null, 人数: p }; prev = { 年: null, 人数: pp }; 種別 = 種別ラベル || '採用予定人数';
   }
   if (!cur || !prev || !(prev.人数 >= 0) || !(cur.人数 > 0)) return null;
   const delta = cur.人数 - prev.人数;
   if (delta <= 0) return null; // 横ばい・減少はシグナルにしない（減少は score 側の注記に回す）
 
-  const 年表記 = cur.年 ? `${prev.年}年${prev.人数}名 → ${cur.年}年${cur.人数}名` : `前回${prev.人数}名 → 今回${cur.人数}名`;
+  const 年表記 = cur.年 ? `${prev.年}年${prev.人数}名 → ${cur.年}年${cur.人数}名`
+    : (種別ラベル ? `${prev.人数}名 → ${cur.人数}名` : `前回${prev.人数}名 → 今回${cur.人数}名`);
   const ratio = prev.人数 > 0 ? cur.人数 / prev.人数 : Infinity;
   const ライン跨ぎ = prev.人数 < floor && cur.人数 >= floor;
   let strength; let level;
@@ -535,12 +537,22 @@ function detectAll(ev = {}, prev = null, opts = {}) {
   push(detectHrMidCareerJob(ev.求人カード || [], { companyName: ev.企業名, 検知日 }));
   push(detectSecondaryRecruit({ text: ev.掲載本文 || '', 卒年: ev.卒年, now, 検知日 }));
   push(detectRecruitEmail({ emails: ev.メール || [], prevEmails: p.メール || null, 検知日 }));
-  push(detectHirePlanIncrease({ series: ev.採用実績系列, plan: ev.採用予定人数, prevPlan: p.採用予定人数, 検知日 }));
+  // 採用数の前年比は「採用実績の年系列 → 卒年面どうしの募集人数 → 観測台帳の前回値」の順で見る。
+  // 卒年面を挟むことで、観測がまだ1周もしていない社でも初回から前年比を言える。
+  const cross = crossYearHeadcount(ev);
+  push(detectHirePlanIncrease({
+    series: ev.採用実績系列,
+    plan: cross ? cross.plan : ev.採用予定人数,
+    prevPlan: cross ? cross.prevPlan : p.採用予定人数,
+    種別ラベル: cross ? `募集人数(${cross.前年}卒→${cross.卒年}卒)` : '',
+    検知日,
+  }));
   push(detectRecruitPageChange({ cur: ev.採用ページ || null, prev: p.採用ページ || null, now, 検知日 }));
   push(detectLineRecruit({ line: ev.LINE || null, prev: p.LINE || null, 検知日 }));
   push(detectInternship({ text: ev.インターン本文 || '', 件数: ev.インターン件数, prev: p.インターン || null, 検知日 }));
   push(detectExpo({ text: (ev.インターン本文 || '') + '\n' + (ev.掲載本文 || ''), prev: p.合説 || null, 検知日 }));
   hits.push(...detectOpportunitySignals(ev, { now, 検知日 }));
+  hits.push(...detectFaceSignals(ev, { now, 検知日, prev: p }));
   return hits;
 }
 

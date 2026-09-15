@@ -91,16 +91,31 @@ function safeWrite(abs, content) {
 }
 
 /** 完全新規候補（既存被りなし × 過去納品に社名なし）を統合マスタから取り出す */
-function freshCandidates() {
+function freshCandidates(opts) {
+  const O = opts || {};
+  const INCLUDE_CORPUS = !!O.includeCorpusOnly;   // 統合マスタ外（マイナビ掲載のみ）の社も候補に含める
+  const USE_LEDGER = !!O.useLedger;               // 納品台帳（_delivered-ledger.csv・全バッチ）も除外に使う
   const idx = createMatchIndex();
   for (const rel of PAST) {
     const f = path.join(ROOT, rel);
     if (!fs.existsSync(f)) continue;
     try { for (const r of readCsv(fs.readFileSync(f, 'utf8')).records) idx.addRecord(r, 'past'); } catch (e) {}
   }
+  if (USE_LEDGER) {
+    const { loadLedger } = require('./delivered-ledger');
+    const led = loadLedger();
+    // 台帳は独自の MatchIndex。has() をそのまま使えるよう参照を持ち回す
+    freshCandidates._ledger = led;
+  } else { freshCandidates._ledger = null; }
   const ng = new Set();
   const ngFile = path.join(ROOT, 'data', 'ng-companies.txt');
   if (fs.existsSync(ngFile)) for (const l of fs.readFileSync(ngFile, 'utf8').split(/\r?\n/)) { const k = mkey(l); if (k) ng.add(k); }
+
+  // 既存CRM（BALES／MOCHICA顧客／SF全リード）と被る社 = 統合マスタの「既存被り」列が真の行
+  const crmIdx = createMatchIndex();
+  if (INCLUDE_CORPUS) {
+    for (const r of readCsv(fs.readFileSync(MASTER, 'utf8')).records) if (g(r, '既存被り')) crmIdx.addRecord(r, 'crm');
+  }
 
   // 社名→corpID（マイナビcorpus）。28卒を優先し、無ければ27卒。
   const corpByName = new Map();
@@ -113,11 +128,15 @@ function freshCandidates() {
     }
   }
 
+  const led = freshCandidates._ledger;
+  const delivered = (name) => !!(led && led.has({ 企業名: name }));
+
   const out = []; const seen = new Set();
   for (const r of readCsv(fs.readFileSync(MASTER, 'utf8')).records) {
     const name = g(r, '企業名'); if (!name) continue;
     if (g(r, '既存被り')) continue;              // BALES/MOCHICA顧客/SF と被る社は除外
     if (idx.has(name)) continue;                 // 過去納品に載っている社は除外
+    if (delivered(name)) continue;               // 納品台帳（アーカイブ）にいる社は除外
     const k = mkey(name); if (!k || ng.has(k) || seen.has(k)) continue;
     const u = g(r, '採用ページURL') + ' ' + g(r, '根拠URL') + ' ' + g(r, '公式URL');
     const m = u.match(/job\.mynavi\.jp\/(\d{2})\/pc\/search\/corp(\d+)/);
@@ -125,6 +144,26 @@ function freshCandidates() {
     if (!ref) continue;                          // マイナビ面が引けない社は厳格検証できない
     seen.add(k);
     out.push({ key: k, name, id: ref.id, gy: ref.gy, row: r });
+  }
+
+  // ── 統合マスタに存在しない（＝一度も発掘していない）マイナビ掲載企業も候補に加える
+  // 統合マスタ由来の候補だけでは「過去に探した範囲」から出られず、完全新規の上限が早々に枯れるため。
+  if (INCLUDE_CORPUS) {
+    let added = 0;
+    for (const [rel, gy] of CORPORA) {
+      const f = path.join(ROOT, rel);
+      if (!fs.existsSync(f)) continue;
+      for (const r of readCsv(fs.readFileSync(f, 'utf8')).records) {
+        const name = String(r['企業名'] || '').trim();
+        const id = String(r.corpID || '').trim();
+        if (!name || !id) continue;
+        const k = mkey(name); if (!k || seen.has(k) || ng.has(k)) continue;
+        if (idx.has(name) || crmIdx.has(name) || delivered(name)) continue;
+        seen.add(k); added++;
+        out.push({ key: k, name, id, gy, row: {} });
+      }
+    }
+    if (added) console.log('  コーパスのみの完全新規候補: ' + added + '社を追加');
   }
   return out;
 }
@@ -163,7 +202,10 @@ async function verifyOne(c) {
 
 async function main() {
   log('完全新規候補を構築中…');
-  const cand = freshCandidates();
+  const cand = freshCandidates({
+    includeCorpusOnly: process.argv.includes('--corpus'),
+    useLedger: process.argv.includes('--ledger'),
+  });
   log('完全新規かつマイナビ面あり: ' + cand.length + '社');
   let ledger = {};
   if (fs.existsSync(OUT)) { try { ledger = JSON.parse(fs.readFileSync(OUT, 'utf8')) || {}; } catch (e) {} }
