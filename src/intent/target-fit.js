@@ -21,14 +21,32 @@ function targetFit(rec, ev = {}, res = {}) {
   const resolved = resolveIcpInputs(rec, ev);
   const emp = exactCount(rec.従業員数) ?? resolved.emp;
   const series = parseHireSeries(ev.採用実績系列 || rec['採用実績(直近3年)']);
-  const hire = series.length ? series[0].人数
-    : exactCount(rec.年間新卒採用人数) ?? exactCount(ev.採用予定人数) ?? exactCount(rec.採用予定人数) ?? resolved.hire;
+  // フロア判定に使う「新卒採用人数」は **今年度の採用目標人数** で見る（ユーザー指定 2026-09-18）。
+  //
+  // 以前はここで採用実績系列（＝昨年度に実際に入社した人数）を最優先していた。これが逆だった:
+  //   昨年度の実績が低い社は「計画を充たせなかった社」であって、MOCHICAがいちばん刺さる相手。
+  //   実際その事実は S22（昨年度の採用計画が未充足）として **加点** している。
+  //   同じ事実でフロアから落とすと、最も熱い層を母集団から捨てることになる。
+  //   実測 2026-09-18: 「28卒6〜10名募集・昨年度3名入社」型が1,664社が対象外に落ちており、
+  //   うち287社は公的・協同組合系（v5で接触2.1倍・アポ4.4倍の最重要層）だった。
+  //
+  // 優先順は resolveIcpInputs() に一本化する（CSV → 掲載面の募集人数 → 入社実績 → 採用予定）。
+  // 実績系列は、目標人数がどこからも取れなかったときの最後の手当てとしてだけ残す。
+  const hire = resolved.hire ?? (series.length ? series[0].人数 : null);
   const entry = exactCount(rec.エントリー人数 ?? rec.応募者数);
   // 採用構成。中途中心・新卒なしと判明した社はここで対象外になる（MOCHICAは新卒ATS）。
   const mix = hiringMix(ev);
   const reasons = [];
   const missing = [];
   if (['DNC', '架電拒否', '除外フラグ', '既存顧客'].some(k => flagged(rec[k]))) reasons.push('架電除外・既存顧客');
+  // 統合マスタが実際に持っている重複列は `既存被り`（MOCHICA顧客 / BALES / SF）で、
+  // 上の4列とは名前が違うため従来ここを素通りしていた。結果、既存顧客が「適合」で
+  // 上位に出ていた（実測: (株)ネオキャリア【BPO事業部】が総合89.5でS帯3位・自社グループ）。
+  //
+  // 落とすのは **MOCHICA既存顧客だけ**。SF／BALESは「過去に接触した」だけで失注ではなく、
+  // 履歴がある側＝再アプローチの材料がある層なので母集団には残す
+  // （新規/既存の切り分けは split-icp-intent-fresh.js が4層索引で後段に割る）。
+  if (/MOCHICA顧客|既存顧客/.test(String(rec['既存被り'] ?? ''))) reasons.push('MOCHICA既存顧客');
   if (isGovernmentOrg(company, industry)) reasons.push('官公庁');
   let host = ''; try { host = new URL(ev.公式URL || rec.公式URL).hostname; } catch (_) {}
   if (/(^|\.)(pref|city|town|vill)\.[a-z]+\.jp$|\.lg\.jp$/.test(host)) reasons.push('自治体ドメイン');

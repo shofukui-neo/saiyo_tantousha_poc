@@ -216,8 +216,10 @@
     "all:pool": "node src/build-intent-pool.js --fetchable-only",
     "all:icp": "node src/rescore-icp-v5.js --in data/intent-pool.csv",
     "all:intent": "node --max-old-space-size=4096 src/intent-analyze.js --in data/intent-pool.csv --out data/leads-intent-wide.csv --report data/intent-wide.md --sources csv,mynavi,faces --conc 8 --delay 120 --resume",
-    "all:final": "node src/build-icp-intent-all.js",
-    "all": "npm run all:pool && npm run all:icp && npm run all:intent && npm run all:final"
+    "all:final": "node --max-old-space-size=4096 src/build-icp-intent-all.js",
+    "all:split": "node --max-old-space-size=4096 src/split-icp-intent-fresh.js --min 50",
+    "all:split:wide": "node --max-old-space-size=4096 src/split-icp-intent-fresh.js --min 1 --fresh data/leads-icp-intent-fresh-all.csv --known data/leads-icp-intent-known-all.csv --report data/icp-intent-fresh-all.md",
+    "all": "npm run all:pool && npm run all:icp && npm run all:intent && npm run all:final && npm run all:split"
   },
   "dependencies": {
     "cheerio": "^1.1.0",

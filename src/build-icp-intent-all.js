@@ -24,6 +24,7 @@ const fs = require('fs');
 const path = require('path');
 const { readCsv, toCsv } = require('./csv');
 const { scoreMochica } = require('./mochica-fit');
+const { targetFit } = require('./intent/target-fit');
 
 const ROOT = path.resolve(__dirname, '..');
 const getArg = (n, d) => {
@@ -49,6 +50,35 @@ function lowerBound(s) {
 function num(s) {
   const t = String(s || '').normalize('NFKC').trim().replace(/,/g, '');
   return /^\d+\s*(?:名|人)?$/.test(t) ? parseInt(t, 10) : null;
+}
+
+/**
+ * 採点済みCSVの列から、targetFit が読む最小限の ev（取得結果）を組み立て直す。
+ *
+ * なぜ必要か: 適合判定（フロア・ゲート）の定義は intent/target-fit.js にしか置きたくない。
+ * ここで判定式を写すと、v5.1 が `resolveIcpInputs` を作った趣旨（リストに載る条件と
+ * 刺す順で定義がずれないようにする）を自分で壊すことになる。
+ * かといって ev は取得時のオブジェクトで、CSVには畳まれた文字列しか残っていない。
+ * なので **列から ev を復元して本物の targetFit を呼ぶ**。取得はしない。
+ */
+function evFromRow(rec) {
+  const ev = {};
+  // 卒年面: 「28卒+27卒」＋「6～10名」→ { 28: { 募集人数: { 下限: 6 } } }
+  const gy = (g(rec, '卒年面').match(/(\d{2})卒/) || [])[1];
+  const plan = lowerBound(g(rec, '募集人数(最新卒年)'));
+  if (gy && plan != null) ev.卒年面 = { [gy]: { 募集人数: { 下限: plan } } };
+  const empPage = num(g(rec, '従業員数(掲載)').replace(/名$/, ''));
+  if (empPage != null) ev.会社データ = { 従業員数: empPage };
+  // 定着率の開示欄:「2025年26名」→ 系列[0].採用者
+  const last = lowerBound(g(rec, '昨年度入社数').replace(/^\d{4}年/, ''));
+  if (last != null) ev.定着 = { 系列: [{ 採用者: last }] };
+  // 中途求人。件数が「未取得」のままなら 取得:false ＝ 構成は不明のまま（0件と数えない）
+  const mid = g(rec, '中途求人件数');
+  const midN = num(mid);
+  ev.中途求人 = { 件数: midN, 取得: midN != null, 確度: g(rec, '採用構成根拠') ? '実測' : '' };
+  ev.公式URL = g(rec, '公式URL');
+  ev.企業名 = g(rec, '企業名');
+  return ev;
 }
 
 // 総合ランク。70/50 は MOCHICA_PRIORITY_HIGH/_MID と同じ帯（運用の意味を動かさない）。
@@ -84,13 +114,22 @@ function main() {
       採用構成: g(rec, '採用構成'),
     }));
 
-    const status = g(rec, 'MOCHCA適合判定') || '要確認';
+    // 適合判定と総合優先度は targetFit に出させる（判定式をここに写さない）。
+    // アポ期待度に充填後のICPスコアを入れてから呼ぶので、層1が第2段まで効いた値で合成される。
     const intent = parseFloat(rec['インテントスコア']) || 0;
     const budget = Math.max(0.5, Math.min(1, parseFloat(rec['予算係数']) || 1));
-    const raw = (intent * 0.65 + s.total * 0.35) * budget;
-    const prio = status === '対象外' ? 0
-      : Math.round(Math.min(status === '要確認' ? 49 : 100, raw) * 10) / 10;
+    const fit = targetFit(
+      Object.assign({}, rec, { アポ期待度: s.total }),
+      evFromRow(rec),
+      { スコア: intent, 予算係数: budget, 行動: g(rec, '推奨アクション') },
+    );
+    const status = fit.status;
+    const prio = fit.priority;
 
+    rec['MOCHCA適合判定'] = status;
+    rec['MOCHCA適合根拠'] = fit.reasons;
+    rec['要確認項目'] = fit.missing;
+    rec['提案ルート'] = fit.route;
     rec['ICPスコア(充填後)'] = String(s.total);
     rec['ICP帯'] = s.priority;
     rec['ICP組織型'] = s.orgLabel;
