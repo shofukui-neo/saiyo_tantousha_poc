@@ -60,6 +60,24 @@ function hitsFromRow(rec) {
   })).filter((h) => h.signal && Number.isFinite(h.weight) && Number.isFinite(h.strength));
 }
 
+/**
+ * 資金の判定は本文（掲載面・根拠資料）を読まないと出せない。採点し直しは取得をしないので、
+ * 前回の取得時に列へ書いた結果をそのまま引き継ぐ。ここを省くと、閾値を引き直すたびに
+ * 「赤字・採用縮小・予算確定」の減点が消えて、資金が閉じている社が上位に戻ってくる。
+ */
+function fundingFromRow(rec) {
+  const 状態 = String(rec['予算状態'] || '').trim();
+  if (!状態 || 状態 === '未判定') return null;
+  const 係数 = parseFloat(rec['予算係数']);
+  return {
+    状態, 係数: Number.isFinite(係数) ? 係数 : 1,
+    リスク: [], 根拠: String(rec['資金リスク'] || ''),
+    検討時期: String(rec['検討時期'] || ''),
+    トーク: String(rec['予算トーク'] || ''),
+    ナーチャリング: 状態 === '予算確定' || 状態 === '逼迫',
+  };
+}
+
 function main() {
   if (!fs.existsSync(IN)) { log('入力が見つかりません: ' + IN); process.exitCode = 1; return; }
   const { headers, records } = readCsv(fs.readFileSync(IN, 'utf8'));
@@ -73,7 +91,7 @@ function main() {
     before[rec['インテント階層']] = (before[rec['インテント階層']] || 0) + 1;
     const hits = hitsFromRow(rec);
     if (!hits) { 内訳なし++; after[rec['インテント階層']] = (after[rec['インテント階層']] || 0) + 1; continue; }
-    const res = scoreIntent(hits, { now: NOW });
+    const res = scoreIntent(hits, { now: NOW, 資金: fundingFromRow(rec) });
     const fit = targetFit(rec, {}, res);
 
     if (String(res.階層) !== String(rec['インテント階層'])) 変化++;
@@ -87,6 +105,9 @@ function main() {
     rec['推奨トーク'] = talkGuide(res);
     rec['総合優先度'] = String(fit.priority);
     rec['推奨アクション'] = fit.action;
+    // 資金の列は引き継いだ値で書き戻す（列がまだ無い古いCSVでも欠けたままにしない）
+    rec['予算状態'] = res.予算状態 || '未判定';
+    rec['予算係数'] = String(res.予算係数 != null ? res.予算係数 : 1);
     rec['シグナル内訳JSON'] = JSON.stringify(res.内訳);
     for (const s of SIGNAL_LIST) rec[s.列] = '';
     for (const d of res.内訳) rec[d.列] = `${d.level}(${d.点数})`;

@@ -25,7 +25,7 @@ const { normCompanyName } = require('../csv');
 const { fingerprint } = require('./store');
 const { INTERN_WORDS, EXPO_WORDS, countOccurrences } = require('./signals');
 const { validUrl } = require('./opportunity-signals');
-const { parseFace } = require('./mynavi-face');
+const { parseFace, parseProfile } = require('./mynavi-face');
 
 function addDocument(ev, doc) {
   if (!doc || typeof doc !== 'object' || !validUrl(doc.url) || !String(doc.text || '').trim()) return;
@@ -87,12 +87,22 @@ function fromRow(rec) {
   const ev = {
     企業名: String(rec['企業名'] || '').trim(),
     corpID: String(rec.corpID || '').trim(),
+    // 業種は入力リストが既に持っている事実。資金シグナル（人が資本の業種）の判定に使う。
+    業種: String(rec['業種'] || '').trim(),
+    事業内容: String(rec['事業内容'] || '').trim(),
     卒年,
     採用実績系列: 実績,
     採用予定人数: String(rec['採用予定人数'] ?? rec['年間新卒採用人数'] ?? ''),
     メール: [],
     掲載本文: '', インターン本文: '', インターン件数: null, 合説出展: null,
     LINE: null, 採用ページ: null,
+    // 掲載面の「会社そのものの情報」。卒年に依らないので卒年面とは別に持つ。
+    //   定着 … 過去3年の新卒採用者数・離職者数・定着率（若者雇用促進法の開示欄）
+    //   会社データ … 売上高・資本金・従業員・一人当たり売上
+    //   拠点 … 事業所欄から数えた拠点/店舗/都道府県
+    //   特徴 … マイナビの特徴・特色タグ（統制語彙）
+    // 昨年度の失敗シグナル（S22〜）と資金シグナル（S26〜）の一次情報。
+    定着: null, 会社データ: null, 拠点: null, 特徴: null, 上場: '',
     公式URL: String(rec['公式URL'] || '').trim(),
     掲載URL: page,
     取得ソース: ['csv'], エラー: [], インテント資料: [],
@@ -112,6 +122,16 @@ function fromRow(rec) {
   return ev;
 }
 function safeHost(u) { try { return new URL(u).hostname; } catch (_) { return ''; } }
+
+// 会社プロフィール（定着率の開示欄・会社データ・事業所・特徴タグ）を ev に載せる。
+// 同じ社の複数の面（現行卒年・次年度）から呼ばれるので、既に取れている項目は上書きしない。
+// 次年度面は中身が薄い（前年度の写しだけの面がある）ので、先に入った現行卒年の値を残す。
+function applyProfile(ev, text) {
+  const prof = parseProfile(text);
+  for (const k of ['定着', '会社データ', '拠点', '特徴']) if (!ev[k] && prof[k]) ev[k] = prof[k];
+  if (!ev.上場 && prof.上場) ev.上場 = prof.上場;
+  return ev;
+}
 
 // =====================================================================
 // ② マイナビ（会社概要 / インターン / 説明会）
@@ -209,8 +229,11 @@ async function collectMynaviFaces(rec, ev, { delay = 150, years = null } = {}) {
       addDocument(ev, { text: stripMynaviChrome(evidenceText(html)), url, source: 'mynavi' });
     }
     if (!parts.length) continue;
-    const face = parseFace(parts.join('\n'), { 卒年: gy, url: base });
+    const joined = parts.join('\n');
+    const face = parseFace(joined, { 卒年: gy, url: base });
     if (face) ev.卒年面[gy] = face;
+    // --sources faces だけで回した時にも会社プロフィールが埋まるようにする。
+    applyProfile(ev, joined);
   }
   // mynavi 系統とは別ラベルにする。どちらが動いたのかを行から読めるようにするため
   // （両方 'mynavi' を積むと 取得ソース が csv+mynavi+mynavi になって意味を持たない）。
@@ -258,6 +281,9 @@ async function collectMynavi(rec, ev, { delay = 150, pages = MYNAVI_PAGES } = {}
     if (p === 'outline') {
       ev.掲載URL = url;
       const upd = (t.match(/最終更新日[：:]\s*([0-9]{4}\/[0-9]{1,2}\/[0-9]{1,2})/) || [])[1] || '';
+      // 「過去3年間の新卒採用者数・離職者数・定着率」「資本金/売上高/従業員」「事業所」
+      // 「特徴・特色」は会社概要（outline）にしか無い。ここで1回だけ読む。
+      applyProfile(ev, t);
       const hr = extractHireRecord(t);
       if (hr && hr.系列 && hr.系列.length) ev.採用実績系列 = hr.系列.map((x) => x.年 + '年' + x.人数 + '名').join('/');
       ev.掲載面 = { url, 更新日: upd };
@@ -466,5 +492,5 @@ async function collectCompany(rec, opts = {}) {
 module.exports = {
   collectCompany, fromRow, collectMynavi, collectMynaviFaces, collectSite, collectHrJobs,
   parseJobCards, pickRecruitLink, mynaviBase, defaultGradYear, toText, fetchUrl, JOBBOX, MYNAVI_PAGES,
-  stripMynaviChrome, mynaviEntries, mynaviInternPrograms, addDocument, evidenceText,
+  stripMynaviChrome, mynaviEntries, mynaviInternPrograms, addDocument, evidenceText, applyProfile,
 };

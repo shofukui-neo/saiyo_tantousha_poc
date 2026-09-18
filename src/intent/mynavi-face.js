@@ -18,7 +18,7 @@
  */
 
 const HALF = (s) => String(s || '').normalize('NFKC');
-const clean = (s) => HALF(s).replace(/[ \t　]+/g, ' ').replace(/\n{2,}/g, '\n').trim();
+const clean = (s) => HALF(s).replace(/\r/g, '').replace(/[ \t　]+/g, ' ').replace(/\n{2,}/g, '\n').trim();
 
 // ---- セクション切り出し ------------------------------------------------
 // 見出し語から次の見出し語までを1区間として返す。見出しが無ければ null。
@@ -167,6 +167,133 @@ function parseUpdated(text) {
   return m ? `${m[1]}/${m[2]}/${m[3]}` : '';
 }
 
+// ---- ⑦ 過去3年間の新卒採用者数・離職者数・定着率 ----------------------
+// 若者雇用促進法の開示項目。実測（2026-09・無作為6社）では6社とも掲載面に出ていた。
+// 「昨年度の採用がうまくいったか」を、掲載文言の解釈ではなく数字で言える唯一の欄。
+//   採用者 / 離職者 / 定着率 の3年ぶん。新しい年が上に来る。
+// 男女別テーブル（年＋3つの人数）が直前にあるので、必ず「離職者数」の位置から読む。
+// 男女別は「名・名・名」で%を伴わないため、%を必須にしている限り誤って拾わない。
+function parseRetention(text) {
+  const t = clean(text);
+  const i = t.indexOf('離職者数');
+  if (i < 0) return null;
+  const s = HALF(t.slice(i, i + 900)).replace(/\s+/g, ' ').replace(/,/g, '');
+  const 系列 = [];
+  for (const m of s.matchAll(/(20\d{2})\s*年\s*(\d{1,4})\s*名\s*(\d{1,4})\s*名\s*(\d{1,3}(?:\.\d)?)\s*%/g)) {
+    const 採用者 = +m[2];
+    if (系列.some((x) => x.年 === +m[1])) continue;
+    系列.push({ 年: +m[1], 採用者, 離職者: +m[3], 定着率: +m[4] });
+  }
+  if (!系列.length) return null;
+  系列.sort((a, b) => b.年 - a.年);
+  return { 系列, 最新: 系列[0], 開示年: 系列[0].年 };
+}
+
+// ---- ⑧ 会社データ（資本金・売上高・従業員・設立）----------------------
+// 「採用にお金を使えるか」を見るための素の数字。判断はここではしない（budget-signals.js）。
+const DATA_STOPS = ['資本金', '売上高', '従業員', '募集人数', '事業所', '設立', '代表者', '本社', '株主構成',
+  '主な取引先', '主な販売先', '主な仕入先', '平均年齢', '平均勤続年数', '沿革', 'エントリー', '事業内容'];
+
+// 「210億4,830万円」「88.8億円」「3.11兆円」「3,300万円」を円に直す。
+// 桁を足し合わせる形にしないと「210億4830万円」が210億で止まる（実測で踏む形）。
+const MONEY_RE = /(?:(\d+(?:\.\d+)?)兆)?(?:(\d+(?:\.\d+)?)億)?(?:(\d+(?:\.\d+)?)万)?(?:(\d+(?:\.\d+)?))?円/;
+function parseMoneyJP(str) {
+  const s = HALF(str || '').replace(/[,\s]/g, '');
+  const m = s.match(MONEY_RE);
+  if (!m || !(m[1] || m[2] || m[3] || m[4])) return null;
+  const v = (+m[1] || 0) * 1e12 + (+m[2] || 0) * 1e8 + (+m[3] || 0) * 1e4 + (+m[4] || 0);
+  return v > 0 ? Math.round(v) : null;
+}
+// 単独/連結の両方が書かれる欄がある。大きい方（＝グループ全体の規模）を採る。
+function maxMoney(seg) {
+  let best = null;
+  for (const m of HALF(seg || '').replace(/[,\s]/g, '').matchAll(/(?:\d+(?:\.\d+)?[兆億万])+\d*円|\d+(?:\.\d+)?[兆億万]円/g)) {
+    const v = parseMoneyJP(m[0]);
+    if (v && (!best || v > best)) best = v;
+  }
+  return best;
+}
+function parseCompanyData(text) {
+  const t = clean(text);
+  const seg = (h) => section(t, h, { stops: DATA_STOPS, max: 400 });
+  const salesSeg = seg('売上高');
+  // 「非上場のため開示していません。※◯◯グループの売上は3.11兆円」のような欄がある。
+  // ここで最大額を採ると、別法人（グループ）の規模をその社の数字として持ち込む。
+  const 非開示 = /開示していません|非公開|非開示/.test(salesSeg);
+  const 売上高 = 非開示 ? null : maxMoney(salesSeg);
+  const 資本金 = maxMoney(seg('資本金'));
+  const empSeg = HALF(seg('従業員')).replace(/,/g, '');
+  const em = empSeg.match(/(\d{1,6})\s*名/);
+  const 従業員数 = em ? +em[1] : null;
+  const sm = HALF(seg('設立')).match(/(19|20)\d{2}\s*年/);
+  const 設立年 = sm ? parseInt(sm[0], 10) : null;
+  if (!売上高 && !資本金 && !従業員数) return null;
+  return {
+    売上高, 資本金, 従業員数, 設立年, 非開示,
+    売上表記: (seg('売上高') || '').split('\n')[0].slice(0, 60),
+    一人当たり売上: (売上高 && 従業員数) ? Math.round(売上高 / 従業員数) : null,
+  };
+}
+
+// ---- ⑨ 事業所（全国展開・店舗数）--------------------------------------
+// 「全国展開している」「店舗が多い」は事業所欄の実体で数える。
+// 拠点の呼び方は社によって違う（支社/営業所/店/センター）ので、語の出現数を拠点数の近似にする。
+const PREFS = ['北海道', '青森', '岩手', '宮城', '秋田', '山形', '福島', '茨城', '栃木', '群馬', '埼玉', '千葉',
+  '東京', '神奈川', '新潟', '富山', '石川', '福井', '山梨', '長野', '岐阜', '静岡', '愛知', '三重', '滋賀',
+  '京都', '大阪', '兵庫', '奈良', '和歌山', '鳥取', '島根', '岡山', '広島', '山口', '徳島', '香川', '愛媛',
+  '高知', '福岡', '佐賀', '長崎', '熊本', '大分', '宮崎', '鹿児島', '沖縄'];
+const SITE_WORD_RE = /支社|支店|営業所|出張所|事業所|工場|センター|ステーション|店(?![舗長員])/g;
+function parseOffices(text) {
+  const sec = section(clean(text), '事業所', {
+    stops: ['主な取引先', '主な販売先', '主な仕入先', '株主構成', '平均年齢', '平均勤続年数', '沿革',
+      '働き方データ', '売上高', '資本金', '募集人数', '運営サイト', '多様な働き方'], max: 3000 });
+  if (!sec) return null;
+  const 拠点語数 = (sec.match(SITE_WORD_RE) || []).length;
+  const 都道府県 = PREFS.filter((p) => sec.includes(p));
+  const 店舗数 = (sec.match(/店(?![舗長員])/g) || []).length;
+  // 拠点の書き方は「支店・営業所」を並べる社と、地名だけを読点で並べる社に分かれる。
+  // 語数だけで数えると後者が1拠点になる（実測: 28都市を並べる社が拠点1になった）。
+  const 列挙数 = sec.split(/[、,／]/).map((x) => x.trim()).filter((x) => x.length >= 2 && x.length <= 14).length;
+  return {
+    拠点語数, 列挙数, 店舗数, 拠点規模: Math.max(拠点語数, 列挙数), 都道府県数: 都道府県.length, 都道府県,
+    海外: /海外|＜海外＞|【海外】/.test(sec),
+    引用: sec.replace(/\n/g, ' ').slice(0, 160),
+  };
+}
+
+// ---- ⑩ 特徴・特色タグ（マイナビの統制語彙）-----------------------------
+// 「過去10年赤字決算なしなど安定した業績」「3年連続売上高前年比が130％以上と急成長中」
+// 「年商1,000億円以上…」はマイナビ側が付ける定型タグで、自由記述より当てになる。
+function parseFeatureTags(text) {
+  const t = clean(text);
+  const i = t.indexOf('と特徴・特色が同じ企業を探す');
+  if (i < 0) return null;
+  const sec = t.slice(i + 14, i + 1400).split('よろしいですか')[0];
+  const tags = sec.split('\n').map((x) => x.trim())
+    .filter((x) => x.length >= 4 && x.length <= 40 && !/^[。、]/.test(x));
+  return tags.length ? tags : null;
+}
+
+// 上場区分は社名の後ろの【東証プライム上場】等に出る。非上場は空文字（不明と区別しない）。
+function parseListing(text) {
+  const m = HALF(text || '').match(/【[^】]{0,20}(?:東証|名証|札証|福証)[^】]{0,20}】/);
+  return m ? m[0].replace(/[【】]/g, '') : '';
+}
+
+/**
+ * 掲載面の「会社そのものの情報」をまとめて取る。卒年に依らないので卒年面とは別に持つ。
+ * 失敗シグナル（failure-signals.js）と資金シグナル（budget-signals.js）の一次情報。
+ */
+function parseProfile(text) {
+  return {
+    定着: parseRetention(text),
+    会社データ: parseCompanyData(text),
+    拠点: parseOffices(text),
+    特徴: parseFeatureTags(text),
+    上場: parseListing(text),
+  };
+}
+
 /**
  * 1つの卒年面（outline + employment のテキスト）から構造値をまとめて取る。
  * @param {string} text stripMynaviChrome 済みのテキスト
@@ -182,8 +309,9 @@ function parseFace(text, meta = {}) {
     エントリー: parseEntryRoutes(t),
     募集コース: parseCourses(t),
     初任給: parseStartingPay(t),
+    ...parseProfile(t),
     本文長: t.length,
   };
 }
 
-module.exports = { parseFace, parseHeadcount, headcountValue, parseFlow, parseEntryRoutes, parseCourses, parseStartingPay, parseUpdated, section };
+module.exports = { parseFace, parseProfile, parseRetention, parseCompanyData, parseOffices, parseFeatureTags, parseListing, parseMoneyJP, parseHeadcount, headcountValue, parseFlow, parseEntryRoutes, parseCourses, parseStartingPay, parseUpdated, section };

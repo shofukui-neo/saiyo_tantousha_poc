@@ -34,7 +34,13 @@ function targetFit(rec, ev = {}, res = {}) {
   const fitRaw = Number.parseFloat(rec.アポ期待度);
   const fit = Number.isFinite(fitRaw) ? Math.max(0, Math.min(100, fitRaw)) : 50;
   // 学習済み受注モデルではない。適合未確認企業は優先度を49に制限。
-  const raw = (Number(res.スコア) || 0) * 0.65 + fit * 0.35;
+  // 資金係数（budget-signals.assessFunding）は「採用にお金を出せない状態」の減点。
+  //   赤字・人員削減 0.70 ／ 採用縮小 0.75〜0.80 ／ 予算確定 0.85 ／ それ以外 1.0
+  // インテントスコア側を下げないのは、シグナルは実際に立っているから（事実は曲げない）。
+  // 下げるのは「今どの順で架けるか」だけ。予算が閉じている社は順番を後ろにし、
+  // 推奨アクション（score.js）でナーチャリングに回す。
+  const 予算係数 = Number.isFinite(res.予算係数) ? Math.max(0.5, Math.min(1, res.予算係数)) : 1;
+  const raw = ((Number(res.スコア) || 0) * 0.65 + fit * 0.35) * 予算係数;
   const priority = status === '対象外' ? 0 : Math.round(Math.min(status === '要確認' ? 49 : 100, raw) * 10) / 10;
   const ats = String(rec.ATS判定 || '不明');
   const route = ats === '未導入' ? '新規導入候補' : ats === '導入済' ? '既存ATSとの併用・切替条件を確認' : 'ATS利用状況を確認';
@@ -48,4 +54,6 @@ function targetFit(rec, ev = {}, res = {}) {
 }
 
 const TARGET_COLS = ['MOCHCA適合判定', 'MOCHCA適合根拠', '要確認項目', '提案ルート', '優先度モデル', '根拠URL一覧', 'インテント資料JSON', 'シグナル内訳JSON'];
-module.exports = { targetFit, exactCount, TARGET_COLS };
+// 資金面の列。架電者が「今すぐ売る相手か／時期を押さえる相手か」を1行で判断するためのもの。
+const BUDGET_COLS = ['予算状態', '予算係数', '資金リスク', '検討時期', '予算トーク'];
+module.exports = { targetFit, exactCount, TARGET_COLS, BUDGET_COLS };

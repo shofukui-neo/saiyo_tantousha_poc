@@ -17,12 +17,21 @@
 const { SIGNALS } = require('./signals');
 const { OPPORTUNITY_TALK, GROUP_CAPS } = require('./opportunity-signals');
 const { FACE_TALK, FACE_GROUP_CAP } = require('./face-signals');
+const { FAILURE_TALK, FAILURE_GROUP_CAP } = require('./failure-signals');
+const { BUDGET_TALK, BUDGET_GROUP_CAP } = require('./budget-signals');
 
 // 課題群ごとの合計上限。軸を足した群に上限を付け忘れると、その群だけが青天井で積み上がる。
-const CAPS = { ...GROUP_CAPS, ...FACE_GROUP_CAP };
+const CAPS = { ...GROUP_CAPS, ...FACE_GROUP_CAP, ...FAILURE_GROUP_CAP, ...BUDGET_GROUP_CAP };
 
 // 効く順①の重み（＝シグナル定義の最大重み）。単独昇格の判定に使う。
 const TOP_WEIGHT = Math.max(...Object.values(SIGNALS).map((s) => s.weight));
+
+// 「これ1本で即架電に値する」と決めた軸。合計点の閾値とは別に、明示的に置く。
+//   MIDCAREER_HR_JOB … 効く順①（2026-09-03 確定）
+//   LAST_YEAR_SHORTFALL … 昨年度の採用失敗（2026-09-18 確定）。二次募集・採用数増は
+//     この“結果”であって原因ではないので、原因が数字で取れた社は合計点に関わらず先に架ける。
+// 重みを閾値に合わせて水増しするのではなく、昇格条件として書く（後から読めるようにするため）。
+const PROMOTE_SIGNALS = ['MIDCAREER_HR_JOB', 'LAST_YEAR_SHORTFALL'];
 
 // 階層の閾値は「絶対値」。母集団が変わっても同じ社は同じ階層に留まる（時系列で比較できる）。
 // ただし分析軸を足すと合計点の目盛りそのものが伸びるので、軸を増やした時は閾値を引き直す。
@@ -38,6 +47,18 @@ const TOP_WEIGHT = Math.max(...Object.values(SIGNALS).map((s) => s.weight));
 //        実測: 標本のD階層12% に対し全数は25%）
 // 分位は必ず「全数・上限適用後」で取ること。
 // 閾値を変えた後は npm run intent:rescore（取得し直さずに採点だけやり直す）。
+//
+// 2026-09-18: 21軸→29軸（昨年度の失敗4軸＋資金4軸）。45.4 はまだ21軸時点の分位のまま。
+// 新しい8軸は「定着率の開示欄・会社データ・事業所・特徴タグ」を一次情報にしており、
+// これらは過去の取得回では集めていない。＝既存CSVを採点し直しても新軸は立たず、
+// 分位を取り直せない（intent:rescore では較正できない、ということ）。
+// 較正の手順は必ずこの順で:
+//   1) npm run intent:wide         … 29軸ぶんの一次情報を取り直す（--resume で継続可）
+//   2) 全数・群上限適用後のスコア分布から A が上位約10%になる値を取る
+//   3) ここの 45.4 を差し替えて npm run intent:rescore
+// それまでは A の件数が従来より膨らむ（軸を足したぶん目盛りが伸びているだけで、
+// 「急に有望企業が増えた」わけではない）。群上限（failure 44 / budget 24）で
+// 青天井にはならないが、上位10%という運用ラベルの意味は較正するまで戻らない。
 const TIERS = [
   { tier: 'A', min: 45.4, 行動: '即架電（今週中）' },
   { tier: 'B', min: 22, 行動: '今週中に着手' },
@@ -57,8 +78,11 @@ function decayFactor(hit, now = new Date()) {
 /**
  * シグナル配列 → インテントスコア。
  * @param {Array} hits signals.js の検知結果
- * @param {{now?:Date}} opts
- * @returns {{スコア:number, 階層:string, 行動:string, 最有力:string, 根拠:string, 内訳:Array}}
+ * @param {{now?:Date, 資金?:object}} opts 資金は budget-signals.assessFunding() の戻り。
+ *   資金リスクは点にしない（加点側と同じ土俵に置くと「リスクが多いほど点が伸びる」ため）。
+ *   点はそのままに、総合優先度の係数と推奨アクションにだけ効かせる。
+ * @returns {{スコア:number, 階層:string, 行動:string, 最有力:string, 根拠:string, 内訳:Array,
+ *   予算状態:string, 予算係数:number, 予算根拠:string, 検討時期:string, 予算トーク:string}}
  */
 function scoreIntent(hits, opts = {}) {
   const now = opts.now ? new Date(opts.now) : new Date();
@@ -92,16 +116,25 @@ function scoreIntent(hits, opts = {}) {
   const raw = 内訳.reduce((a, x) => a + x.点数, 0);
   const スコア = Math.min(100, Math.round(raw * 10) / 10);
   let t = TIERS.find((x) => スコア >= x.min) || TIERS[TIERS.length - 1];
-  // 最上位の重みを持つシグナルが「確定」で立っていれば、合計点に関わらずA。
-  // 設計の約束（効く順①＝人事・採用担当の中途求人は、それ1本で即架電に値する）を
-  // 閾値の引き上げで失わないため。閾値を上げた分、単独では届かなくなるのを明示的に戻す。
-  // 重みを閾値に合わせて水増しするより、昇格条件として書くほうが後から読める。
-  if (t.tier !== 'A' && 内訳.some((d) => d.weight === TOP_WEIGHT && /^確定/.test(d.level || '') && d.減衰 >= 0.5)) {
+  // PROMOTE_SIGNALS が「確定」で立っていれば、合計点に関わらずA。
+  // 設計の約束（人事・採用担当の中途求人／昨年度の採用計画が未充足は、それ1本で
+  // 即架電に値する）を、閾値の引き上げで失わないため。
+  if (t.tier !== 'A' && 内訳.some((d) => PROMOTE_SIGNALS.includes(d.signal) && /^確定/.test(d.level || '') && d.減衰 >= 0.5)) {
     t = TIERS[0];
   }
   const top = 内訳[0] || null;
+  // 資金面。赤字・採用縮小・予算確定の社は、点が高くても「今すぐ売る相手」ではない。
+  // 階層Aはタイミングの話なので落とさず、行動だけをナーチャリングに寄せる。
+  const 資金 = opts.資金 || null;
+  const 行動 = (資金 && 資金.ナーチャリング && t.tier !== 'A')
+    ? `ナーチャリング（${資金.状態}／検討時期${資金.検討時期 || '未確認'}を確認）` : t.行動;
   return {
-    スコア, 階層: t.tier, 行動: t.行動,
+    スコア, 階層: t.tier, 行動,
+    予算状態: 資金 ? 資金.状態 : '未判定',
+    予算係数: 資金 ? 資金.係数 : 1,
+    予算根拠: 資金 ? 資金.根拠 : '',
+    検討時期: 資金 ? 資金.検討時期 : '',
+    予算トーク: 資金 ? 資金.トーク : '',
     最有力: top ? top.名称 : '', 最有力シグナル: top ? top.signal : '',
     最有力レベル: top ? top.level : '',
     根拠: 内訳.slice(0, 3).map((x) => x.根拠).join(' ／ '),
@@ -121,6 +154,8 @@ function combineWithFit(intentScore, アポ期待度) {
 const TALK = {
   ...OPPORTUNITY_TALK,
   ...FACE_TALK,
+  ...FAILURE_TALK,
+  ...BUDGET_TALK,
   MIDCAREER_HR_JOB: '人事・採用ご担当の中途募集を拝見しました。採用のオペレーションが人手に寄っているタイミングかと思い、'
     + '採用担当を増やす前に応募者対応の自動化で持たせている事例をご紹介したくご連絡しました。',
   SECONDARY_RECRUIT: '追加募集（秋採用）のご案内を拝見しました。この時期の追加募集は歩留まりの取りこぼしが響くので、'
@@ -150,4 +185,4 @@ function whyNow(res) {
   return `${top.名称}［${top.level}］${top.減衰 < 0.7 ? `※検知${top.検知日}のため減衰${top.減衰}` : ''}`.trim();
 }
 
-module.exports = { scoreIntent, combineWithFit, decayFactor, talkGuide, whyNow, TIERS, TALK, CAPS, TOP_WEIGHT };
+module.exports = { scoreIntent, combineWithFit, decayFactor, talkGuide, whyNow, TIERS, TALK, CAPS, TOP_WEIGHT, PROMOTE_SIGNALS };

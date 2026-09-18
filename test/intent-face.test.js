@@ -234,13 +234,17 @@ t('A階層への単独昇格は最上位の重みの「確定」だけ（他の�
   assert.notStrictEqual(scoreIntent(古い, { now: NOW }).階層, 'A');
 });
 
-t('追加5軸は列・重み・半減期が一意で、既存16軸と衝突しない', () => {
+t('卒年面5軸は列・重み・半減期が一意で、他系統と衝突しない', () => {
+  // 軸の総数は系統を足すたびに増える（21軸→29軸: 昨年度の失敗4軸＋資金4軸を追加）。
+  // ここで見たいのは「face群の5軸が他とぶつかっていないこと」なので、総数は
+  // SIGNAL_LIST から取って、一意性だけを固定する。
   const { SIGNAL_LIST } = require('../src/intent/signals');
   const ids = Object.keys(FACE_SIGNALS);
+  const n = SIGNAL_LIST.length;
   assert.strictEqual(ids.length, 5);
-  assert.strictEqual(SIGNAL_LIST.length, 21);
-  assert.strictEqual(new Set(SIGNAL_LIST.map(s => s.列)).size, 21);
-  assert.strictEqual(new Set(SIGNAL_LIST.map(s => s.順位)).size, 21);
+  assert.ok(n >= 21, '軸数=' + n);
+  assert.strictEqual(new Set(SIGNAL_LIST.map(s => s.列)).size, n);
+  assert.strictEqual(new Set(SIGNAL_LIST.map(s => s.順位)).size, n);
   for (const id of ids) assert.ok(FACE_SIGNALS[id].weight > 0 && FACE_SIGNALS[id].半減期日 > 0);
 });
 

@@ -24,6 +24,8 @@
 const { normCompanyName } = require('../csv');
 const { OPPORTUNITY_SIGNALS, detectOpportunitySignals } = require('./opportunity-signals');
 const { FACE_SIGNALS, detectFaceSignals, crossYearHeadcount } = require('./face-signals');
+const { FAILURE_SIGNALS, detectFailureSignals } = require('./failure-signals');
+const { BUDGET_SIGNALS, detectBudgetSignals, assessFunding } = require('./budget-signals');
 
 // ---- シグナル定義（weight＝効く順そのもの。半減期＝そのシグナルの賞味期限）----
 const SIGNALS = {
@@ -68,7 +70,9 @@ const SIGNALS = {
     説明: '母集団形成に外部投資を始めた＝応募者管理の負荷が跳ねる',
   },
 };
-Object.assign(SIGNALS, OPPORTUNITY_SIGNALS, FACE_SIGNALS);
+// 系統は4つ。基礎8軸（このファイル）／課題8軸（opportunity）／卒年面5軸（face）／
+// 昨年度の失敗4軸（failure）／資金4軸（budget）。列番号は S1〜 で通し（重複させない）。
+Object.assign(SIGNALS, OPPORTUNITY_SIGNALS, FACE_SIGNALS, FAILURE_SIGNALS, BUDGET_SIGNALS);
 const SIGNAL_LIST = Object.values(SIGNALS).sort((a, b) => a.順位 - b.順位);
 
 // ---- テキスト共通ヘルパ ----
@@ -553,6 +557,11 @@ function detectAll(ev = {}, prev = null, opts = {}) {
   push(detectExpo({ text: (ev.インターン本文 || '') + '\n' + (ev.掲載本文 || ''), prev: p.合説 || null, 検知日 }));
   hits.push(...detectOpportunitySignals(ev, { now, 検知日 }));
   hits.push(...detectFaceSignals(ev, { now, 検知日, prev: p }));
+  // 昨年度の採用結果（S22〜S25）。prev には前回観測の卒年面が入っており、
+  // そこに前年の募集人数が残っている社だけ「計画に対して何人足りなかったか」が確定になる。
+  hits.push(...detectFailureSignals(ev, { now, 検知日, prev: p }));
+  // 採用にお金を出せる構造か（S26〜S29）。出せない側＝資金リスクは点にしない（assessFunding）。
+  hits.push(...detectBudgetSignals(ev, { now, 検知日 }));
   return hits;
 }
 
@@ -563,4 +572,6 @@ module.exports = {
   // 下位関数（テスト・再利用のために公開）
   parseHireSeries, isRecruitAddress, parsePostedDays, currentGradYear, findKeyword, negatedAround, hedgedAround,
   daysSince, countOccurrences, INTERN_WORDS, EXPO_WORDS,
+  // 資金リスクは加点シグナルではないので detectAll には混ぜない。呼び出し側がここから取る。
+  assessFunding,
 };

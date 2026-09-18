@@ -36,9 +36,9 @@ const fs = require('fs');
 const path = require('path');
 const { readCsv, toCsv } = require('./csv');
 const { collectCompany } = require('./intent/collect');
-const { detectAll, SIGNAL_LIST } = require('./intent/signals');
+const { detectAll, SIGNAL_LIST, assessFunding } = require('./intent/signals');
 const { scoreIntent, talkGuide, whyNow, TIERS, TOP_WEIGHT } = require('./intent/score');
-const { targetFit, TARGET_COLS } = require('./intent/target-fit');
+const { targetFit, TARGET_COLS, BUDGET_COLS } = require('./intent/target-fit');
 const { sortedFaces } = require('./intent/face-signals');
 const { buildReport } = require('./intent/report');
 const { finalizeFromWork } = require('./intent/finalize');
@@ -89,6 +89,29 @@ const PASS_COLS = ['ATS判定', 'ATS確度', 'ATS根拠', 'ATS検査日', 'ATS�
 // シグナルが立たなかった社でも「今年は何人募集で、選考が何段か」は架電の材料になる。
 const FACE_COLS = ['卒年面', '募集人数(最新卒年)', '募集人数(前卒年)', '選考段数', '面接回数', '応募受付経路',
   '募集コース数', '初任給(大卒)', '掲載面更新日'];
+// 昨年度の採用結果と会社の体力。シグナルが立たなかった社でも、この素の数字が架電の材料になる。
+// （「昨年8名採って3名辞めています」はそれ自体が話の入り口になる）
+const PROFILE_COLS = ['昨年度入社数', '昨年度定着率', '定着率(3年)', '売上高', '従業員数(掲載)', '拠点数', '都道府県数', '上場区分', '特徴タグ'];
+function profileCells(ev) {
+  const empty = Object.fromEntries(PROFILE_COLS.map((c) => [c, '']));
+  const ret = ev.定着;
+  const d = ev.会社データ;
+  const o = ev.拠点;
+  if (!ret && !d && !o) return empty;
+  const 最新 = ret && ret.系列 && ret.系列[0];
+  return {
+    ...empty,
+    昨年度入社数: 最新 ? `${最新.年}年${最新.採用者}名` : '',
+    昨年度定着率: 最新 ? `${最新.定着率}%` : '',
+    '定着率(3年)': ret ? ret.系列.map((r) => `${r.年}:${r.採用者}名/離職${r.離職者}名/${r.定着率}%`).join(' ') : '',
+    売上高: d && d.売上高 ? String(d.売上高) : '',
+    '従業員数(掲載)': d && d.従業員数 ? String(d.従業員数) : '',
+    拠点数: o && o.拠点規模 ? String(o.拠点規模) : '',
+    都道府県数: o && o.都道府県数 ? String(o.都道府県数) : '',
+    上場区分: ev.上場 || '',
+    特徴タグ: (ev.特徴 || []).slice(0, 6).join('／'),
+  };
+}
 function faceCells(ev) {
   const faces = sortedFaces(ev.卒年面);
   if (!faces.length) return Object.fromEntries(FACE_COLS.map((c) => [c, '']));
@@ -110,7 +133,7 @@ function faceCells(ev) {
   };
 }
 
-const COLS = [...BASE_COLS, ...SIG_COLS, ...FACE_COLS, ...TAIL_COLS, ...TARGET_COLS, ...PASS_COLS];
+const COLS = [...BASE_COLS, ...BUDGET_COLS, ...SIG_COLS, ...FACE_COLS, ...PROFILE_COLS, ...TAIL_COLS, ...TARGET_COLS, ...PASS_COLS];
 
 function safeWrite(abs, content) {
   fs.mkdirSync(path.dirname(abs), { recursive: true });
@@ -142,6 +165,12 @@ function buildRow(rec, ev, res, 観測回数) {
     推奨トーク: talkGuide(res),
     アポ期待度: rec['アポ期待度'] || '',
     総合優先度: String(fit.priority),
+    // 資金面。点にはせず、順番（総合優先度の係数）と次の一手だけに効かせている。
+    予算状態: res.予算状態 || '未判定',
+    予算係数: String(res.予算係数 != null ? res.予算係数 : 1),
+    資金リスク: res.予算根拠 || '',
+    検討時期: res.検討時期 || '',
+    予算トーク: res.予算トーク || '',
     MOCHCA適合判定: fit.status,
     MOCHCA適合根拠: fit.reasons,
     要確認項目: fit.missing,
@@ -159,7 +188,7 @@ function buildRow(rec, ev, res, 観測回数) {
     観測日: TODAY,
     観測回数: String(観測回数 || 1),
   };
-  Object.assign(o, faceCells(ev));
+  Object.assign(o, faceCells(ev), profileCells(ev));
   for (const c of PASS_COLS) o[c] = rec[c] ?? '';
   for (const s of SIGNAL_LIST) o[s.列] = '';
   for (const d of res.内訳) o[d.列] = `${d.level}(${d.点数})`;
@@ -262,7 +291,10 @@ async function main() {
       // 台帳に記録し、過去に検知して“まだ生きている”シグナルも合わせて採点する
       const merged = NO_STORE ? null : store.record(state, key, ev, hits, { now: NOW });
       const scoreHits = merged ? store.signalsToHits(merged) : hits;
-      const res = scoreIntent(scoreHits, { now: NOW });
+      // 資金リスク（赤字・採用縮小・予算確定）は加点シグナルにしない。
+      // 点はそのままに、総合優先度の係数と推奨アクション（ナーチャリング）に効かせる。
+      // 今回取得した本文でしか判定できないので、台帳の持ち越しではなく毎回見る。
+      const res = scoreIntent(scoreHits, { now: NOW, 資金: assessFunding(ev, scoreHits) });
 
       stats.処理++;
       if ((ev.インテント資料 || []).length) stats.資料あり++;

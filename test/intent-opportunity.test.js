@@ -30,9 +30,10 @@ const doc = (text, date = TODAY, url = 'https://example.test/recruit') => ({ tex
 const detect = docs => detectOpportunitySignals({ インテント資料: docs }, { now: NOW, 検知日: TODAY });
 const good = { 企業名: '株式会社検証サンプル', 業種: '製造業', 従業員数: '300', 年間新卒採用人数: '21', アポ期待度: '80', 電話番号: '03-0000-0000', ATS判定: '未導入' };
 
-t('定義は8→21種類、ID・CSV列は一意', () => {
-  assert.strictEqual(SIGNAL_LIST.length, 21);
-  assert.strictEqual(new Set(SIGNAL_LIST.map(s => s.id)).size, 21);
+t('定義は8→29種類、ID・CSV列は一意', () => {
+  // 8（基礎）＋8（課題）＋5（卒年面）＋4（昨年度の失敗）＋4（資金）＝29
+  assert.strictEqual(SIGNAL_LIST.length, 29);
+  assert.strictEqual(new Set(SIGNAL_LIST.map(s => s.id)).size, 29);
   assert.strictEqual(new Set(COLS).size, COLS.length);
 });
 Object.keys(OPPORTUNITY_SIGNALS).forEach((id, i) => t(`${id}: 根拠付き検知・トーク・CSVまで接続`, () => {
@@ -129,7 +130,7 @@ t('根拠資料JSONの再入力と欠損・破損に対応する', () => {
   assert.ok(fromRow({ インテント資料JSON: 'broken' }).エラー.length);
   assert.strictEqual(fromRow({}).インテント資料.length, 0);
 });
-t('CLIをオフラインで実行し、21軸・適合限定・JSON・レポートを確認', () => {
+t('CLIをオフラインで実行し、29軸・適合限定・JSON・レポートを確認', () => {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'intent-opportunity-'));
   const input = path.join(dir, 'input.csv');
   const out = path.join(dir, 'out.csv');
@@ -142,7 +143,7 @@ t('CLIをオフラインで実行し、21軸・適合限定・JSON・レポー�
       '--out', out, '--report', report, '--offline', '--no-store', '--qualified-only'], { stdio: 'pipe' });
     const parsed = readCsv(fs.readFileSync(out, 'utf8'));
     assert.strictEqual(parsed.records.length, 1);
-    assert.strictEqual(parsed.headers.filter(c => /^S\d+_/.test(c)).length, 21);
+    assert.strictEqual(parsed.headers.filter(c => /^S\d+_/.test(c)).length, 29);
     assert.strictEqual(parsed.records[0].MOCHCA適合判定, '適合');
     assert.strictEqual(JSON.parse(parsed.records[0].シグナル内訳JSON).length, 8);
     assert.ok(fs.readFileSync(report, 'utf8').includes('受注確率ではありません'));
