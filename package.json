@@ -212,7 +212,12 @@
     "intent:rescore": "node src/rescore-intent.js --in data/leads-intent-wide.csv --report data/intent-wide.md",
     "intent:deep:jobs": "node src/intent-analyze.js --in data/intent-pool-deep.csv --out data/leads-intent-deep.csv --report data/intent-deep.md --sources csv,site,jobs --conc 4 --resume",
     "intent:finalize": "node src/finalize-intent.js --work data/leads-intent-wide.work.csv --out data/leads-intent-wide.csv",
-    "intent:mix": "node src/intent-analyze.js --in data/intent-pool-deep.csv --out data/leads-intent-mix.csv --report data/intent-mix.md --sources csv,mynavi,faces,midjobs --conc 3 --resume"
+    "intent:mix": "node src/intent-analyze.js --in data/intent-pool-deep.csv --out data/leads-intent-mix.csv --report data/intent-mix.md --sources csv,mynavi,faces,midjobs --conc 3 --resume",
+    "all:pool": "node src/build-intent-pool.js --fetchable-only",
+    "all:icp": "node src/rescore-icp-v5.js --in data/intent-pool.csv",
+    "all:intent": "node --max-old-space-size=4096 src/intent-analyze.js --in data/intent-pool.csv --out data/leads-intent-wide.csv --report data/intent-wide.md --sources csv,mynavi,faces --conc 8 --delay 120 --resume",
+    "all:final": "node src/build-icp-intent-all.js",
+    "all": "npm run all:pool && npm run all:icp && npm run all:intent && npm run all:final"
   },
   "dependencies": {
     "cheerio": "^1.1.0",
