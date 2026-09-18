@@ -217,15 +217,31 @@ const RISK_NEG = /(あり?ません|ござい?ません|такое)/;
 
 // 検討時期。架電で「いつなら」を押さえるための当たり。
 // N月／来期／下期／次年度を、検討・予算の文脈の近くにある時だけ拾う。
-const TIMING_CONTEXT = /検討|導入|予算|見直し|更新|稟議|決裁|入替|切替|リプレイス|開始/;
+// 「開始」「更新」は新卒の掲載面に普通に出る語（エントリー開始・最終更新）なので入れない。
+// 実測 2026-09-18: これを入れていたせいで「2027年3月卒業」の“3月”が検討時期として出た。
+const TIMING_CONTEXT = /検討|導入|予算|稟議|決裁|入替|切替|リプレイス|見直し|商談|ご提案/;
+// 月の直後がこれらなら採用スケジュールの話であって、検討時期ではない。
+// 「(2026年3月時点)」「3月末現在」は基準日であって検討時期ではない。
+const TIMING_NOT_AFTER = /^\s*(?:卒|卒業|入社|期|決算|時点|現在|実績|末|開講|開催|実施|選考|面接|説明会|エントリー)/;
 const TIMING_WORDS = [
   [/(?:来期|次年度|来年度)/, '来期'],
   [/(?:下期|下半期)/, '下期'],
   [/(?:上期|上半期)/, '上期'],
   [/(?:期初|年度初め|年度初)/, '期初'],
 ];
-function extractTiming(text) {
+function extractTiming(text, { now = new Date() } = {}) {
   const t = String(text || '').normalize('NFKC').replace(/[ \t]+/g, ' ');
+  const 今年 = new Date(now).getFullYear();
+  // 「2005年 8月 先進的IT技術導入…」のような沿革の日付を検討時期にしない。
+  // 実測 2026-09-18: 掲載面の沿革から「8月」「4月」を拾っていた（窓に 導入/見直し が入るため）。
+  // 過ぎた年が直前に付いている月は履歴の話。未来の年（2027年4月から導入を検討）は残す。
+  const 今月 = new Date(now).getMonth() + 1;
+  const 過去の日付 = (idx, mon) => {
+    const m = t.slice(Math.max(0, idx - 10), idx).match(/(20\d{2})\s*年\s*$/);
+    if (!m) return false;
+    const y = Number(m[1]);
+    return y < 今年 || (y === 今年 && mon < 今月);
+  };
   for (const [re, label] of TIMING_WORDS) {
     const m = re.exec(t);
     if (!m) continue;
@@ -235,6 +251,8 @@ function extractTiming(text) {
   for (const m of t.matchAll(/(\d{1,2})\s*月/g)) {
     const mon = parseInt(m[1], 10);
     if (mon < 1 || mon > 12) continue;
+    if (TIMING_NOT_AFTER.test(t.slice(m.index + m[0].length, m.index + m[0].length + 6))) continue;
+    if (過去の日付(m.index, mon)) continue;
     const win = t.slice(Math.max(0, m.index - 30), m.index + m[0].length + 30);
     if (TIMING_CONTEXT.test(win)) return { 時期: `${mon}月`, 引用: win.trim().slice(0, 120) };
   }

@@ -19,9 +19,10 @@ const { OPPORTUNITY_TALK, GROUP_CAPS } = require('./opportunity-signals');
 const { FACE_TALK, FACE_GROUP_CAP } = require('./face-signals');
 const { FAILURE_TALK, FAILURE_GROUP_CAP } = require('./failure-signals');
 const { BUDGET_TALK, BUDGET_GROUP_CAP } = require('./budget-signals');
+const { MIX_TALK, MIX_GROUP_CAP } = require('./mix-signals');
 
 // 課題群ごとの合計上限。軸を足した群に上限を付け忘れると、その群だけが青天井で積み上がる。
-const CAPS = { ...GROUP_CAPS, ...FACE_GROUP_CAP, ...FAILURE_GROUP_CAP, ...BUDGET_GROUP_CAP };
+const CAPS = { ...GROUP_CAPS, ...FACE_GROUP_CAP, ...FAILURE_GROUP_CAP, ...BUDGET_GROUP_CAP, ...MIX_GROUP_CAP };
 
 // 効く順①の重み（＝シグナル定義の最大重み）。単独昇格の判定に使う。
 const TOP_WEIGHT = Math.max(...Object.values(SIGNALS).map((s) => s.weight));
@@ -156,6 +157,7 @@ const TALK = {
   ...FACE_TALK,
   ...FAILURE_TALK,
   ...BUDGET_TALK,
+  ...MIX_TALK,
   MIDCAREER_HR_JOB: '人事・採用ご担当の中途募集を拝見しました。採用のオペレーションが人手に寄っているタイミングかと思い、'
     + '採用担当を増やす前に応募者対応の自動化で持たせている事例をご紹介したくご連絡しました。',
   SECONDARY_RECRUIT: '追加募集（秋採用）のご案内を拝見しました。この時期の追加募集は歩留まりの取りこぼしが響くので、'

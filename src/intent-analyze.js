@@ -38,7 +38,7 @@ const { readCsv, toCsv } = require('./csv');
 const { collectCompany } = require('./intent/collect');
 const { detectAll, SIGNAL_LIST, assessFunding } = require('./intent/signals');
 const { scoreIntent, talkGuide, whyNow, TIERS, TOP_WEIGHT } = require('./intent/score');
-const { targetFit, TARGET_COLS, BUDGET_COLS } = require('./intent/target-fit');
+const { targetFit, TARGET_COLS, BUDGET_COLS, MIX_COLS } = require('./intent/target-fit');
 const { sortedFaces } = require('./intent/face-signals');
 const { buildReport } = require('./intent/report');
 const { finalizeFromWork } = require('./intent/finalize');
@@ -133,7 +133,7 @@ function faceCells(ev) {
   };
 }
 
-const COLS = [...BASE_COLS, ...BUDGET_COLS, ...SIG_COLS, ...FACE_COLS, ...PROFILE_COLS, ...TAIL_COLS, ...TARGET_COLS, ...PASS_COLS];
+const COLS = [...BASE_COLS, ...MIX_COLS, ...BUDGET_COLS, ...SIG_COLS, ...FACE_COLS, ...PROFILE_COLS, ...TAIL_COLS, ...TARGET_COLS, ...PASS_COLS];
 
 function safeWrite(abs, content) {
   fs.mkdirSync(path.dirname(abs), { recursive: true });
@@ -165,6 +165,12 @@ function buildRow(rec, ev, res, 観測回数) {
     推奨トーク: talkGuide(res),
     アポ期待度: rec['アポ期待度'] || '',
     総合優先度: String(fit.priority),
+    // 採用構成。新卒中心の社を拾うための選別軸で、中途中心はここで対象外になる。
+    採用構成: fit.mix ? fit.mix.構成 : '不明',
+    新卒規模: fit.mix && fit.mix.新卒表記 ? `${fit.mix.新卒表記}(${fit.mix.新卒出所})` : '',
+    中途求人件数: fit.mix && fit.mix.中途 != null ? String(fit.mix.中途) : '',
+    採用構成根拠: fit.mix ? `${fit.mix.理由}${fit.mix.中途引用 ? '／' + fit.mix.中途引用 : ''}` : '',
+    入力出所: fit.入力出所 || '',
     // 資金面。点にはせず、順番（総合優先度の係数）と次の一手だけに効かせている。
     予算状態: res.予算状態 || '未判定',
     予算係数: String(res.予算係数 != null ? res.予算係数 : 1),

@@ -233,14 +233,24 @@ t('昨年度の未充足が「確定」なら、合計点に関わらずA階層�
 t('追加8軸は列・順位が一意で、既存21軸と衝突しない', () => {
   assert.strictEqual(Object.keys(FAILURE_SIGNALS).length, 4);
   assert.strictEqual(Object.keys(BUDGET_SIGNALS).length, 4);
-  assert.strictEqual(SIGNAL_LIST.length, 29);
-  assert.strictEqual(new Set(SIGNAL_LIST.map((s) => s.列)).size, 29);
-  assert.strictEqual(new Set(SIGNAL_LIST.map((s) => s.順位)).size, 29);
+  assert.strictEqual(SIGNAL_LIST.length, 30);   // ＋S30 採用構成
+  assert.strictEqual(new Set(SIGNAL_LIST.map((s) => s.列)).size, 30);
+  assert.strictEqual(new Set(SIGNAL_LIST.map((s) => s.順位)).size, 30);
 });
 
 t('検討時期は検討の文脈にある時だけ拾う', () => {
   assert.strictEqual(extractTiming('4月に導入を検討します').時期, '4月');
   assert.strictEqual(extractTiming('4月入社の新卒を募集中です'), null);
+  // 実測で踏んだ誤爆: 掲載面の「2027年3月卒業見込み／エントリー開始」から3月を拾っていた
+  assert.strictEqual(extractTiming('2027年3月卒業見込みの方が対象です。エントリー開始しました'), null);
+  assert.strictEqual(extractTiming('選考は6月開始、7月に最終面接を実施します'), null);
+  assert.strictEqual(extractTiming('稟議は10月に上げる予定です').時期, '10月');
+  // 実測で踏んだ誤爆その2: 掲載面の沿革「2005年 8月 …IT技術導入…」から8月を拾っていた
+  const NOW = { now: new Date('2026-09-18') };
+  assert.strictEqual(extractTiming('2005年 8月 先進的IT技術導入による販促拡大推進事業の認定', NOW), null);
+  assert.strictEqual(extractTiming('2022年 4月 東京証券取引所の市場区分の見直しにより', NOW), null);
+  // 未来の年つきは残す（履歴ではなく予定なので）
+  assert.strictEqual(extractTiming('2027年4月から導入を検討しています', NOW).時期, '4月');
 });
 
 console.log('失敗・資金シグナル: ' + pass + ' pass');

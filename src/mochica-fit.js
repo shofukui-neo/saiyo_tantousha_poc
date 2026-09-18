@@ -433,12 +433,16 @@ function scoreMochica(rec, opt = {}) {
 
   // ── ★v5 本体: total = 目盛り( p(接触) × p(アポ|接触) ) ──────────────
   // 総合点に入るのは 組織型 / 到達性C / 業種(負リフト群か) / 規模 / 年間新卒採用人数 の5つだけ。
+  // 採用構成（v5.1）。列があれば使う。無ければ「不明」＝×1.00 で従来どおり。
+  // 列は intent 側（intent-analyze.js の 採用構成）が埋める。
+  const mixLabel = String(rec['採用構成'] || rec['採用構成判定'] || '').trim();
   const V = scoreV5({
     company,
     reachScore: C.score,   // C90+（電話妥当＋担当者名）で ×1.05
     industry: industryRaw,
     emp: B.emp,
     hire: F.hire,          // 年間新卒採用人数（不明は ×0.93）
+    mix: mixLabel,         // 新卒中心 ×1.15 / 中途中心 ×0.55（仮説係数・ICP_V5_MIX=off で無効）
   });
   let total = Math.max(0, Math.min(100, Math.round(V.total - P.penalty)));
 

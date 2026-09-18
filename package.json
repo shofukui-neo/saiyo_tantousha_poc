@@ -193,7 +193,7 @@
     "intent:offline": "node src/intent-analyze.js --offline",
     "intent:full": "node src/intent-analyze.js --sources csv,mynavi,site --conc 4",
     "intent:jobs": "node src/intent-analyze.js --in data/leads-intent-scored.csv --sources csv,jobs --limit 100 --out data/leads-intent-hot-jobs.csv --report data/intent-hot-jobs.md",
-    "test:intent": "node test/intent-signals.test.js && node test/intent-opportunity.test.js && node test/intent-face.test.js && node test/intent-failure-budget.test.js && node test/intent-pool.test.js",
+    "test:intent": "node test/intent-signals.test.js && node test/intent-opportunity.test.js && node test/intent-face.test.js && node test/intent-failure-budget.test.js && node test/intent-mix-icp.test.js && node test/intent-pool.test.js",
     "ats:learn": "node src/learn-ats-fingerprints.js",
     "ats:learn:ledger": "node src/learn-ats-fingerprints.js --from-ledger",
     "ats:probe": "node src/probe-ats.js",
@@ -211,7 +211,8 @@
     "intent:deep": "node src/intent-analyze.js --in data/intent-pool-deep.csv --out data/leads-intent-deep.csv --report data/intent-deep.md --sources csv,site --conc 4 --resume",
     "intent:rescore": "node src/rescore-intent.js --in data/leads-intent-wide.csv --report data/intent-wide.md",
     "intent:deep:jobs": "node src/intent-analyze.js --in data/intent-pool-deep.csv --out data/leads-intent-deep.csv --report data/intent-deep.md --sources csv,site,jobs --conc 4 --resume",
-    "intent:finalize": "node src/finalize-intent.js --work data/leads-intent-wide.work.csv --out data/leads-intent-wide.csv"
+    "intent:finalize": "node src/finalize-intent.js --work data/leads-intent-wide.work.csv --out data/leads-intent-wide.csv",
+    "intent:mix": "node src/intent-analyze.js --in data/intent-pool-deep.csv --out data/leads-intent-mix.csv --report data/intent-mix.md --sources csv,mynavi,faces,midjobs --conc 3 --resume"
   },
   "dependencies": {
     "cheerio": "^1.1.0",

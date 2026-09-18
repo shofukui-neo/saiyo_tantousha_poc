@@ -26,6 +26,7 @@ const { OPPORTUNITY_SIGNALS, detectOpportunitySignals } = require('./opportunity
 const { FACE_SIGNALS, detectFaceSignals, crossYearHeadcount } = require('./face-signals');
 const { FAILURE_SIGNALS, detectFailureSignals } = require('./failure-signals');
 const { BUDGET_SIGNALS, detectBudgetSignals, assessFunding } = require('./budget-signals');
+const { MIX_SIGNALS, detectMixSignals, hiringMix } = require('./mix-signals');
 
 // ---- シグナル定義（weight＝効く順そのもの。半減期＝そのシグナルの賞味期限）----
 const SIGNALS = {
@@ -72,7 +73,7 @@ const SIGNALS = {
 };
 // 系統は4つ。基礎8軸（このファイル）／課題8軸（opportunity）／卒年面5軸（face）／
 // 昨年度の失敗4軸（failure）／資金4軸（budget）。列番号は S1〜 で通し（重複させない）。
-Object.assign(SIGNALS, OPPORTUNITY_SIGNALS, FACE_SIGNALS, FAILURE_SIGNALS, BUDGET_SIGNALS);
+Object.assign(SIGNALS, OPPORTUNITY_SIGNALS, FACE_SIGNALS, FAILURE_SIGNALS, BUDGET_SIGNALS, MIX_SIGNALS);
 const SIGNAL_LIST = Object.values(SIGNALS).sort((a, b) => a.順位 - b.順位);
 
 // ---- テキスト共通ヘルパ ----
@@ -562,6 +563,8 @@ function detectAll(ev = {}, prev = null, opts = {}) {
   hits.push(...detectFailureSignals(ev, { now, 検知日, prev: p }));
   // 採用にお金を出せる構造か（S26〜S29）。出せない側＝資金リスクは点にしない（assessFunding）。
   hits.push(...detectBudgetSignals(ev, { now, 検知日 }));
+  // 採用構成（S30）。新卒中心の社だけを立てる。中途中心は減点せず、ICP側のゲートが落とす。
+  hits.push(...detectMixSignals(ev, { now, 検知日 }));
   return hits;
 }
 
@@ -574,4 +577,6 @@ module.exports = {
   daysSince, countOccurrences, INTERN_WORDS, EXPO_WORDS,
   // 資金リスクは加点シグナルではないので detectAll には混ぜない。呼び出し側がここから取る。
   assessFunding,
+  // 採用構成は ICP のゲートでも使う（リストに載る条件と刺す順で定義がずれないように）。
+  hiringMix,
 };

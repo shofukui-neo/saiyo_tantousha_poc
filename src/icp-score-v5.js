@@ -1,13 +1,26 @@
 'use strict';
 /**
- * ICPスコア v5 ── 2段の期待値モデル（2026-08-27）
+ * ICPスコア v5.1 ── 2段の期待値モデル（2026-08-27 / 2026-09-18 に採用構成を追加）
  * =====================================================================
  * 6次元の加重和（v4）は廃止。「接触前に分かることだけ」で、コールド架電の“並べる順番”だけを決める。
  *
  *   total = 目盛り( p(接触) × p(アポ|接触) )
  *
- *   p(接触)      = 19.6% × 組織型 × 到達性 × 業種 × 規模        ← 母数 8,604架電
- *   p(アポ|接触) = 4.68% × 組織型 × 年間新卒採用人数            ← 母数 1,689接触
+ *   p(接触)      = 19.6% × 組織型 × 到達性 × 業種 × 規模              ← 母数 8,604架電
+ *   p(アポ|接触) = 4.68% × 組織型 × 年間新卒採用人数 × 採用構成      ← 母数 1,689接触
+ *
+ * ── v5.1 の変更（2026-09-18）──────────────────────────────
+ *   (a) 第2段に「採用構成」を足した。新卒中心 ×1.15 / 併用 ×1.00 / 中途中心 ×0.55 / 不明 ×1.00。
+ *       **これだけは実測フィットではなく製品適合の仮説**である。MOCHICAは新卒ATSなので、
+ *       中途が採用計画の主で新卒枠が横にあるだけの会社は、担当者の感触が良くても
+ *       新卒側の予算が動かない、という商談上の理屈から置いた係数。
+ *       他の係数（組織型・到達性・業種・規模・採用人数）は成約実測から出した値で、性質が違う。
+ *       混ざって見えないよう factors.仮説 に分けて返し、ICP_V5_MIX=off で切れるようにしてある。
+ *       中途中心そのものは ICP 側のゲート（icp-rules.passesNewgradCentric）が母集団から落とす。
+ *       ここの ×0.55 は、ゲートを無効にして回した時に順番だけでも下がるようにする保険。
+ *   (b) 入力の充填。emp / hire は入力CSVが空でも掲載面（マイナビ会社概要）から埋まるようになった
+ *       （icp-rules.resolveIcpInputs）。係数表は変えていないが、「不明×0.93」に落ちていた社が
+ *       実値で採点されるようになるため、同じリストでも点は動く。
  *
  * ── 段に入れないもの（意図的な不採用）─────────────────────────
  *   業種は第2段に入れない（31業種中29業種が判定不能）。規模も第2段に入れない（単調にならない）。
@@ -61,6 +74,18 @@ const V5 = {
   ],
   HIRE_UNKNOWN: 0.93,
 
+  // 採用構成（v5.1）。★実測フィットではなく製品適合の仮説（上のヘッダ参照）。
+  // ICP_V5_MIX=off で全部 1.00 になる＝v5.0 の採点に戻る。
+  MIX_ENABLED: (process.env.ICP_V5_MIX === undefined || process.env.ICP_V5_MIX === '')
+    ? true : !/^(0|false|no|off)$/i.test(process.env.ICP_V5_MIX),
+  MIX_APPT: {
+    新卒中心: 1.15,   // 新卒の歩留まりが事業計画に直結する＝新卒ATSの話が前に進む
+    併用: 1.00,
+    中途中心: 0.55,   // 通常は ICP ゲートで母集団から落ちる。ゲート無効時の保険
+    新卒なし: 0.30,   // 同上
+    不明: 1.00,       // 未取得を罰しない（他のフロアと同じ方針）
+  },
+
   // 目盛り: 期待アポ率(%) → 0-100点（log線形）。70点＝「今週架電」の帯。
   // モデルを変えても帯（70/50）は動かさない方針＝運用の意味を固定する。
   SCALE: [[0.05, 0], [0.15, 40], [0.44, 70], [3.0, 100]],
@@ -107,12 +132,31 @@ function contactRate({ orgType = 'private', reachScore = 0, industry = '', emp =
   };
 }
 
+/**
+ * 採用構成 → 第2段の係数（v5.1・仮説係数）。
+ * @param {string|{構成:string}} mix icp-rules.classifyHiringMix() の戻り、または構成の文字列
+ */
+function mixMultiplier(mix) {
+  if (!V5.MIX_ENABLED) return { mult: 1, label: '採用構成×1.00(ICP_V5_MIX=off)' };
+  const 構成 = typeof mix === 'string' ? mix : (mix && mix.構成) || '';
+  const mult = V5.MIX_APPT[構成];
+  if (mult == null) return { mult: 1, label: '採用構成不明×1.00' };
+  return { mult, label: `採用構成${構成}×${mult}(仮説)` };
+}
+
 /** 第2段: 通った先でアポになる確率 */
-function apptRate({ orgType = 'private', hire = null } = {}) {
+function apptRate({ orgType = 'private', hire = null, mix = null } = {}) {
   const org = V5.ORG_APPT[orgType] != null ? V5.ORG_APPT[orgType] : V5.ORG_APPT.private;
   const h = hireMultiplier(hire);
-  const p = V5.BASE_APPT * org * h.mult;
-  return { p, factors: { org, hire: h.mult }, reasons: [`組織型×${org}(2段)`, h.label] };
+  const m = mixMultiplier(mix);
+  const p = V5.BASE_APPT * org * h.mult * m.mult;
+  return {
+    p,
+    factors: { org, hire: h.mult },
+    // 実測フィットの係数と仮説の係数を混ぜて返さない（どちらの根拠で点が動いたか追えるように）
+    仮説: { mix: m.mult },
+    reasons: [`組織型×${org}(2段)`, h.label, m.label],
+  };
 }
 
 /**
@@ -136,10 +180,10 @@ function toPoints(pct) {
  * @param {{company?:string, orgType?:'public'|'private', reachScore?:number, industry?:string, emp?:number|null, hire?:number|null}} v
  * @returns {{total:number, expectedPct:number, pContact:number, pAppt:number, orgType:string, orgLabel:string, factors:object, reasons:string[]}}
  */
-function scoreV5({ company = '', orgType = null, reachScore = 0, industry = '', emp = null, hire = null } = {}) {
+function scoreV5({ company = '', orgType = null, reachScore = 0, industry = '', emp = null, hire = null, mix = null } = {}) {
   const org = orgType ? { type: orgType, label: orgType === 'public' ? '公的・協同組合系' : '民間' } : classifyOrgType(company);
   const s1 = contactRate({ orgType: org.type, reachScore, industry, emp });
-  const s2 = apptRate({ orgType: org.type, hire });
+  const s2 = apptRate({ orgType: org.type, hire, mix });
   const expectedPct = s1.p * s2.p * 100; // 期待アポ率（%）
   const total = Math.max(0, Math.min(100, Math.round(toPoints(expectedPct))));
   return {
@@ -149,7 +193,8 @@ function scoreV5({ company = '', orgType = null, reachScore = 0, industry = '', 
     pAppt: s2.p,
     orgType: org.type,
     orgLabel: org.label,
-    factors: { contact: s1.factors, appt: s2.factors },
+    hiringMix: (typeof mix === 'string' ? mix : (mix && mix.構成)) || '不明',
+    factors: { contact: s1.factors, appt: s2.factors, 仮説: s2.仮説 },
     reasons: []
       .concat(s1.reasons.map((r) => '接触:' + r))
       .concat(s2.reasons.map((r) => 'アポ:' + r))
@@ -157,4 +202,4 @@ function scoreV5({ company = '', orgType = null, reachScore = 0, industry = '', 
   };
 }
 
-module.exports = { V5, scoreV5, contactRate, apptRate, toPoints, reachMultiplier, sizeMultiplier, hireMultiplier };
+module.exports = { V5, scoreV5, contactRate, apptRate, toPoints, reachMultiplier, sizeMultiplier, hireMultiplier, mixMultiplier };

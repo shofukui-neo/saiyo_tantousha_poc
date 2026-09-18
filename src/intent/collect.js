@@ -10,6 +10,8 @@
  *                → 採用専用メール・採用用LINE・採用ページの指紋（次回の差分用）
  *   ④ jobs    … 求人検索エンジン（求人ボックス）に「社名 + 人事/採用担当」を投げ、中途求人カードを拾う
  *                → 最強シグナル①。ホスト単位で直列化されるため、絞ったリストに使う
+ *   ⑤ midjobs … 同じ求人検索エンジンに「社名 + 中途採用/採用」を投げ、**中途枠の件数**を数える
+ *                → 採用構成（新卒中心か中途中心か・S30 と ICP のゲート）。jobs とは見たいものが違う
  *
  * 取得マナー: 自社サイト/求人検索は polite.js（robots遵守・ホスト別レート制限・キャッシュ）。
  * マイナビは既存ハーベスタ（harvest-icp-wide.js）と同じ素のHTTP＋自前ディレイで揃える。
@@ -103,6 +105,11 @@ function fromRow(rec) {
     //   特徴 … マイナビの特徴・特色タグ（統制語彙）
     // 昨年度の失敗シグナル（S22〜）と資金シグナル（S26〜）の一次情報。
     定着: null, 会社データ: null, 拠点: null, 特徴: null, 上場: '',
+    // 中途の公開求人件数（--sources midjobs のときだけ埋まる）。
+    // undefined ではなく null＋取得フラグで持つ＝「0件」と「取っていない」を混同しない。
+    中途求人: null,
+    // 自社サイトの採用ページ本文（site 系統のみ）。新卒/中途の寄りはここでしか読めない。
+    自社サイト本文: '',
     公式URL: String(rec['公式URL'] || '').trim(),
     掲載URL: page,
     取得ソース: ['csv'], エラー: [], インテント資料: [],
@@ -382,6 +389,10 @@ async function collectSite(rec, ev, { maxPages = 2 } = {}) {
     const text = String(page.text || '').replace(/\s+/g, ' ');
     addDocument(ev, { text: evidenceText(page.html), url: page.url, source: 'site', title: cheerio.load(page.html)('title').text() });
     recruitPage = { url: page.url, hash: fingerprint(text), 長さ: text.length };
+    // 自社サイトの本文は別にも持っておく。掲載本文（マイナビ）と混ぜたものからは
+    // 「新卒と中途のどちらに寄っているか」が読めない ── マイナビ面は構造上100%新卒で、
+    // 混ぜると全社が新卒寄りになる（実測8社中8社）。採用構成の判定はこちらだけを見る。
+    ev.自社サイト本文 = (String(ev.自社サイト本文 || '') + '\n' + text).trim().slice(0, 100000);
     ev.掲載本文 = (ev.掲載本文 + '\n' + text).trim().slice(0, 200000);
     ev.インターン本文 = (ev.インターン本文 + '\n' + text).trim().slice(0, 100000);
     if (ev.インターン件数 == null) ev.インターン件数 = countOccurrences(text, INTERN_WORDS);
@@ -469,6 +480,67 @@ async function collectHrJobs(rec, ev, { queries = ['人事', '採用担当'] } =
   return ev;
 }
 
+// その社の“新卒求人そのもの”は中途の規模ではない。求人ボックスはこれを大量に返すので必ず落とす。
+// （signals.js の NEWGRAD_LISTING_RE と同じ考え方。あちらは人事ロール判定用なので別に持つ）
+const OWN_NEWGRAD_CARD_RE = /((?:20\d{2}|\d{2})\s*年?\s*卒|新卒採用|新卒募集|新卒者?を?対象|新卒\s*\/?\s*\d{2}卒)/;
+// アルバイト・パート・派遣の枠は「中途採用の規模」ではない（採用計画の主従の話をしたい）。
+const NON_SEIKI_CARD_RE = /(アルバイト|パート|派遣社員|業務委託|インターン|嘱託|契約社員\(短期\))/;
+
+/**
+ * 中途採用の“規模”を、公開中の求人件数で測る。
+ *
+ * なぜ件数か:
+ *   中途の採用“人数”は公開されていない（新卒と違って募集人数を出す慣行がない）。
+ *   公開中の求人件数は、その社がいま中途にどれだけ枠を開けているかの唯一の公開指標。
+ *   1件が何人採るかは分からないので、新卒の人数と等倍では比べない（icp-rules の RATIO_MAX）。
+ *
+ * 1ページ目しか見ない。20件超は「打ち切り」として記録する（そこまで出ていれば中途中心は確定的で、
+ * ページを送っても判定は変わらないため。相手サイトへの負荷も増やさない）。
+ */
+// 検索に投げる社名。マイナビの社名は「(株)メーカーズ【K-cafe】」「【東証プライム上場】」のように
+// 括弧の但し書きが付く。そのまま投げると求人ボックスが404を返す（実測 2026-09-18・8社中3社）。
+// 突き合わせ側（normCompanyName の完全一致）は元の社名のままなので、緩めているのは検索語だけ。
+const queryName = (name) => String(name || '')
+  .replace(/[【〔［\[][^】〕］\]]*[】〕］\]]/g, ' ').replace(/\s+/g, ' ').trim() || String(name || '');
+
+async function collectMidcareerJobs(rec, ev, { queries = ['中途採用', '採用'] } = {}) {
+  const raw = ev.企業名;
+  if (!raw) return ev;
+  const name = queryName(raw);
+  const target = normCompanyName(raw);
+  const cards = new Map();
+  let ok = false;
+  for (const q of queries) {
+    const r = await politeGet(JOBBOX.searchUrl(`${name} ${q}`), { render: 'static' });
+    if (!r || r.blocked || r.error || !r.html) { ev.エラー.push(`midjobs:${(r && (r.reason || r.error)) || 'fail'}`); continue; }
+    ok = true;
+    for (const c of parseJobCards(r.html, JOBBOX.名称)) {
+      if (normCompanyName(c.企業名 || '') !== target) continue;
+      const hay = `${c.職種} ${c.本文}`;
+      if (OWN_NEWGRAD_CARD_RE.test(hay) || NON_SEIKI_CARD_RE.test(hay)) continue;
+      cards.set(c.url || c.職種, c);
+    }
+    if (cards.size >= 20) break;   // ここまで出ていれば中途中心は確定的
+  }
+  if (!ok) { ev.中途求人 = { 件数: null, 取得: false, 出所: '求人ボックス', 理由: '取得失敗', 例: [] }; return ev; }
+  const list = [...cards.values()];
+  // ★ 社名一致が1件も無い＝「中途を募集していない」ではない。
+  // 求人ボックスは全社横断の関連度順で、1ページ目がよそのカードで埋まるとその社は出てこない。
+  // 実測（2026-09-18・日本無線(株)）: 「日本無線 中途採用」で25枚返るのに社名一致は0枚で、
+  // その25枚は日本無線硝子・古野電気・豊田合成などだった。ここを0件と数えると、
+  // 中途を大量に募集している社が「中途0件＝新卒中心(確定)」に化ける。
+  // 使える件数は「その社のカードが少なくとも1枚は索引に出た」ときだけ。
+  if (!list.length) {
+    ev.中途求人 = { 件数: null, 取得: false, 出所: '求人ボックス', 理由: '社名一致の求人カードなし(索引に出ていない可能性)', 例: [] };
+    return ev;
+  }
+  ev.中途求人 = {
+    件数: list.length, 取得: true, 出所: '求人ボックス', 打切り: list.length >= 20,
+    例: list.slice(0, 5).map((c) => c.職種),
+  };
+  return ev;
+}
+
 /**
  * 1社ぶんのエビデンスを集める。
  * @param {object} rec 入力CSVの1行
@@ -484,13 +556,17 @@ async function collectCompany(rec, opts = {}) {
   if (sources.has('mynavi')) { try { await collectMynavi(rec, ev, { delay: opts.delay }); } catch (e) { ev.エラー.push('mynavi:' + String(e && e.message || e).slice(0, 60)); } }
   if (sources.has('site')) { try { await collectSite(rec, ev, { maxPages: opts.sitePages || 2 }); } catch (e) { ev.エラー.push('site:' + String(e && e.message || e).slice(0, 60)); } }
   if (sources.has('jobs')) { try { await collectHrJobs(rec, ev); } catch (e) { ev.エラー.push('jobs:' + String(e && e.message || e).slice(0, 60)); } }
+  // 中途の規模（S30・ICPの採用構成ゲート）。jobs と同じ求人検索エンジンを使うが、
+  // 見たいものが違う（人事ロールの有無 ではなく 中途枠の件数）ので問い合わせを分けている。
+  // --sources に midjobs を入れた時だけ取る＝既存の jobs 実行の取得回数を増やさない。
+  if (sources.has('midjobs')) { try { await collectMidcareerJobs(rec, ev); } catch (e) { ev.エラー.push('midjobs:' + String(e && e.message || e).slice(0, 60)); } }
   delete ev._page;   // 取得済みHTMLは判定に使い終わっている。行に持ち越さない
   ev.取得ソース = [...new Set(ev.取得ソース)];
   return ev;
 }
 
 module.exports = {
-  collectCompany, fromRow, collectMynavi, collectMynaviFaces, collectSite, collectHrJobs,
+  collectCompany, fromRow, collectMynavi, collectMynaviFaces, collectSite, collectHrJobs, collectMidcareerJobs,
   parseJobCards, pickRecruitLink, mynaviBase, defaultGradYear, toText, fetchUrl, JOBBOX, MYNAVI_PAGES,
   stripMynaviChrome, mynaviEntries, mynaviInternPrograms, addDocument, evidenceText, applyProfile,
 };

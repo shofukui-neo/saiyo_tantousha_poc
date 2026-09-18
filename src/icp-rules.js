@@ -16,6 +16,10 @@
  *   ④ DNC/架電拒否 −100 ／ 既存顧客 −70（mochica-fit.js の penalties）
  *   ⑤ リスト掲載の資格   : 担当者名＋電話＋新卒6名以上＋従業員100名以上＋非IT（qualifiesForList）
  *      採用人数不明は落とさずエンリッチ行き（needHire=true）
+ *   ⑥ 採用構成が中途中心でない（2026-09-18 追加 / classifyHiringMix・passesNewgradCentric）
+ *      MOCHICAは新卒ATS。中途が採用計画の主でその横に新卒枠が少しある会社は、
+ *      担当者が良いと言っても新卒側の予算が小さく決裁が下りない。
+ *      他のフロアと同じ扱いで「中途中心と判明しているときだけ」落とす（不明は通す）。
  *
  * ── v4 から撤回したもの（実測で全体平均を上回っていたため）───────────
  *   規模上限2000名の罰 / 1000名超 −20 / 競合ATS −45 は廃止。規模フロア100名・採用フロア6名は
@@ -27,6 +31,7 @@
  */
 
 const intEnv = (v, d) => (v !== undefined && v !== '' && Number.isFinite(parseInt(v, 10)) ? parseInt(v, 10) : d);
+const flt = (v, d) => (v !== undefined && v !== '' && Number.isFinite(parseFloat(v)) ? parseFloat(v) : d);
 const boolEnv = (v, d) => (v === undefined || v === '' ? d : !/^(0|false|no|off)$/i.test(v));
 
 const ICP = {
@@ -38,6 +43,11 @@ const ICP = {
   EMP_SWEET_MAX: intEnv(process.env.ICP_EMP_SWEET_MAX, 500),
   HIRE_MIN: intEnv(process.env.ICP_HIRE_MIN, 6),           // 採用フロア（<6名は成約率<14%、1-2名=3.6%）
   ENTRY_MIN: intEnv(process.env.ICP_ENTRY_MIN, 50),        // エントリー人数フロア（2026-08-31 業務判断）
+  // 採用構成ゲート（2026-09-18）。中途の募集規模が新卒の何倍を超えたら「中途中心」と見なすか。
+  // 単位が違う（中途＝公開中の求人件数／新卒＝募集人数）ので、等倍ではなく余裕を持たせる。
+  REQUIRE_NEWGRAD_CENTRIC: boolEnv(process.env.ICP_REQUIRE_NEWGRAD_CENTRIC, true),
+  MIDCAREER_RATIO_MAX: flt(process.env.ICP_MIDCAREER_RATIO_MAX, 2),
+  MIDCAREER_MIN_COUNT: intEnv(process.env.ICP_MIDCAREER_MIN_COUNT, 5), // 件数が少ないうちは中途中心と言わない
 };
 
 // --- 絶対除外業種（IT・ソフトウェア）。細分ラベル完全一致＋キーワードの両建てで漏らさない ---
@@ -148,14 +158,135 @@ function passesEntryFloor(entry) {
  * @param {{emp?:number|null, hire?:number|null, entry?:number|null}} v
  * @returns {{pass:boolean, reasons:string[]}}
  */
-function passesIcpFloor({ emp = null, hire = null, entry = null } = {}) {
+function passesIcpFloor({ emp = null, hire = null, entry = null, mix = null } = {}) {
   const reasons = [];
   let pass = true;
   if (emp != null && emp < ICP.EMP_MIN) { pass = false; reasons.push(`従業員${emp}名<${ICP.EMP_MIN}(規模フロア未満)`); }
   if (hire != null && hire < ICP.HIRE_MIN) { pass = false; reasons.push(`新卒${hire}名<${ICP.HIRE_MIN}(採用フロア未満)`); }
   const e = passesEntryFloor(entry);
   if (!e.pass) { pass = false; reasons.push(e.reason); }
+  // 採用構成。mix を渡さない呼び出し（従来のCSVだけの経路）は素通りする＝挙動を変えない。
+  if (mix) {
+    const m = passesNewgradCentric(mix);
+    if (!m.pass) { pass = false; reasons.push(m.reason); }
+  }
   return { pass, reasons };
+}
+
+// =====================================================================
+// 採用構成（新卒中心か、中途中心か）── 2026-09-18 追加
+// =====================================================================
+// MOCHICAは新卒ATS。「新卒採用をやっていて、なおかつ中途の方が小さい」会社が主戦場で、
+// 中途が主で新卒枠が横にちょっとある会社は、担当者の感触が良くても新卒側の予算が動かない。
+//
+// 単位が揃わないことを正面から扱う:
+//   新卒 = 募集“人数”（掲載面の募集人数 / 年間新卒採用人数 / 直近の入社実数）
+//   中途 = 公開中の求人“件数”（求人ボックスの社名一致カード）
+// 1件の中途求人が何人採るかは分からないので、等倍では比べない。
+//   - 中途件数 ≤ 新卒人数                     → 新卒中心
+//   - 中途件数 ≥ 新卒人数 × MIDCAREER_RATIO_MAX かつ MIDCAREER_MIN_COUNT 件以上 → 中途中心
+//   - その間                                   → 併用
+// 中途が「取得できて0件」と「取得できていない」は必ず区別する（後者は不明）。
+const MIX = { NEWGRAD: '新卒中心', BOTH: '併用', MIDCAREER: '中途中心', NONE: '新卒なし', UNKNOWN: '不明' };
+
+/**
+ * 採用構成を判定する（新卒中心の唯一の真実源）。
+ * @param {{newgrad?:number|null, midcareer?:number|null, midcareerFetched?:boolean, 確度?:string}} v
+ *   newgrad          新卒の募集人数（不明は null）
+ *   midcareer        中途の公開求人件数（不明は null）
+ *   midcareerFetched 中途側を実際に取得できたか（0件の意味を決めるため）
+ * @returns {{構成:string, 新卒:number|null, 中途:number|null, 比:number|null, 確度:string, 理由:string}}
+ */
+function classifyHiringMix({ newgrad = null, midcareer = null, midcareerFetched = false, 確度 = '' } = {}) {
+  const ng = Number.isFinite(newgrad) ? newgrad : null;
+  const mc = Number.isFinite(midcareer) ? midcareer : null;
+  const mk = (構成, 理由, conf) => ({
+    構成, 新卒: ng, 中途: mc, 確度: conf,
+    比: ng != null && mc != null && ng > 0 ? Math.round((mc / ng) * 100) / 100 : null,
+    理由,
+  });
+  if (ng != null && ng <= 0) return mk(MIX.NONE, '新卒の募集が0名', '中');
+  if (ng == null) return mk(MIX.UNKNOWN, '新卒の募集人数が不明', '—');
+  if (mc == null) {
+    // 取得していない＝不明。取得したのにカードが無かった場合だけ「中途0件」として扱う。
+    if (!midcareerFetched) return mk(MIX.UNKNOWN, '中途の募集規模が未取得', '—');
+    return mk(MIX.NEWGRAD, `新卒${ng}名／中途の公開求人は0件`, 確度 || '中');
+  }
+  if (mc <= ng) return mk(MIX.NEWGRAD, `新卒${ng}名 ≥ 中途${mc}件`, 確度 || '中');
+  if (mc >= ng * ICP.MIDCAREER_RATIO_MAX && mc >= ICP.MIDCAREER_MIN_COUNT) {
+    return mk(MIX.MIDCAREER, `中途${mc}件 ≥ 新卒${ng}名×${ICP.MIDCAREER_RATIO_MAX}`, 確度 || '中');
+  }
+  return mk(MIX.BOTH, `新卒${ng}名／中途${mc}件（どちらかに寄っていない）`, 確度 || '中');
+}
+
+/**
+ * 採用構成のゲート。他のフロアと同じく「判明していて外れるときだけ」落とす。
+ * 新卒なしも落とす（新卒ATSを売る相手ではない）。不明・併用・新卒中心は通す。
+ * @param {{構成?:string}} mix classifyHiringMix() の戻り
+ */
+function passesNewgradCentric(mix) {
+  if (!ICP.REQUIRE_NEWGRAD_CENTRIC) return { pass: true, reason: '採用構成ゲート無効' };
+  const c = mix && mix.構成;
+  if (c === MIX.MIDCAREER) return { pass: false, reason: `採用構成=中途中心(${mix.理由})` };
+  if (c === MIX.NONE) return { pass: false, reason: '新卒採用なし' };
+  return { pass: true, reason: c ? `採用構成=${c}` : '採用構成=不明(通す)' };
+}
+
+/**
+ * ICP判定の入力を、入力CSVと掲載面（intent の ev）の両方から解決する。
+ *
+ * これを足した理由: 従来 ICP は入力CSVの列だけを見ていて、従業員数・新卒採用人数が
+ * 空の行は「不明」として全部通していた。層2で掲載面（マイナビ会社概要）を読むように
+ * なった今は、同じ事実が取れている ── 募集人数・直近の入社実数・従業員数は掲載面にある。
+ * 埋めたぶんフロアが実際に効くようになり、「不明だから通す」で膨らんでいた母集団が締まる。
+ * どこから来た値かを 出所 に必ず残す（CSVの値と掲載面の値を後で見分けられるように）。
+ *
+ * @param {object} rec 入力CSVの1行
+ * @param {object} ev  intent/collect.js のエビデンス（無くてよい）
+ */
+function resolveIcpInputs(rec = {}, ev = {}) {
+  const num = (value) => {
+    const s = String(value ?? '').normalize('NFKC').trim().replace(/,/g, '');
+    if (!/^\d+\s*(?:名|人)?$/.test(s)) return null;
+    const n = parseInt(s, 10);
+    return Number.isSafeInteger(n) ? n : null;
+  };
+  const 出所 = {};
+  const pick = (key, candidates) => {
+    for (const [src, v] of candidates) {
+      const n = typeof v === 'number' ? (Number.isFinite(v) ? v : null) : num(v);
+      if (n != null) { 出所[key] = src; return n; }
+    }
+    return null;
+  };
+  // 掲載面の卒年面のうち、いちばん新しい卒年の募集人数（下限）
+  const faces = Object.entries((ev && ev.卒年面) || {})
+    .map(([gy, f]) => ({ gy: parseInt(gy, 10), f }))
+    .filter((x) => Number.isFinite(x.gy) && x.f && x.f.募集人数 && Number.isFinite(x.f.募集人数.下限))
+    .sort((a, b) => b.gy - a.gy);
+  const 面の募集 = faces.length ? faces[0].f.募集人数.下限 : null;
+  // 定着率の開示欄にある直近の採用者数（＝実際に入社した人数）
+  const 直近実績 = ev && ev.定着 && ev.定着.系列 && ev.定着.系列[0] ? ev.定着.系列[0].採用者 : null;
+
+  const emp = pick('emp', [
+    ['CSV', rec.従業員数], ['CSV', rec['従業員数']],
+    ['掲載面', ev && ev.会社データ ? ev.会社データ.従業員数 : null],
+  ]);
+  const hire = pick('hire', [
+    ['CSV', rec.年間新卒採用人数], ['CSV', rec['年間新卒採用人数']],
+    ['掲載面(募集人数)', 面の募集],
+    ['掲載面(入社実績)', 直近実績],
+    ['CSV(予定)', rec['採用予定人数']],
+  ]);
+  const entry = pick('entry', [['CSV', rec['エントリー人数']], ['CSV', rec['応募者数']]]);
+  const mc = ev && ev.中途求人 ? ev.中途求人 : null;
+  const mix = classifyHiringMix({
+    newgrad: hire,
+    midcareer: mc && Number.isFinite(mc.件数) ? mc.件数 : null,
+    midcareerFetched: !!(mc && mc.取得),
+    確度: mc ? mc.確度 : '',
+  });
+  return { emp, hire, entry, mix, 出所, industry: String(rec.業種 || (ev && ev.業種) || '').trim() };
 }
 
 /**
@@ -167,9 +298,14 @@ function passesIcpFloor({ emp = null, hire = null, entry = null } = {}) {
  * @param {{company?:string, contactName?:string, phone?:string, hire?:number|null, emp?:number|null, entry?:number|null, industry?:string}} v
  * @returns {{pass:boolean, needHire:boolean, blocked:boolean, reasons:string[]}}
  */
-function qualifiesForList({ company = '', contactName = '', phone = '', hire = null, emp = null, entry = null, industry = '' } = {}) {
+function qualifiesForList({ company = '', contactName = '', phone = '', hire = null, emp = null, entry = null, industry = '', mix = null } = {}) {
   const reasons = [];
   let pass = true; let needHire = false; let blocked = false;
+  // 採用構成は「中途中心と判明」した時だけ落とす絶対条件（⑥）。mix 未指定の呼び出しは素通り。
+  if (mix) {
+    const m = passesNewgradCentric(mix);
+    if (!m.pass) { pass = false; blocked = true; reasons.push(m.reason + '=絶対除外'); }
+  }
   if (isGovernmentOrg(company, industry)) { pass = false; blocked = true; reasons.push('官公庁(県庁・市役所系)=絶対除外'); }
   if (!String(contactName || '').trim()) { pass = false; reasons.push('担当者名なし'); }
   if (!String(phone || '').trim()) { pass = false; reasons.push('電話番号なし'); }
@@ -199,5 +335,6 @@ function proposalTier(emp) {
 module.exports = {
   ICP, isExcludedIndustry, isNegativeLiftIndustry, isGovernmentOrg, classifyOrgType,
   passesEntryFloor, passesIcpFloor, qualifiesForList, proposalTier,
+  classifyHiringMix, passesNewgradCentric, resolveIcpInputs, MIX,
   EXCLUDE_INDUSTRY_RE, NEGATIVE_LIFT_INDUSTRY_RE,
 };
