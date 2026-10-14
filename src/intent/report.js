@@ -69,7 +69,8 @@ function buildReport(rows, stats, opts = {}) {
 
 // 採点済みCSVから、レポートに要る統計を数え直す（採点し直し用）
 function statsFromRows(rows, signalList = []) {
-  const stats = { 処理: rows.length, 検知: 0, 資料あり: 0, A: 0, B: 0, C: 0, D: 0, signals: {} };
+  const stats = { 処理: rows.length, 検知: 0, 資料あり: 0, A: 0, B: 0, C: 0, D: 0,
+    卒年面あり: 0, 適合内訳: {}, signals: {} };
   const byCol = new Map(signalList.map((s) => [s.列, s.id]));
   for (const r of rows) {
     if (String(r['検知シグナル'] || '').trim()) stats.検知++;
@@ -77,6 +78,8 @@ function statsFromRows(rows, signalList = []) {
     const t = r['インテント階層'];
     if (t) stats[t] = (stats[t] || 0) + 1;
     for (const [col, id] of byCol) if (String(r[col] || '').trim()) stats.signals[id] = (stats.signals[id] || 0) + 1;
+    if (r.MOCHCA適合判定) stats.適合内訳[r.MOCHCA適合判定] = (stats.適合内訳[r.MOCHCA適合判定] || 0) + 1;
+    if (String(r['卒年面'] || '').includes('+')) stats.卒年面あり++;
   }
   return stats;
 }

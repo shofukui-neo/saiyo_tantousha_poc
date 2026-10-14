@@ -31,6 +31,8 @@
  *   --resume          作業ファイル（<out>.work.csv）に済みがある社を飛ばして続きから流す
  *   --store-every N   観測台帳の途中保存の間隔（既定2000社。0で無効）。
  *                     長時間実行が落ちてもその回の観測を失わないため。
+ *   --company-timeout N  1社あたりの取得の打ち切り（ミリ秒・既定120000）。
+ *                     undici の未捕捉例外を飲んだ後、解決しない fetch で worker が固まるのを防ぐ。
  */
 const fs = require('fs');
 const path = require('path');
@@ -40,7 +42,7 @@ const { detectAll, SIGNAL_LIST } = require('./intent/signals');
 const { scoreIntent, talkGuide, whyNow, TIERS, TOP_WEIGHT } = require('./intent/score');
 const { targetFit, TARGET_COLS } = require('./intent/target-fit');
 const { sortedFaces } = require('./intent/face-signals');
-const { buildReport } = require('./intent/report');
+const { buildReport, statsFromRows } = require('./intent/report');
 const { finalizeFromWork } = require('./intent/finalize');
 const ngGuard = require('./ng-guard');
 const store = require('./intent/store');
@@ -75,6 +77,28 @@ const EVIDENCE_FILE = OUT.replace(/\.csv$/i, '') + '.evidence.jsonl';
 
 const log = (m) => console.log('[' + new Date().toISOString() + '] ' + m);
 const T0 = Date.now();
+
+// undici の Parser.finish の assert(!this.paused) が、ソケット終端で未捕捉例外として飛ぶ。
+// await を try/catch で囲んでも捕まらない（socket の 'end' ハンドラから投げられるため）。
+// site/jobs 系統（polite.js 経由＝undici）で踏む。実測: 2026-09-30、1,670社目で落ちた。
+// enrich-ats.js と同じ対処。ただし例外を飲むと当該 fetch は永久に解決しないので、
+// 1社あたりの打ち切り（COMPANY_TIMEOUT_MS）と必ず併用する。片方だけでは worker が固まる。
+process.on('uncaughtException', (e) => {
+  const m = String((e && e.message) || e).replace(/\s+/g, ' ').slice(0, 140);
+  log('uncaughtException(継続): ' + m);
+});
+const COMPANY_TIMEOUT_MS = parseInt(getArg('company-timeout', '120000'), 10);
+
+// 1社の取得に上限を付ける。時間切れは「取得できなかった社」として扱い、実行は止めない。
+function withTimeout(promise, ms, label) {
+  let timer;
+  return Promise.race([
+    promise,
+    new Promise((_, rej) => {
+      timer = setTimeout(() => rej(new Error(label + '時間切れ(' + (ms >= 1000 ? Math.round(ms / 1000) + '秒' : ms + 'ミリ秒') + ')')), ms);
+    }),
+  ]).finally(() => clearTimeout(timer));
+}
 const NOW = new Date();
 const TODAY = NOW.toISOString().slice(0, 10);
 
@@ -219,11 +243,17 @@ async function main() {
   // 完了した社はその場で作業ファイルに追記する。落ちても --resume で続きから再開でき、
   // メモリには“並べ替えに必要な軽い行”しか持たない（最終CSVは作業ファイルから作る）。
   const done = new Set();
+  // 再開時は「済みの社」だけでなく、その行の集計も引き継ぐ。
+  // 引き継がないと、レポートが今回処理したぶんだけを全体の件数として書いてしまう
+  // （実測: 2,450社の出力に対し「処理876社・A0」と書かれた。実際に出した）。
+  let priorStats = null;
   if (RESUME && fs.existsSync(WORK)) {
-    for (const r of readCsv(fs.readFileSync(WORK, 'utf8')).records) {
+    const prior = readCsv(fs.readFileSync(WORK, 'utf8')).records;
+    for (const r of prior) {
       const k = store.companyKey(r);
       if (k) done.add(k);
     }
+    priorStats = statsFromRows(prior, SIGNAL_LIST);
     log(`--resume: 作業ファイルに ${done.size}社ぶんの済みを確認（${path.relative(ROOT, WORK)}）`);
   } else if (fs.existsSync(WORK)) {
     fs.unlinkSync(WORK);
@@ -254,7 +284,7 @@ async function main() {
       const prev = store.prevOf(state, key);
       let ev;
       try {
-        ev = await collectCompany(rec, { sources: SOURCES, delay: DELAY });
+        ev = await withTimeout(collectCompany(rec, { sources: SOURCES, delay: DELAY }), COMPANY_TIMEOUT_MS, '');
       } catch (e) {
         ev = { 企業名: rec['企業名'] || '', 取得ソース: [], エラー: ['collect:' + String(e && e.message || e).slice(0, 60)], メール: [] };
       }
@@ -304,15 +334,27 @@ async function main() {
 
   // 最終CSVは作業ファイルから作る。行をオブジェクトに開かずに並べ替えるので、
   // 2万行でもピークが200MB前後で収まる（開くと実測1.9GB要り、取得90分の後にOOMしうる）。
+  // 最終CSVに実際に書けた行数。レポート用の out は上位N社しか読まないので、
+  // これを件数として使わない（--resume 後は「出力80行」のような嘘になる。実際に出した）。
+  let 書出行数 = 0;
   log('作業ファイルを並べ替えて書き出し中…');
   if (fs.existsSync(WORK)) {
     const r = await finalizeFromWork(WORK, OUT);
+    書出行数 = r.行数;
     log(`  ${r.行数}行を書き出し` + (r.除外 ? `（架電禁止 ${r.除外}行を除外）` : ''));
   } else {
     fs.writeFileSync(OUT, toCsv(COLS, []));
   }
   // レポートは上位のみ使うので、ここだけ改めて読み直す（全行は開かない）。
   const out = readTopRows(OUT, Math.max(TOP, 1));
+
+  // 再開前の行ぶんを足して、レポートを「出力ファイル全体」の数字にする。
+  if (priorStats) {
+    for (const k of ['処理', '検知', '資料あり', 'A', 'B', 'C', 'D']) stats[k] = (stats[k] || 0) + (priorStats[k] || 0);
+    for (const [id, n] of Object.entries(priorStats.signals || {})) stats.signals[id] = (stats.signals[id] || 0) + n;
+    for (const [k, n] of Object.entries(priorStats.適合内訳 || {})) stats.適合内訳[k] = (stats.適合内訳[k] || 0) + n;
+    stats.卒年面あり += priorStats.卒年面あり || 0;
+  }
   // 作業ファイルは中断時の再開用。最終CSVを書けた時点で役目が終わるので片付ける。
   try { if (fs.existsSync(WORK)) fs.unlinkSync(WORK); } catch (_) {}
   if (!NO_STORE) {
@@ -322,7 +364,7 @@ async function main() {
   writeReport(out, stats);
 
   log('---- 結果 ----');
-  log(`処理 ${stats.処理}社／出力 ${out.length}行`
+  log(`処理 ${stats.処理}社／出力 ${書出行数}行`
     + (stats.再開スキップ ? `／--resume で ${stats.再開スキップ}社をスキップ` : '')
     + `／所要 ${Math.round((Date.now() - T0) / 60000)}分`);
   log(`シグナル検知 ${stats.検知}社（${Math.round(stats.検知 / Math.max(1, stats.処理) * 100)}%）`);

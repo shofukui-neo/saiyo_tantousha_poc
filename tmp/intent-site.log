@@ -1,0 +1,42 @@
+[2026-09-29T23:36:52.764Z] 入力 2450社 → 処理 2450社 ／ 取得系統: csv+site ／ 並列6
+[2026-09-29T23:36:53.186Z] 観測台帳: 既知 48749社（C:\Users\shofu\Desktop\saiyo_tantousha_poc\poc\data\intent\observations.json）
+[2026-09-29T23:38:07.196Z]   …100/2450 検知31社（A0 B4 C8） 1.3社/秒 残り約29分
+[2026-09-29T23:39:49.760Z]   …200/2450 検知62社（A1 B5 C15） 1.1社/秒 残り約33分
+[2026-09-29T23:41:58.554Z]   …300/2450 検知88社（A1 B5 C24） 1.0社/秒 残り約37分
+[2026-09-29T23:44:07.609Z]   …400/2450 検知115社（A1 B5 C27） 0.9社/秒 残り約37分
+[2026-09-29T23:46:08.341Z]   観測台帳を保存（500社時点）
+[2026-09-29T23:46:08.341Z]   …500/2450 検知137社（A1 B6 C27） 0.9社/秒 残り約36分
+[2026-09-29T23:48:24.016Z]   …600/2450 検知169社（A1 B7 C30） 0.9社/秒 残り約36分
+[2026-09-29T23:50:37.826Z]   …700/2450 検知198社（A1 B7 C38） 0.8社/秒 残り約34分
+[2026-09-29T23:52:56.730Z]   …800/2450 検知214社（A1 B7 C41） 0.8社/秒 残り約33分
+[2026-09-29T23:55:13.788Z]   …900/2450 検知236社（A1 B7 C46） 0.8社/秒 残り約32分
+[2026-09-29T23:57:32.565Z]   観測台帳を保存（1000社時点）
+[2026-09-29T23:57:32.565Z]   …1000/2450 検知263社（A1 B7 C51） 0.8社/秒 残り約30分
+[2026-09-29T23:59:22.775Z]   …1100/2450 検知288社（A1 B8 C54） 0.8社/秒 残り約28分
+[2026-09-30T00:01:04.195Z]   …1200/2450 検知322社（A1 B10 C60） 0.8社/秒 残り約25分
+[2026-09-30T00:02:55.961Z]   …1300/2450 検知340社（A1 B10 C62） 0.8社/秒 残り約23分
+[2026-09-30T00:05:02.531Z]   …1400/2450 検知369社（A1 B14 C69） 0.8社/秒 残り約21分
+[2026-09-30T00:07:20.257Z]   観測台帳を保存（1500社時点）
+[2026-09-30T00:07:20.258Z]   …1500/2450 検知388社（A1 B14 C72） 0.8社/秒 残り約19分
+node:internal/assert/utils:77
+    throw err;
+    ^
+
+AssertionError [ERR_ASSERTION]: The expression evaluated to a falsy value:
+
+  assert(!this.paused)
+
+    at Parser.finish (C:\Users\shofu\Desktop\saiyo_tantousha_poc\poc\node_modules\undici\lib\dispatcher\client-h1.js:364:5)
+    at TLSSocket.onHttpSocketEnd (C:\Users\shofu\Desktop\saiyo_tantousha_poc\poc\node_modules\undici\lib\dispatcher\client-h1.js:934:30)
+    at TLSSocket.emit (node:events:526:24)
+    at endReadableNT (node:internal/streams/readable:1757:12)
+    at process.processTicksAndRejections (node:internal/process/task_queues:90:21) {
+  generatedMessage: true,
+  code: 'ERR_ASSERTION',
+  actual: false,
+  expected: true,
+  operator: '==',
+  diff: 'simple'
+}
+
+Node.js v24.20.0
