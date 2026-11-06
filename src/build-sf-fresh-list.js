@@ -43,14 +43,8 @@ const EXCLUDED_OUT = path.resolve(getArg('--excluded-out', path.join(DATA, 'lead
 const KEEP_DUPES = has('--keep-dupes');
 const FUZZY = !has('--no-fuzzy');
 
-// data/ 内で最も新しい BALESCLOUD leadList を選ぶ（ファイル名の日時スタンプ順）
-function latestBales() {
-  const cands = fs.readdirSync(DATA)
-    .filter((f) => /^BALESCLOUD.*leadList.*\.csv$/i.test(f))
-    .sort();
-  if (!cands.length) return path.join(DATA, 'BALESCLOUDの既存リスト - 202608071207_leadList_utf-8.csv');
-  return path.join(DATA, cands[cands.length - 1]);
-}
+// data/ 内で最も新しい leadList を選ぶ（選び方は exclusion-index.js に一本化）
+function latestBales() { return require('./exclusion-index').latestBales(); }
 
 // SF内に残る動作確認用レコード。「テスト」を含むだけで落とすと 株式会社アドバンテスト /
 // ベリサーブ沖縄テストセンター のような実在企業を巻き込むため、**社名全体が**テスト語の

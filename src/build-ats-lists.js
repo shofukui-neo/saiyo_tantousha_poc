@@ -47,12 +47,8 @@ const getArg = (k, d) => { const i = args.indexOf(k); return i >= 0 && args[i + 
 const has = (k) => args.includes(k);
 
 /** BALESの最新エクスポートを拾う（ファイル名に日時が入るため固定できない）。 */
-function latestBales() {
-  const hit = fs.readdirSync(DATA)
-    .filter((f) => /BALESCLOUD.*leadList.*\.csv$/i.test(f))
-    .sort();
-  return hit.length ? path.join(DATA, hit[hit.length - 1]) : path.join(DATA, 'BALESCLOUD-leadList.csv');
-}
+// 選び方は exclusion-index.js に一本化（前置き無しの「2026…_leadList」も日時スタンプで比較する）
+function latestBales() { return require('./exclusion-index').latestBales(); }
 
 const BALES = path.resolve(getArg('--bales', latestBales()));
 const CUSTOMERS = path.resolve(getArg('--customers', path.join(DATA, 'MOCHICAの既存顧客リスト - mochica-companies-list.csv')));

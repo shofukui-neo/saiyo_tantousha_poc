@@ -57,10 +57,8 @@ const C = {
   banned: 'カスタム情報：アプローチ禁止の種類', callResult: 'コール結果1：結果',
 };
 /** BALESの最新エクスポート（ファイル名に日時が入るので固定できない）。 */
-function latestBales() {
-  const hit = fs.readdirSync(DATA).filter((f) => /BALESCLOUD.*leadList.*\.csv$/i.test(f)).sort();
-  return hit.length ? path.join(DATA, hit[hit.length - 1]) : '';
-}
+// 選び方は exclusion-index.js に一本化（前置き無しの「2026…_leadList」も日時スタンプで比較する）
+function latestBales() { const p = require('./exclusion-index').latestBales(); return fs.existsSync(p) ? p : ''; }
 
 /**
  * 統合マスタ（leads-consolidated-all.csv ほか）をホスト＋会社名で引ける索引にする。

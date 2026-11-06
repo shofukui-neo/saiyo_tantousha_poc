@@ -76,10 +76,8 @@ const SOURCES = [
   { file: path.join(DATA, 'leads-mochica-target.csv'), name: '企業名', url: '公式URL', recruit: '採用ページURL' },
 ];
 /** BALESの最新エクスポート（ファイル名に日時が入るので固定できない）。 */
-function latestBales() {
-  const hit = fs.readdirSync(DATA).filter((f) => /BALESCLOUD.*leadList.*\.csv$/i.test(f)).sort();
-  return hit.length ? path.join(DATA, hit[hit.length - 1]) : '';
-}
+// 選び方は exclusion-index.js に一本化（前置き無しの「2026…_leadList」も日時スタンプで比較する）
+function latestBales() { const p = require('./exclusion-index').latestBales(); return fs.existsSync(p) ? p : ''; }
 
 /**
  * 母集団を任意のCSVで差し替える（--targets）。

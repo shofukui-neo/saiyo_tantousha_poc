@@ -44,10 +44,16 @@ const DATA = path.join(ROOT, 'data');
  * BALESは定期的に新しいスナップショットへ差し替わるため、固定パスにすると
  * 旧ファイル削除時にBALES層が丸ごと未突合になる（＝既存企業が新規として出る）。
  */
+// BALESのエクスポートは「BALESCLOUDの既存リスト - 202608071207_leadList_utf-8.csv」のように前置きが付く場合と、
+// 「202610271811_leadList_utf-8.csv」のように日時スタンプで始まる場合がある。前置きの有無で名前順に並べると
+// 数字始まりの新しいファイルが先頭に来て選ばれない（2026-11-06 実例: 10/27版が無視され 8/7版で突合していた）。
+// → ファイル名中の12桁の日時スタンプで比較する。
+function balesStamp(f) { const m = String(f).match(/(\d{12})_leadList/i); return m ? m[1] : ''; }
 function latestBales() {
   const fallback = path.join(DATA, 'BALESCLOUDの既存リスト - 202608071207_leadList_utf-8.csv');
   try {
-    const c = fs.readdirSync(DATA).filter((f) => /^BALESCLOUD.*leadList.*\.csv$/i.test(f)).sort();
+    const c = fs.readdirSync(DATA).filter((f) => /leadList.*\.csv$/i.test(f) && balesStamp(f))
+      .sort((a, b) => balesStamp(a).localeCompare(balesStamp(b)) || a.localeCompare(b));
     return c.length ? path.join(DATA, c[c.length - 1]) : fallback;
   } catch { return fallback; }
 }
@@ -192,7 +198,7 @@ function buildExclusionIndex(opts = {}) {
   return result;
 }
 
-module.exports = { FILES, buildExclusionIndex, parseSfReport };
+module.exports = { FILES, buildExclusionIndex, parseSfReport, latestBales, balesStamp };
 
 // ── CLI ──────────────────────────────────────────────────────────────
 if (require.main === module) {
