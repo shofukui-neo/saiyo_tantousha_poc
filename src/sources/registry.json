@@ -1,0 +1,360 @@
+{
+  "_meta": {
+    "description": "リードの発生源（データソース・媒体）の登録簿。設計は docs/all-source-lead-plan.md §3。",
+    "legal_tier": {
+      "T1": "オープンデータ・公式API（二次利用可）",
+      "T2": "公開ページで robots 許可・規約上の禁止なし（媒体ごとに規約を確認済み）",
+      "T3": "ログイン壁・規約で禁止・robots不可。収集しない"
+    },
+    "status": {
+      "active": "アダプタあり・実データで動作確認済み",
+      "unverified": "アダプタあり・実ファイルでの確認がまだ",
+      "needs-key": "アダプタあり・APIキーが無いと動かない",
+      "planned": "計画のみ（アダプタ未実装）",
+      "excluded": "対象外（T3 または ICP外）"
+    },
+    "fields": "社=企業識別 規=規模 採=新卒採用人数 電=電話 名=担当者名 業=業種 出=出来事シグナル",
+    "media": "新卒媒体カタログの各媒体は src/sources/media.json（id=m-<ホスト名>）で管理し、registry.js が合流させる"
+  },
+  "sources": [
+    {
+      "id": "kaigo-kouhyou",
+      "name": "介護サービス情報公表システム オープンデータ（厚労省）",
+      "group": "A",
+      "legal_tier": "T1",
+      "tos_checked_at": "2026-11-05",
+      "tos_url": "https://www.mhlw.go.jp/stf/kaigo-kouhyou_opendata.html",
+      "tos_note": "二次利用可。利用したら同ページの「掲載データ利用のご連絡」フォームで一報を入れる",
+      "method": "bulk-download",
+      "cadence": "semiannual",
+      "fields": [
+        "社",
+        "電",
+        "業",
+        "拠点数"
+      ],
+      "reliability": 1,
+      "icp_prior": "◎",
+      "adapter": "kaigo-kouhyou",
+      "status": "active"
+    },
+    {
+      "id": "kenko-keiei",
+      "name": "健康経営優良法人 認定法人一覧（経産省）",
+      "group": "A",
+      "legal_tier": "T1",
+      "tos_checked_at": "2026-11-05",
+      "tos_url": "https://kenko-keiei.jp/houjin_list/",
+      "tos_note": "認定事務局ポータルで公表されている一覧（Excel）",
+      "method": "bulk-download",
+      "cadence": "yearly",
+      "fields": [
+        "社",
+        "業",
+        "規"
+      ],
+      "reliability": 1,
+      "icp_prior": "◎",
+      "adapter": "kenko-keiei",
+      "status": "active"
+    },
+    {
+      "id": "josei-katsuyaku",
+      "name": "女性の活躍推進企業データベース オープンデータ（厚労省）",
+      "group": "A",
+      "legal_tier": "T1",
+      "tos_checked_at": "2026-11-05",
+      "tos_url": "https://positive-ryouritsu.mhlw.go.jp/positivedb/opendata/index.html",
+      "tos_note": "サイトがbot用User-Agentを403で拒否する。偽装はせず、ブラウザで落としたZIP/CSVを --file で渡す",
+      "method": "manual-file",
+      "cadence": "monthly",
+      "fields": [
+        "社",
+        "規",
+        "採",
+        "業"
+      ],
+      "reliability": 0.9,
+      "icp_prior": "○",
+      "adapter": "josei-katsuyaku",
+      "status": "unverified"
+    },
+    {
+      "id": "gbiz-basic",
+      "name": "gBizINFO 法人基本情報（エンリッチ専用）",
+      "group": "A",
+      "legal_tier": "T1",
+      "tos_checked_at": "2026-11-05",
+      "tos_url": "https://info.gbiz.go.jp/hojin/swagger-ui.html",
+      "method": "api",
+      "cadence": "on-demand",
+      "fields": [
+        "規",
+        "URL"
+      ],
+      "reliability": 1,
+      "icp_prior": "—",
+      "adapter": null,
+      "status": "needs-key",
+      "note": "リードの発生源ではない。build --gbiz N で法人番号つきの上位N社の従業員数・URLを補う（GBIZ_TOKEN が必要）"
+    },
+    {
+      "id": "gbiz-workplace",
+      "name": "gBizINFO 職場情報／届出・認定／表彰／調達",
+      "group": "A",
+      "legal_tier": "T1",
+      "tos_checked_at": "2026-11-05",
+      "tos_url": "https://info.gbiz.go.jp/hojin/swagger-ui.html",
+      "method": "api",
+      "cadence": "on-demand",
+      "fields": [
+        "規",
+        "採",
+        "出"
+      ],
+      "reliability": 1,
+      "icp_prior": "○",
+      "adapter": null,
+      "status": "planned",
+      "note": "レスポンスの項目名は GBIZ_TOKEN を入れてから実物で確認して実装する"
+    },
+    {
+      "id": "iryo-kikan",
+      "name": "医療情報ネット（医療機能情報）",
+      "group": "A",
+      "legal_tier": "T1",
+      "tos_checked_at": null,
+      "method": "bulk-download",
+      "cadence": "semiannual",
+      "fields": [
+        "社",
+        "電",
+        "業"
+      ],
+      "reliability": 1,
+      "icp_prior": "◎",
+      "adapter": null,
+      "status": "planned"
+    },
+    {
+      "id": "fsa-registry",
+      "name": "金融庁 登録業者一覧（金融商品取引業者・保険関連・貸金業）",
+      "group": "A",
+      "legal_tier": "T1",
+      "tos_checked_at": null,
+      "method": "bulk-download",
+      "cadence": "monthly",
+      "fields": [
+        "社",
+        "業"
+      ],
+      "reliability": 1,
+      "icp_prior": "◎",
+      "adapter": null,
+      "status": "planned"
+    },
+    {
+      "id": "youth-yell",
+      "name": "ユースエール・くるみん・えるぼし 認定企業一覧",
+      "group": "A",
+      "legal_tier": "T1",
+      "tos_checked_at": null,
+      "method": "bulk-download",
+      "cadence": "quarterly",
+      "fields": [
+        "社"
+      ],
+      "reliability": 1,
+      "icp_prior": "○",
+      "adapter": null,
+      "status": "planned"
+    },
+    {
+      "id": "chiiki-mirai",
+      "name": "地域未来牽引企業 一覧（経産省）",
+      "group": "A",
+      "legal_tier": "T2",
+      "tos_checked_at": null,
+      "method": "bulk-download",
+      "cadence": "yearly",
+      "fields": [
+        "社"
+      ],
+      "reliability": 1,
+      "icp_prior": "◎",
+      "adapter": null,
+      "status": "planned"
+    },
+    {
+      "id": "nta-diff",
+      "name": "国税庁 法人番号 差分データ（新設・移転・商号変更）",
+      "group": "A",
+      "legal_tier": "T1",
+      "tos_checked_at": null,
+      "method": "api",
+      "cadence": "daily",
+      "fields": [
+        "社",
+        "出"
+      ],
+      "reliability": 1,
+      "icp_prior": "○",
+      "adapter": null,
+      "status": "planned",
+      "note": "NTA_APP_ID が必要"
+    },
+    {
+      "id": "edinet-kankei",
+      "name": "EDINET 有報の関係会社（親子関係）",
+      "group": "A",
+      "legal_tier": "T1",
+      "tos_checked_at": null,
+      "method": "api",
+      "cadence": "quarterly",
+      "fields": [
+        "親子"
+      ],
+      "reliability": 1,
+      "icp_prior": "—",
+      "adapter": null,
+      "status": "planned",
+      "note": "サプレッション N5（親会社）とグループ会社の発見に使う"
+    },
+    {
+      "id": "hellowork",
+      "name": "ハローワーク 大卒等求人・高卒求人",
+      "group": "B",
+      "legal_tier": "T1",
+      "tos_checked_at": null,
+      "method": "api",
+      "cadence": "daily",
+      "fields": [
+        "社",
+        "規",
+        "採",
+        "電",
+        "名",
+        "業"
+      ],
+      "reliability": 1,
+      "icp_prior": "◎",
+      "adapter": null,
+      "status": "planned",
+      "note": "求人・求職情報提供サービスの利用申請が先（民間職業紹介事業者の区分）"
+    },
+    {
+      "id": "event-other",
+      "name": "マイナビ以外の合説（学情・キャリタス・地方新聞社・県・商工会議所）",
+      "group": "D",
+      "legal_tier": "T2",
+      "tos_checked_at": null,
+      "method": "pdf",
+      "cadence": "weekly",
+      "fields": [
+        "社",
+        "出"
+      ],
+      "reliability": 0.9,
+      "icp_prior": "◎",
+      "adapter": null,
+      "status": "planned"
+    },
+    {
+      "id": "univ-placement",
+      "name": "大学の学内合説・主な就職先一覧",
+      "group": "D",
+      "legal_tier": "T2",
+      "tos_checked_at": null,
+      "method": "list-crawl",
+      "cadence": "yearly",
+      "fields": [
+        "社"
+      ],
+      "reliability": 0.8,
+      "icp_prior": "◎",
+      "adapter": null,
+      "status": "planned"
+    },
+    {
+      "id": "press-other",
+      "name": "PR TIMES 以外のプレスリリース（@Press・ValuePress 等）",
+      "group": "G",
+      "legal_tier": "T2",
+      "tos_checked_at": null,
+      "method": "list-crawl",
+      "cadence": "daily",
+      "fields": [
+        "社",
+        "出"
+      ],
+      "reliability": 0.85,
+      "icp_prior": "○",
+      "adapter": null,
+      "status": "planned"
+    },
+    {
+      "id": "competitor-cases",
+      "name": "競合ATS・LINE採用ツールの導入事例ページ",
+      "group": "G",
+      "legal_tier": "T2",
+      "tos_checked_at": null,
+      "method": "list-crawl",
+      "cadence": "monthly",
+      "fields": [
+        "社"
+      ],
+      "reliability": 0.9,
+      "icp_prior": "○",
+      "adapter": null,
+      "status": "planned",
+      "note": "サプレッション N6 の材料にもなる"
+    },
+    {
+      "id": "zoom-phone",
+      "name": "Zoom Phone 架電履歴・文字起こし",
+      "group": "H",
+      "legal_tier": "T1",
+      "tos_checked_at": null,
+      "method": "api",
+      "cadence": "daily",
+      "fields": [
+        "社",
+        "出"
+      ],
+      "reliability": 1,
+      "icp_prior": "—",
+      "adapter": null,
+      "status": "planned"
+    },
+    {
+      "id": "indeed",
+      "name": "Indeed",
+      "group": "E",
+      "legal_tier": "T3",
+      "tos_checked_at": "2026-06-18",
+      "method": null,
+      "cadence": null,
+      "fields": [],
+      "reliability": 0,
+      "icp_prior": "—",
+      "adapter": null,
+      "status": "excluded",
+      "note": "HTTP 403。求人ボックスで代替"
+    },
+    {
+      "id": "stanby",
+      "name": "スタンバイ",
+      "group": "E",
+      "legal_tier": "T3",
+      "tos_checked_at": "2026-06-18",
+      "method": null,
+      "cadence": null,
+      "fields": [],
+      "reliability": 0,
+      "icp_prior": "—",
+      "adapter": null,
+      "status": "excluded",
+      "note": "robots 不可"
+    }
+  ]
+}

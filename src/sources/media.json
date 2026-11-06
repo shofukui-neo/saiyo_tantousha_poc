@@ -1,0 +1,4572 @@
+{
+  "media": [
+    {
+      "id": "m-job-mynavi-jp",
+      "name": "マイナビ",
+      "status": "unverified",
+      "cat": "1-大手総合",
+      "role": "competitor",
+      "url": "https://job.mynavi.jp/",
+      "catalog_strategy": "media-detail",
+      "catalog_note": "scrape-mynavi.js 実装済。企業詳細から担当者名/新卒intent/企業ファクト",
+      "catalog_probe": {
+        "robots": "allow",
+        "reachable": "yes",
+        "sitemap": "yes",
+        "nameLikely": 0,
+        "companyLinks": 32,
+        "loginWall": "",
+        "note": ""
+      },
+      "probed_at": "2026-11-06",
+      "reason": "企業詳細ページの型が見つからない（サイトマップ /:id/pc/search/:id/outline.html(19585件) 抽出0/2 / サイトマップ /conts/:id/zukan/:id/index.html(23件) 抽出0/2）",
+      "robots": "allow",
+      "tos_verdict": "prohibited",
+      "tos_url": "https://job.mynavi.jp/sitepolicy/index.html",
+      "tos_evidence": [
+        {
+          "kind": "automated",
+          "text": "当社、またはその他の第三者に対する詐欺または脅迫行為 第三者または当社に対して、不利益もしくは損害を与える行為、またはその恐れのある行為 当社または当サイトの信用、品位を損なう行為、またはその恐れのある行為 犯罪行為もしくは犯罪行為に結びつく行為、またはその恐れのある行為 法律、法令もしくは条令に違反する行為、またはそ",
+          "url": "https://job.mynavi.jp/sitepolicy/index.html"
+        },
+        {
+          "kind": "commercial",
+          "text": "当サイトのコンテンツは、個人使用（非商用）のみに限りご利用いただけるものとします。",
+          "url": "https://job.mynavi.jp/sitepolicy/index.html"
+        }
+      ],
+      "crawl": {
+        "tried": [
+          "サイトマップ /:id/pc/search/:id/outline.html(19585件) 抽出0/2",
+          "サイトマップ /conts/:id/zukan/:id/index.html(23件) 抽出0/2"
+        ]
+      },
+      "legal_tier": "T3",
+      "tos_checked_at": "2026-11-06",
+      "tos_override": {
+        "legal_tier": "T2",
+        "reason": "規約に自動収集・商用利用の禁止あり。ネオキャリアは媒体を販売する正式な事業者のため利用可と判断（ユーザー判断 2026-11-06）",
+        "by": "shofukui-neo",
+        "at": "2026-11-06"
+      }
+    },
+    {
+      "id": "m-job-rikunabi-com",
+      "name": "リクナビ",
+      "status": "active",
+      "cat": "1-大手総合",
+      "role": "competitor",
+      "url": "https://job.rikunabi.com/",
+      "catalog_strategy": "media-detail",
+      "catalog_note": "scrape-rikunabi.js 実装済",
+      "catalog_probe": {
+        "robots": "allow",
+        "reachable": "yes",
+        "sitemap": "yes",
+        "nameLikely": 0,
+        "companyLinks": 35,
+        "loginWall": "",
+        "note": ""
+      },
+      "probed_at": "2026-11-06",
+      "reason": "",
+      "robots": "allow",
+      "tos_verdict": "prohibited",
+      "tos_url": "https://cdn.p.recruit.co.jp/terms/ngr-t-1001/index.html",
+      "tos_evidence": [
+        {
+          "kind": "automated",
+          "text": "Indeed エントリーのプロセスを自動化するために、Indeed の正式ベンダーおよび正式ツール以外の自動フロー、スクリプティング、ボットを使用することは禁止されています。",
+          "url": "https://cdn.p.recruit.co.jp/terms/ngr-t-1001/index.html"
+        },
+        {
+          "kind": "commercial",
+          "text": "ユーザーが投稿した未申請の求人広告のパフォーマンスデータは、その後に申請した当事者が利用できるようになる可能性があります。",
+          "url": "https://cdn.p.recruit.co.jp/terms/ngr-t-1001/index.html"
+        },
+        {
+          "kind": "commercial",
+          "text": "トラッキングピクセルは便宜のためにのみ提供されるものであり、ユーザーのプロファイリング、行動分析、または Indeed の広告料金の請求への異議申し立てに使用することはできません。",
+          "url": "https://cdn.p.recruit.co.jp/terms/ngr-t-1001/index.html"
+        }
+      ],
+      "legal_tier": "T3",
+      "tos_checked_at": "2026-11-06",
+      "tos_override": {
+        "legal_tier": "T2",
+        "reason": "規約に自動収集・商用利用の禁止あり。ネオキャリアは媒体を販売する正式な事業者のため利用可と判断（ユーザー判断 2026-11-06）",
+        "by": "shofukui-neo",
+        "at": "2026-11-06"
+      },
+      "crawl": {
+        "via": "listing",
+        "render": "static",
+        "detail_template": "/company_jobs/:id/",
+        "detail_regex": "^/company_jobs/[^/?]+/$",
+        "support": 97,
+        "list_urls": [
+          "https://job.rikunabi.com/?mode=intern",
+          "https://job.rikunabi.com/contents/company/36681/",
+          "https://job.rikunabi.com/lp/job/action/?category=followCompanyJob&sort=deadline",
+          "https://job.rikunabi.com/lp/company/ranking/",
+          "https://job.rikunabi.com/contents/industry/881/",
+          "https://job.rikunabi.com/contents/industry/2489/",
+          "https://job.rikunabi.com/contents/company/2536/",
+          "https://job.rikunabi.com/job_search/area1-DSQF7/",
+          "https://job.rikunabi.com/job_search/area1-01/",
+          "https://job.rikunabi.com/job_search/area1-02/",
+          "https://job.rikunabi.com/job_search/area1-03/",
+          "https://job.rikunabi.com/job_search/area1-04/"
+        ],
+        "sitemap_hits": 200,
+        "details_seen": 443,
+        "sample": [
+          {
+            "url": "https://job.rikunabi.com/company_jobs/1496934706/",
+            "name": "株式会社臨海人事・人材サービス",
+            "phone": "045-451-5131",
+            "employees": null,
+            "hire": null,
+            "site": "https://rinkai-recruiting.com/"
+          },
+          {
+            "url": "https://job.rikunabi.com/company_jobs/1329540459/",
+            "name": "株式会社日立システムズソフトウェア開発",
+            "phone": "03-5435-7777",
+            "employees": null,
+            "hire": null,
+            "site": ""
+          },
+          {
+            "url": "https://job.rikunabi.com/company_jobs/188223484/",
+            "name": "日本製鉄株式会社",
+            "phone": "03-6867-2242",
+            "employees": null,
+            "hire": null,
+            "site": ""
+          },
+          {
+            "url": "https://job.rikunabi.com/company_jobs/170734742/",
+            "name": "株式会社アーネストワン製造・メーカー",
+            "phone": "042-461-6288",
+            "employees": null,
+            "hire": null,
+            "site": ""
+          }
+        ],
+        "tried": [
+          "一覧(静的) /company_jobs/:id/ 抽出4/4"
+        ]
+      }
+    },
+    {
+      "id": "m-job-career-tasu-jp",
+      "name": "キャリタス就活",
+      "status": "active",
+      "cat": "1-大手総合",
+      "role": "competitor",
+      "url": "https://job.career-tasu.jp/",
+      "catalog_strategy": "media-detail",
+      "catalog_note": "scrape-careertasu.js 実装済（ディスコ）",
+      "catalog_probe": {
+        "robots": "allow",
+        "reachable": "yes",
+        "sitemap": "yes",
+        "nameLikely": 0,
+        "companyLinks": 9,
+        "loginWall": "",
+        "note": ""
+      },
+      "probed_at": "2026-11-05",
+      "reason": "",
+      "robots": "allow",
+      "tos_verdict": "no-explicit-prohibition",
+      "tos_url": "https://job.career-tasu.jp/membership-agreement/ https://job.career-tasu.jp/copyright/",
+      "tos_evidence": [],
+      "legal_tier": "T2",
+      "tos_checked_at": "2026-11-05",
+      "crawl": {
+        "via": "listing",
+        "render": "static",
+        "detail_template": "/corp/:id/default/",
+        "detail_regex": "^/corp/[^/]+/default/$",
+        "support": 15,
+        "list_urls": [
+          "https://job.career-tasu.jp/top/",
+          "https://job.career-tasu.jp/intern-search/",
+          "https://job.career-tasu.jp/employment-search/",
+          "https://job.career-tasu.jp/seminar-search/",
+          "https://job.career-tasu.jp/condition-search/",
+          "https://job.career-tasu.jp/counterplan-search/",
+          "https://job.career-tasu.jp/employment-search/result/?emStatus=02-%E3%82%A8%E3%83%B3%E3%83%88%E3%83%AA%E3%83%BC%E5%8F%97%E4%BB%98%E4%B8%AD%E3%81%AE%E4%BC%81%E6%A5%AD&adPlanNumCd=00-%E3%81%99%E3%81%B9%E3%81%A6&o=2&qcd=piprmbbef0123_260522",
+          "https://job.career-tasu.jp/seminar-search/result/?smnStatus=04-%E8%AA%AC%E6%98%8E%E4%BC%9A%E5%8F%97%E4%BB%98%E4%B8%AD%E3%81%AE%E4%BC%81%E6%A5%AD&o=1&qcd=piprmbbef0164_260301",
+          "https://job.career-tasu.jp/special/s_corp_search/?qcd=piprmbbef0163_260301",
+          "https://job.career-tasu.jp/condition-search/result/?keyword=%E8%88%AA%E7%A9%BA&tcd=PickKwd",
+          "https://job.career-tasu.jp/condition-search/result/?keyword=%E3%82%B2%E3%83%BC%E3%83%A0&tcd=PickKwd",
+          "https://job.career-tasu.jp/condition-search/result/?keyword=%E9%9F%B3%E6%A5%BD&tcd=PickKwd"
+        ],
+        "sitemap_hits": 0,
+        "details_seen": 221,
+        "sample": [
+          {
+            "url": "https://job.career-tasu.jp/corp/00018112/default/",
+            "name": "アイリスオーヤマ株式会社",
+            "phone": "",
+            "employees": "113670",
+            "hire": null,
+            "site": "https://www.irisohyama.co.jp/recruit/"
+          },
+          {
+            "url": "https://job.career-tasu.jp/corp/00000955/default/",
+            "name": "株式会社ロッテ",
+            "phone": "",
+            "employees": "2409",
+            "hire": null,
+            "site": "https://www.lotte.co.jp/recruit/"
+          },
+          {
+            "url": "https://job.career-tasu.jp/corp/00048465/default/",
+            "name": "Ｓｋｙ株式会社",
+            "phone": "",
+            "employees": "4656",
+            "hire": null,
+            "site": ""
+          }
+        ],
+        "tried": [
+          "一覧(静的) /corp/:id/default/ 抽出3/3"
+        ]
+      }
+    },
+    {
+      "id": "m-gakujo-ne-jp",
+      "name": "あさがくナビ",
+      "status": "active",
+      "cat": "1-大手総合",
+      "role": "competitor",
+      "url": "https://www.gakujo.ne.jp/",
+      "catalog_strategy": "media-detail",
+      "catalog_note": "学情",
+      "catalog_probe": {
+        "robots": "allow",
+        "reachable": "yes",
+        "sitemap": "yes",
+        "nameLikely": 0,
+        "companyLinks": 10,
+        "loginWall": "",
+        "note": ""
+      },
+      "probed_at": "2026-11-06",
+      "reason": "",
+      "robots": "allow",
+      "tos_verdict": "not-found",
+      "tos_url": "",
+      "tos_evidence": [],
+      "crawl": {
+        "via": "sitemap",
+        "render": "static",
+        "detail_template": "/campus/company/baseinfo/:id/",
+        "detail_regex": "^/campus/company/baseinfo/[^/?]+/$",
+        "support": 1474,
+        "list_urls": [],
+        "sitemap_hits": 1474,
+        "details_seen": 1474,
+        "sample": [
+          {
+            "url": "https://www.gakujo.ne.jp/campus/company/baseinfo/148/",
+            "name": "旭工精株式会社",
+            "phone": "",
+            "employees": "1550",
+            "hire": null,
+            "site": "http://www.asahikosei.jp/"
+          },
+          {
+            "url": "https://www.gakujo.ne.jp/campus/company/baseinfo/245/",
+            "name": "株式会社ブロンコビリー",
+            "phone": "",
+            "employees": "7849",
+            "hire": null,
+            "site": "http://www.bronco.co.jp/"
+          }
+        ],
+        "tried": [
+          "サイトマップ /campus/company/baseinfo/:id/(1474件) 抽出2/2"
+        ]
+      },
+      "tos_override": {
+        "legal_tier": "T2",
+        "reason": "規約ページ未発見。禁止媒体も利用可とした判断に準じる（ユーザー判断 2026-11-06）",
+        "by": "shofukui-neo",
+        "at": "2026-11-06"
+      },
+      "tos_checked_at": "2026-11-06"
+    },
+    {
+      "id": "m-onecareer-jp",
+      "name": "ONE CAREER",
+      "status": "unverified",
+      "cat": "1-大手総合",
+      "role": "competitor",
+      "url": "https://www.onecareer.jp/",
+      "catalog_strategy": "media-detail",
+      "catalog_note": "scrape-onecareer.js 実装済",
+      "catalog_probe": {
+        "robots": "allow",
+        "reachable": "yes",
+        "sitemap": "yes",
+        "nameLikely": 0,
+        "companyLinks": 3,
+        "loginWall": "",
+        "note": ""
+      },
+      "probed_at": "2026-11-06",
+      "reason": "企業詳細ページの型が見つからない（サイトマップ /companies/:id/experiences/:id/:id/:id(20000件) 抽出0/2）",
+      "robots": "allow",
+      "tos_verdict": "prohibited",
+      "tos_url": "https://portal.onecareer.jp/sites-policy https://www.onecareer.jp/infos/terms https://id.onecareer.jp/infos/terms",
+      "tos_evidence": [
+        {
+          "kind": "commercial",
+          "text": "本サイトのコンテンツは、個人使用（非商用）のみに限りご利用いただけるものとします。",
+          "url": "https://portal.onecareer.jp/sites-policy"
+        },
+        {
+          "kind": "automated",
+          "text": "（１）当社、またはその他の第三者に対する詐欺または脅迫行為 （２）第三者または当社に対して、不利益もしくは損害を与える行為、またはその恐れのある行為 （３）当社または本サイトの信用、品位を損なう行為、またはその恐れのある行為 （４）犯罪行為もしくは犯罪行為に結びつく行為、またはその恐れのある行為 （５）当社が提供するソ",
+          "url": "https://portal.onecareer.jp/sites-policy"
+        },
+        {
+          "kind": "commercial",
+          "text": "）、財産、プライバシーもしくは肖像権を侵害する行為、または侵害するおそれのある行為 弊社もしくは第三者を差別、誹謗中傷、侮辱し、第三者への差別を助長し、またはその名誉もしくは信用を毀損する行為 営業、宣伝、広告、勧誘その他営利を目的とする行為（弊社が別途認めたものを除きます。",
+          "url": "https://www.onecareer.jp/infos/terms"
+        }
+      ],
+      "legal_tier": "T3",
+      "tos_checked_at": "2026-11-06",
+      "tos_override": {
+        "legal_tier": "T2",
+        "reason": "規約に自動収集・商用利用の禁止あり。ネオキャリアは媒体を販売する正式な事業者のため利用可と判断（ユーザー判断 2026-11-06）",
+        "by": "shofukui-neo",
+        "at": "2026-11-06"
+      },
+      "crawl": {
+        "tried": [
+          "サイトマップ /companies/:id/experiences/:id/:id/:id(20000件) 抽出0/2"
+        ]
+      }
+    },
+    {
+      "id": "m-wantedly-com",
+      "name": "Wantedly",
+      "status": "active",
+      "cat": "1-大手総合",
+      "role": "sales",
+      "url": "https://www.wantedly.com/",
+      "catalog_strategy": "sitemap-discovery",
+      "catalog_note": "harvest-wantedly.js 実装済・1000件収穫済。中途寄りで新卒signal弱",
+      "catalog_probe": {
+        "robots": "allow",
+        "reachable": "yes",
+        "sitemap": "yes",
+        "nameLikely": 0,
+        "companyLinks": 3,
+        "loginWall": "",
+        "note": ""
+      },
+      "probed_at": "2026-11-06",
+      "reason": "",
+      "robots": "allow",
+      "tos_verdict": "not-found",
+      "tos_url": "",
+      "tos_evidence": [],
+      "crawl": {
+        "via": "listing",
+        "render": "static",
+        "detail_template": "/customer_stories/:id",
+        "detail_regex": "^/customer_stories/[^/?]+$",
+        "support": 4,
+        "list_urls": [
+          "https://www.wantedly.com/",
+          "https://www.wantedly.com/about/list",
+          "https://www.wantedly.com/company_registrations/trial?from=project&referrer_path=%2Fabout%2Flist",
+          "https://www.wantedly.com/company_registrations/trial?from=story&referrer_path=%2Fabout%2Flist",
+          "https://www.wantedly.com/company_registrations/trial?from=scout&referrer_path=%2Fabout%2Flist",
+          "https://www.wantedly.com/external_links/private_consulting?source=about_list",
+          "https://www.wantedly.com/company_registrations/trial?from=get_started&referrer_path=%2Fabout%2Flist",
+          "https://www.wantedly.com/about/list?referrer_path=%2Fabout%2Flist",
+          "https://www.wantedly.com/external_links/price_serviceguide_download?ad_params%5Breferrer_path%5D=%2Fabout%2Flist"
+        ],
+        "sitemap_hits": 0,
+        "details_seen": 5,
+        "sample": [
+          {
+            "url": "https://www.wantedly.com/customer_stories/166",
+            "name": "株式会社マネーフォワード",
+            "phone": "",
+            "employees": "101",
+            "hire": null,
+            "site": ""
+          },
+          {
+            "url": "https://www.wantedly.com/customer_stories/158",
+            "name": "株式会社Voicy",
+            "phone": "",
+            "employees": "31",
+            "hire": null,
+            "site": ""
+          },
+          {
+            "url": "https://www.wantedly.com/customer_stories/168",
+            "name": "株式会社セブンデックス",
+            "phone": "",
+            "employees": "30",
+            "hire": null,
+            "site": ""
+          },
+          {
+            "url": "https://www.wantedly.com/customer_stories/163",
+            "name": "Sansan株式会社",
+            "phone": "",
+            "employees": "101",
+            "hire": null,
+            "site": ""
+          }
+        ],
+        "tried": [
+          "一覧(静的) /customer_stories/:id 抽出4/4"
+        ]
+      },
+      "tos_override": {
+        "legal_tier": "T2",
+        "reason": "規約ページ未発見。禁止媒体も利用可とした判断に準じる（ユーザー判断 2026-11-06）",
+        "by": "shofukui-neo",
+        "at": "2026-11-06"
+      },
+      "tos_checked_at": "2026-11-06"
+    },
+    {
+      "id": "m-bunnabi-jp",
+      "name": "ブンナビ",
+      "status": "unverified",
+      "cat": "1-大手総合",
+      "role": "sales",
+      "url": "https://bunnabi.jp/",
+      "catalog_strategy": "recruit-page-link",
+      "catalog_note": "文化放送キャリアパートナーズ",
+      "catalog_probe": {
+        "robots": "allow",
+        "reachable": "yes",
+        "sitemap": "yes",
+        "nameLikely": 0,
+        "companyLinks": 3,
+        "loginWall": "",
+        "note": ""
+      },
+      "probed_at": "2026-11-06",
+      "reason": "企業詳細ページの型が見つからない（一覧・サイトマップとも社名つきの詳細リンクなし）",
+      "robots": "allow",
+      "tos_verdict": "not-found",
+      "tos_url": "",
+      "tos_evidence": [],
+      "crawl": {
+        "tried": []
+      },
+      "tos_override": {
+        "legal_tier": "T2",
+        "reason": "規約ページ未発見。禁止媒体も利用可とした判断に準じる（ユーザー判断 2026-11-06）",
+        "by": "shofukui-neo",
+        "at": "2026-11-06"
+      },
+      "tos_checked_at": "2026-11-06"
+    },
+    {
+      "id": "m-shukatsu-type-jp",
+      "name": "type就活",
+      "status": "unverified",
+      "cat": "1-大手総合",
+      "role": "sales",
+      "url": "https://typeshukatsu.jp/",
+      "catalog_strategy": "recruit-page-link",
+      "catalog_note": "",
+      "catalog_probe": {
+        "robots": "allow",
+        "reachable": "no",
+        "sitemap": "?",
+        "nameLikely": 0,
+        "companyLinks": "",
+        "loginWall": "",
+        "note": "fetch failed"
+      },
+      "probed_at": "2026-11-06",
+      "reason": "企業詳細ページの型が見つからない（一覧(静的) /company/:id 抽出0/4 / サイトマップ /company/:id/(601件) 抽出0/2 / サイトマップ /company/:id/recruitment/:id/(264件) 抽出0/2 / サイトマップ /company/:id/event/:id/(798件) 抽出0/2 / サイトマップ /event/:id/(2223件) 抽出0/2 / 一覧(JS描画) /company/:id 抽出0/4）",
+      "robots": "allow",
+      "url_override": "https://typeshukatsu.jp/",
+      "tos_verdict": "not-found",
+      "tos_url": "",
+      "tos_evidence": [],
+      "crawl": {
+        "tried": [
+          "一覧(静的) /company/:id 抽出0/4",
+          "サイトマップ /company/:id/(601件) 抽出0/2",
+          "サイトマップ /company/:id/recruitment/:id/(264件) 抽出0/2",
+          "サイトマップ /company/:id/event/:id/(798件) 抽出0/2",
+          "サイトマップ /event/:id/(2223件) 抽出0/2",
+          "一覧(JS描画) /company/:id 抽出0/4"
+        ]
+      },
+      "tos_override": {
+        "legal_tier": "T2",
+        "reason": "規約ページ未発見。禁止媒体も利用可とした判断に準じる（ユーザー判断 2026-11-06）",
+        "by": "shofukui-neo",
+        "at": "2026-11-06"
+      },
+      "tos_checked_at": "2026-11-06"
+    },
+    {
+      "id": "m-shukatsu-jp",
+      "name": "ダイヤモンド就活ナビ",
+      "status": "excluded",
+      "cat": "1-大手総合",
+      "role": "sales",
+      "url": "https://www.shukatsu.jp/",
+      "catalog_strategy": "recruit-page-link",
+      "catalog_note": "",
+      "catalog_probe": {
+        "robots": "allow",
+        "reachable": "no",
+        "sitemap": "?",
+        "nameLikely": 0,
+        "companyLinks": "",
+        "loginWall": "",
+        "note": "HTTP 403"
+      },
+      "probed_at": "2026-11-06",
+      "reason": "自動アクセスを拒否（HTTP 403）。UA偽装等の回避はしない",
+      "robots": ""
+    },
+    {
+      "id": "m-careerpark-jp",
+      "name": "キャリアパーク就活",
+      "status": "unverified",
+      "cat": "1-大手総合",
+      "role": "sales",
+      "url": "https://careerpark.jp/",
+      "catalog_strategy": "recruit-page-link",
+      "catalog_note": "ポート",
+      "catalog_probe": {
+        "robots": "allow",
+        "reachable": "yes",
+        "sitemap": "no",
+        "nameLikely": 0,
+        "companyLinks": 3,
+        "loginWall": "",
+        "note": ""
+      },
+      "probed_at": "2026-11-06",
+      "reason": "企業詳細ページの型が見つからない（一覧・サイトマップとも社名つきの詳細リンクなし）",
+      "robots": "allow",
+      "tos_verdict": "prohibited",
+      "tos_url": "https://careerpark.jp/rule https://careerpark.jp/terms https://careerpark.jp/disclaimer",
+      "tos_evidence": [
+        {
+          "kind": "commercial",
+          "text": "第７条（営業活動等の原則的禁止）利用者は当社が承認した場合を除き、本サービスを使用して、営業活動、営利を目的とした利用、布教活動、選挙活動を含む政治活動およびその準備を目的とした活動を行うことはできません。",
+          "url": "https://careerpark.jp/rule"
+        },
+        {
+          "kind": "commercial",
+          "text": "当社は、本サービスを通じて、当社が認めた者の広告宣伝またはアンケートを配信または表示する場合があり、利用者はこれを承諾します。",
+          "url": "https://careerpark.jp/rule"
+        }
+      ],
+      "legal_tier": "T3",
+      "tos_checked_at": "2026-11-06",
+      "tos_override": {
+        "legal_tier": "T2",
+        "reason": "規約に自動収集・商用利用の禁止あり。ネオキャリアは媒体を販売する正式な事業者のため利用可と判断（ユーザー判断 2026-11-06）",
+        "by": "shofukui-neo",
+        "at": "2026-11-06"
+      },
+      "crawl": {
+        "tried": []
+      }
+    },
+    {
+      "id": "m-unknown-11",
+      "name": "アクセス就活",
+      "status": "excluded",
+      "cat": "1-大手総合",
+      "role": "either",
+      "url": "",
+      "catalog_strategy": "blocked-or-login",
+      "catalog_note": "URL要確認",
+      "catalog_probe": {
+        "robots": "",
+        "reachable": "",
+        "sitemap": "",
+        "nameLikely": 0,
+        "companyLinks": "",
+        "loginWall": "",
+        "note": "URL未確定(要確認)"
+      },
+      "reason": "URL未確定（カタログにURLが無い）",
+      "legal_tier": "T2"
+    },
+    {
+      "id": "m-syukatsu-kaigi-jp",
+      "name": "就活会議",
+      "status": "active",
+      "cat": "1-大手総合",
+      "role": "sales",
+      "url": "https://syukatsu-kaigi.jp/",
+      "catalog_strategy": "recruit-page-link",
+      "catalog_note": "クチコミ系",
+      "catalog_probe": {
+        "robots": "allow",
+        "reachable": "yes",
+        "sitemap": "yes",
+        "nameLikely": 0,
+        "companyLinks": 6,
+        "loginWall": "",
+        "note": ""
+      },
+      "probed_at": "2026-11-06",
+      "reason": "",
+      "robots": "allow",
+      "tos_verdict": "prohibited",
+      "tos_url": "https://syukatsu-kaigi.jp/term https://syukatsu-kaigi.jp/group_company_term",
+      "tos_evidence": [
+        {
+          "kind": "commercial",
+          "text": "）や、もっぱら企業の調査、口コミの監視、勧誘等を目的とする者は、学生としての身分を有していても、本サービスを利用登録することはできません。",
+          "url": "https://syukatsu-kaigi.jp/term"
+        },
+        {
+          "kind": "commercial",
+          "text": "） (10)当社の事前の書面による承認を経ない広告をなす行為 (11)以下のいずれかに該当する行為 a．",
+          "url": "https://syukatsu-kaigi.jp/term"
+        },
+        {
+          "kind": "automated",
+          "text": "自動投稿ツール自動登録ツール、巡回ツール等を使用して本サービスの利用（利用登録、書き込み等、検索を含みます。",
+          "url": "https://syukatsu-kaigi.jp/term"
+        }
+      ],
+      "legal_tier": "T3",
+      "tos_checked_at": "2026-11-06",
+      "tos_override": {
+        "legal_tier": "T2",
+        "reason": "規約に自動収集・商用利用の禁止あり。ネオキャリアは媒体を販売する正式な事業者のため利用可と判断（ユーザー判断 2026-11-06）",
+        "by": "shofukui-neo",
+        "at": "2026-11-06"
+      },
+      "crawl": {
+        "via": "listing",
+        "render": "static",
+        "detail_template": "/companies/:id/intern_experiences/:id",
+        "detail_regex": "^/companies/[^/?]+/intern_experiences/[^/?]+$",
+        "support": 3,
+        "list_urls": [
+          "https://syukatsu-kaigi.jp/",
+          "https://syukatsu-kaigi.jp/companies/search",
+          "https://syukatsu-kaigi.jp/companies/events/search",
+          "https://syukatsu-kaigi.jp/companies/jobhunt_services/search",
+          "https://syukatsu-kaigi.jp/experiences/search",
+          "https://syukatsu-kaigi.jp/self_promotions/search",
+          "https://syukatsu-kaigi.jp/search",
+          "https://syukatsu-kaigi.jp/jobhunt_prompt_reports/search",
+          "https://syukatsu-kaigi.jp/companies/94735",
+          "https://syukatsu-kaigi.jp/companies/122524",
+          "https://syukatsu-kaigi.jp/companies/120359",
+          "https://syukatsu-kaigi.jp/companies/121050"
+        ],
+        "sitemap_hits": 0,
+        "details_seen": 52,
+        "sample": [
+          {
+            "url": "https://syukatsu-kaigi.jp/companies/55872/intern_experiences/117266",
+            "name": "株式会社東邦銀行",
+            "phone": "024-523-3131",
+            "employees": "2095",
+            "hire": null,
+            "site": "https://www.tohobank.co.jp/"
+          },
+          {
+            "url": "https://syukatsu-kaigi.jp/companies/86693/intern_experiences/117261",
+            "name": "大日本印刷株式会社",
+            "phone": "03-3266-2111",
+            "employees": "36360",
+            "hire": null,
+            "site": "https://www.dnp.co.jp/"
+          },
+          {
+            "url": "https://syukatsu-kaigi.jp/companies/125149/intern_experiences/117251",
+            "name": "株式会社宇徳",
+            "phone": "045-201-6931",
+            "employees": "390",
+            "hire": null,
+            "site": "https://www.utoc.co.jp/"
+          }
+        ],
+        "tried": [
+          "一覧(静的) /companies/:id/intern_experiences/:id 抽出3/4"
+        ]
+      }
+    },
+    {
+      "id": "m-openwork-jp",
+      "name": "OpenWork",
+      "status": "excluded",
+      "cat": "1-大手総合",
+      "role": "competitor",
+      "url": "https://www.openwork.jp/",
+      "catalog_strategy": "blocked-or-login",
+      "catalog_note": "クチコミ・会員制",
+      "catalog_probe": {
+        "robots": "allow",
+        "reachable": "yes",
+        "sitemap": "no",
+        "nameLikely": 0,
+        "companyLinks": 1,
+        "loginWall": "",
+        "note": ""
+      },
+      "reason": "ログイン壁・公開の企業ページなし（カタログの実測判定）",
+      "legal_tier": "T3"
+    },
+    {
+      "id": "m-nikki-ne-jp",
+      "name": "みんなの就職活動日記",
+      "status": "excluded",
+      "cat": "1-大手総合",
+      "role": "sales",
+      "url": "https://www.nikki.ne.jp/",
+      "catalog_strategy": "blocked-or-login",
+      "catalog_note": "楽天みん就",
+      "catalog_probe": {
+        "robots": "allow",
+        "reachable": "yes",
+        "sitemap": "yes",
+        "nameLikely": 0,
+        "companyLinks": 3,
+        "loginWall": "",
+        "note": ""
+      },
+      "reason": "ログイン壁・公開の企業ページなし（カタログの実測判定）",
+      "legal_tier": "T3"
+    },
+    {
+      "id": "m-unistyleinc-com",
+      "name": "unistyle",
+      "status": "active",
+      "cat": "1-大手総合",
+      "role": "sales",
+      "url": "https://unistyleinc.com/",
+      "catalog_strategy": "recruit-page-link",
+      "catalog_note": "",
+      "catalog_probe": {
+        "robots": "allow",
+        "reachable": "yes",
+        "sitemap": "yes",
+        "nameLikely": 0,
+        "companyLinks": 11,
+        "loginWall": "",
+        "note": ""
+      },
+      "probed_at": "2026-11-06",
+      "reason": "",
+      "robots": "allow",
+      "tos_verdict": "prohibited",
+      "tos_url": "https://unistyleinc.com/rule https://unistyleinc.com/rule/",
+      "tos_evidence": [
+        {
+          "kind": "commercial",
+          "text": "4 会員の個人認証情報を利用して会員と他者により同時に、または他者のみによりなされた接続等の機能および品質については、一切保証いたしません。",
+          "url": "https://unistyleinc.com/rule"
+        },
+        {
+          "kind": "commercial",
+          "text": "4 会員の個人認証情報を利用して会員と他者により同時に、または他者のみによりなされた接続等の機能および品質については、一切保証いたしません。",
+          "url": "https://unistyleinc.com/rule/"
+        }
+      ],
+      "legal_tier": "T3",
+      "tos_checked_at": "2026-11-06",
+      "tos_override": {
+        "legal_tier": "T2",
+        "reason": "規約に自動収集・商用利用の禁止あり。ネオキャリアは媒体を販売する正式な事業者のため利用可と判断（ユーザー判断 2026-11-06）",
+        "by": "shofukui-neo",
+        "at": "2026-11-06"
+      },
+      "crawl": {
+        "via": "sitemap",
+        "render": "static",
+        "detail_template": "/companies/:id",
+        "detail_regex": "^/companies/[^/?]+$",
+        "support": 2192,
+        "list_urls": [],
+        "sitemap_hits": 2192,
+        "details_seen": 2192,
+        "sample": [
+          {
+            "url": "https://unistyleinc.com/companies/2",
+            "name": "三菱商事株式会社",
+            "phone": "",
+            "employees": "4456",
+            "hire": null,
+            "site": ""
+          },
+          {
+            "url": "https://unistyleinc.com/companies/3",
+            "name": "三井物産株式会社",
+            "phone": "",
+            "employees": "5388",
+            "hire": 110,
+            "site": ""
+          }
+        ],
+        "tried": [
+          "一覧(静的) /companies/:id/sheets 抽出0/4",
+          "サイトマップ /companies/:id/sheets(6319件) 抽出0/2",
+          "サイトマップ /companies/:id(2192件) 抽出2/2"
+        ]
+      }
+    },
+    {
+      "id": "m-shukatsu-note-com",
+      "name": "就活ノート",
+      "status": "unverified",
+      "cat": "1-大手総合",
+      "role": "sales",
+      "url": "https://shukatsu-note.com/",
+      "catalog_strategy": "recruit-page-link",
+      "catalog_note": "",
+      "catalog_probe": {
+        "robots": "allow",
+        "reachable": "no",
+        "sitemap": "?",
+        "nameLikely": 0,
+        "companyLinks": "",
+        "loginWall": "",
+        "note": "fetch failed"
+      },
+      "probed_at": "2026-11-06",
+      "reason": "到達不可（fetch failed）。一時的な障害か社内網から届かない可能性。再プローブで確認",
+      "robots": ""
+    },
+    {
+      "id": "m-job-hari-match-com",
+      "name": "はりまっち",
+      "status": "active",
+      "cat": "2-地方特化",
+      "role": "sales",
+      "url": "https://job.hari-match.com/",
+      "catalog_strategy": "recruit-page-link",
+      "catalog_note": "兵庫・播磨。最優先営業先",
+      "catalog_probe": {
+        "robots": "allow",
+        "reachable": "yes",
+        "sitemap": "yes",
+        "nameLikely": 0,
+        "companyLinks": 7,
+        "loginWall": "",
+        "note": ""
+      },
+      "probed_at": "2026-11-05",
+      "reason": "",
+      "robots": "allow",
+      "tos_verdict": "no-explicit-prohibition",
+      "tos_url": "https://job.hari-match.com/terms https://job.hari-match.com/terms/ https://job.hari-match.com/kiyaku",
+      "tos_evidence": [],
+      "legal_tier": "T2",
+      "tos_checked_at": "2026-11-05",
+      "crawl": {
+        "via": "sitemap",
+        "render": "static",
+        "detail_template": "/pages/company/:id/",
+        "detail_regex": "^/pages/company/[^/]+/$",
+        "support": 29,
+        "list_urls": [],
+        "sitemap_hits": 29,
+        "details_seen": 29,
+        "sample": [
+          {
+            "url": "https://job.hari-match.com/pages/company/955sxheo/",
+            "name": "株式会社大窪鐵工所",
+            "phone": "078-944-0005",
+            "employees": "106",
+            "hire": null,
+            "site": ""
+          },
+          {
+            "url": "https://job.hari-match.com/pages/company/wq3wek0c/",
+            "name": "株式会社籠谷",
+            "phone": "",
+            "employees": "390",
+            "hire": null,
+            "site": ""
+          }
+        ],
+        "tried": [
+          "サイトマップ /pages/company/:id/(29件) 抽出2/2"
+        ]
+      }
+    },
+    {
+      "id": "m-shushoku-meidaisha-co-jp",
+      "name": "名大社 新卒ナビ",
+      "status": "unverified",
+      "cat": "2-地方特化",
+      "role": "sales",
+      "url": "https://shushoku.meidaisha.co.jp/",
+      "catalog_strategy": "recruit-page-link",
+      "catalog_note": "東海3県。最優先営業先",
+      "catalog_probe": {
+        "robots": "allow",
+        "reachable": "yes",
+        "sitemap": "?",
+        "nameLikely": 0,
+        "companyLinks": 0,
+        "loginWall": "",
+        "note": ""
+      },
+      "probed_at": "2026-11-06",
+      "reason": "企業詳細ページの型が見つからない（一覧・サイトマップとも社名つきの詳細リンクなし）",
+      "robots": "allow",
+      "tos_verdict": "no-explicit-prohibition",
+      "tos_url": "https://shushoku.meidaisha.co.jp/?p=terms",
+      "tos_evidence": [],
+      "legal_tier": "T2",
+      "tos_checked_at": "2026-11-06",
+      "crawl": {
+        "tried": []
+      }
+    },
+    {
+      "id": "m-niigata-job-ne-jp",
+      "name": "にいがた就職応援団ナビ",
+      "status": "unverified",
+      "cat": "2-地方特化",
+      "role": "sales",
+      "url": "https://www.niigata-job.ne.jp/",
+      "catalog_strategy": "recruit-page-link",
+      "catalog_note": "新潟・広報しえん。最優先営業先",
+      "catalog_probe": {
+        "robots": "allow",
+        "reachable": "yes",
+        "sitemap": "?",
+        "nameLikely": 0,
+        "companyLinks": 4,
+        "loginWall": "",
+        "note": ""
+      },
+      "probed_at": "2026-11-06",
+      "reason": "企業詳細ページの型が見つからない（一覧(静的) /:id/search/c/company.html?cmp_id 抽出0/4 / 一覧(JS描画) /:id/search/c/company.html?cmp_id 抽出0/4）",
+      "robots": "allow",
+      "tos_verdict": "not-found",
+      "tos_url": "",
+      "tos_evidence": [],
+      "crawl": {
+        "tried": [
+          "一覧(静的) /:id/search/c/company.html?cmp_id 抽出0/4",
+          "一覧(JS描画) /:id/search/c/company.html?cmp_id 抽出0/4"
+        ]
+      },
+      "tos_override": {
+        "legal_tier": "T2",
+        "reason": "規約ページ未発見。禁止媒体も利用可とした判断に準じる（ユーザー判断 2026-11-06）",
+        "by": "shofukui-neo",
+        "at": "2026-11-06"
+      },
+      "tos_checked_at": "2026-11-06"
+    },
+    {
+      "id": "m-jobkita-jp",
+      "name": "ジョブキタ就活",
+      "status": "active",
+      "cat": "2-地方特化",
+      "role": "sales",
+      "url": "https://www.jobkita.jp/shukatsu/",
+      "catalog_strategy": "recruit-page-link",
+      "catalog_note": "北海道",
+      "catalog_probe": {
+        "robots": "allow",
+        "reachable": "yes",
+        "sitemap": "yes",
+        "nameLikely": 0,
+        "companyLinks": 13,
+        "loginWall": "likely",
+        "note": ""
+      },
+      "probed_at": "2026-11-06",
+      "reason": "",
+      "robots": "allow",
+      "tos_verdict": "not-found",
+      "tos_url": "",
+      "tos_evidence": [],
+      "crawl": {
+        "via": "sitemap",
+        "render": "static",
+        "detail_template": "/job/detail/:id/",
+        "detail_regex": "^/job/detail/[^/?]+/$",
+        "support": 320,
+        "list_urls": [],
+        "sitemap_hits": 320,
+        "details_seen": 320,
+        "sample": [
+          {
+            "url": "https://www.jobkita.jp/job/detail/031984198700380001/",
+            "name": "株式会社北海道マリンパーク",
+            "phone": "0143-83-3800",
+            "employees": "107",
+            "hire": 1,
+            "site": "https://nixe-aqua.com/"
+          },
+          {
+            "url": "https://www.jobkita.jp/job/detail/031984198700380002/",
+            "name": "株式会社北海道マリンパーク",
+            "phone": "0143-83-3800",
+            "employees": "107",
+            "hire": 1,
+            "site": "https://nixe-aqua.com/"
+          }
+        ],
+        "tried": [
+          "サイトマップ /shukatsu/:id/job/detail/:id/:id/(349件) 抽出1/2",
+          "サイトマップ /job/detail/:id/(320件) 抽出2/2"
+        ]
+      },
+      "tos_override": {
+        "legal_tier": "T2",
+        "reason": "規約ページ未発見。禁止媒体も利用可とした判断に準じる（ユーザー判断 2026-11-06）",
+        "by": "shofukui-neo",
+        "at": "2026-11-06"
+      },
+      "tos_checked_at": "2026-11-06"
+    },
+    {
+      "id": "m-kocchake-com",
+      "name": "Kocchake!",
+      "status": "active",
+      "cat": "2-地方特化",
+      "role": "sales",
+      "url": "https://kocchake.com/",
+      "catalog_strategy": "recruit-page-link",
+      "catalog_note": "秋田",
+      "catalog_probe": {
+        "robots": "allow",
+        "reachable": "yes",
+        "sitemap": "yes",
+        "nameLikely": 0,
+        "companyLinks": 16,
+        "loginWall": "",
+        "note": ""
+      },
+      "probed_at": "2026-11-06",
+      "reason": "",
+      "robots": "allow",
+      "tos_verdict": "not-found",
+      "tos_url": "",
+      "tos_evidence": [],
+      "crawl": {
+        "via": "listing",
+        "render": "static",
+        "detail_template": "/pages/company_info/:id",
+        "detail_regex": "^/pages/company_info/[^/?]+$",
+        "support": 14,
+        "list_urls": [
+          "https://kocchake.com/",
+          "https://kocchake.com/pages/search",
+          "https://kocchake.com/pages/recruit-list?only_employment=1",
+          "https://kocchake.com/pages/recruit-list?is_online_senior=1",
+          "https://kocchake.com/pages/recruit-list?is_woman=1",
+          "https://kocchake.com/pages/recruit-high-school?only_high_school=1",
+          "https://kocchake.com/pages/intern-about-company",
+          "https://kocchake.com/pages/about-corporation",
+          "https://kocchake.com/pages/company-manual",
+          "https://kocchake.com/pages/grant-company",
+          "https://kocchake.com/pages/news-list",
+          "https://kocchake.com/pages/member-regist"
+        ],
+        "sitemap_hits": 0,
+        "details_seen": 14,
+        "sample": [
+          {
+            "url": "https://kocchake.com/pages/company_info/p34417",
+            "name": "株式会社ウイズ・ワン",
+            "phone": "",
+            "employees": null,
+            "hire": null,
+            "site": ""
+          },
+          {
+            "url": "https://kocchake.com/pages/company_info/p34878",
+            "name": "山二システムサービス株式会社",
+            "phone": "",
+            "employees": null,
+            "hire": null,
+            "site": ""
+          },
+          {
+            "url": "https://kocchake.com/pages/company_info/p31527",
+            "name": "株式会社プライムアシスタンス",
+            "phone": "",
+            "employees": null,
+            "hire": null,
+            "site": ""
+          },
+          {
+            "url": "https://kocchake.com/pages/company_info/p35747",
+            "name": "ＭＸモバイリング株式会社",
+            "phone": "",
+            "employees": null,
+            "hire": null,
+            "site": "https://www.mxmobiling.co.jp/html/corporate/recruit/index.html"
+          }
+        ],
+        "tried": [
+          "一覧(静的) /pages/company_info/:id 抽出4/4"
+        ]
+      },
+      "tos_override": {
+        "legal_tier": "T2",
+        "reason": "規約ページ未発見。禁止媒体も利用可とした判断に準じる（ユーザー判断 2026-11-06）",
+        "by": "shofukui-neo",
+        "at": "2026-11-06"
+      },
+      "tos_checked_at": "2026-11-06"
+    },
+    {
+      "id": "m-yamagata-np-jp",
+      "name": "やまがた就活ナビ",
+      "status": "unverified",
+      "cat": "2-地方特化",
+      "role": "sales",
+      "url": "https://www.yamagata-np.jp/yamanavi/",
+      "catalog_strategy": "recruit-page-link",
+      "catalog_note": "山形新聞社",
+      "catalog_probe": {
+        "robots": "allow",
+        "reachable": "yes",
+        "sitemap": "yes",
+        "nameLikely": 0,
+        "companyLinks": 0,
+        "loginWall": "",
+        "note": ""
+      },
+      "probed_at": "2026-11-06",
+      "reason": "企業詳細ページの型が見つからない（一覧・サイトマップとも社名つきの詳細リンクなし）",
+      "robots": "allow",
+      "tos_verdict": "not-found",
+      "tos_url": "",
+      "tos_evidence": [],
+      "crawl": {
+        "tried": []
+      },
+      "tos_override": {
+        "legal_tier": "T2",
+        "reason": "規約ページ未発見。禁止媒体も利用可とした判断に準じる（ユーザー判断 2026-11-06）",
+        "by": "shofukui-neo",
+        "at": "2026-11-06"
+      },
+      "tos_checked_at": "2026-11-06"
+    },
+    {
+      "id": "m-shimotsuke-navi-com",
+      "name": "とちぎ就活ナビ",
+      "status": "unverified",
+      "cat": "2-地方特化",
+      "role": "sales",
+      "url": "https://www.shimotsuke-navi.com/",
+      "catalog_strategy": "recruit-page-link",
+      "catalog_note": "下野新聞社",
+      "catalog_probe": {
+        "robots": "allow",
+        "reachable": "yes",
+        "sitemap": "?",
+        "nameLikely": 0,
+        "companyLinks": 2,
+        "loginWall": "",
+        "note": ""
+      },
+      "probed_at": "2026-11-06",
+      "reason": "企業詳細ページの型が見つからない（一覧・サイトマップとも社名つきの詳細リンクなし）",
+      "robots": "allow",
+      "tos_verdict": "not-found",
+      "tos_url": "",
+      "tos_evidence": [],
+      "crawl": {
+        "tried": []
+      },
+      "tos_override": {
+        "legal_tier": "T2",
+        "reason": "規約ページ未発見。禁止媒体も利用可とした判断に準じる（ユーザー判断 2026-11-06）",
+        "by": "shofukui-neo",
+        "at": "2026-11-06"
+      },
+      "tos_checked_at": "2026-11-06"
+    },
+    {
+      "id": "m-g-jumps-jp",
+      "name": "ぐんま就活ジャンプス",
+      "status": "active",
+      "cat": "2-地方特化",
+      "role": "sales",
+      "url": "https://g-jumps.jp/",
+      "catalog_strategy": "recruit-page-link",
+      "catalog_note": "上毛新聞社",
+      "catalog_probe": {
+        "robots": "allow",
+        "reachable": "yes",
+        "sitemap": "yes",
+        "nameLikely": 0,
+        "companyLinks": 4,
+        "loginWall": "",
+        "note": ""
+      },
+      "probed_at": "2026-11-06",
+      "reason": "",
+      "robots": "allow",
+      "tos_verdict": "prohibited",
+      "tos_url": "https://policies.google.com/terms?hl=ja",
+      "tos_evidence": [
+        {
+          "kind": "automated",
+          "text": "マルウェアの投入システムや保護対策に対するスパム行為、ハッキング、または回避ジェイルブレイク、敵対的なプロンプト、プロンプト インジェクション（安全性やバグのテスト プログラムに含まれる場合を除く）以下のような、不正なまたは虚偽の方法でのサービスやコンテンツへのアクセスもしくは使用フィッシング偽のレビューなど、偽のアカ",
+          "url": "https://policies.google.com/terms?hl=ja"
+        }
+      ],
+      "legal_tier": "T3",
+      "tos_checked_at": "2026-11-06",
+      "tos_override": {
+        "legal_tier": "T2",
+        "reason": "規約に自動収集・商用利用の禁止あり。ネオキャリアは媒体を販売する正式な事業者のため利用可と判断（ユーザー判断 2026-11-06）",
+        "by": "shofukui-neo",
+        "at": "2026-11-06"
+      },
+      "crawl": {
+        "via": "listing",
+        "render": "static",
+        "detail_template": "/company/:id/",
+        "detail_regex": "^/company/[^/?]+/$",
+        "support": 103,
+        "list_urls": [
+          "https://g-jumps.jp/",
+          "https://g-jumps.jp/company/"
+        ],
+        "sitemap_hits": 123,
+        "details_seen": 123,
+        "sample": [
+          {
+            "url": "https://g-jumps.jp/company/50551/",
+            "name": "株式会社IHIエアロスペース",
+            "phone": "027-254-0099",
+            "employees": "1900",
+            "hire": null,
+            "site": "https://www.ihi.co.jp/ia/"
+          },
+          {
+            "url": "https://g-jumps.jp/company/50645/",
+            "name": "株式会社IHIエアロスペース・エンジニアリング",
+            "phone": "027-254-0099",
+            "employees": "248",
+            "hire": null,
+            "site": "https://www.ihi.co.jp/ise/recruit/"
+          },
+          {
+            "url": "https://g-jumps.jp/company/52521/",
+            "name": "株式会社アイチコーポレーション",
+            "phone": "027-254-0099",
+            "employees": "1012",
+            "hire": null,
+            "site": "https://www.aichi-corp.co.jp/"
+          }
+        ],
+        "tried": [
+          "一覧(静的) /company/:id/ 抽出3/4"
+        ]
+      }
+    },
+    {
+      "id": "m-chibacari-com",
+      "name": "千葉キャリ",
+      "status": "active",
+      "cat": "2-地方特化",
+      "role": "sales",
+      "url": "https://www.chibacari.com/",
+      "catalog_strategy": "recruit-page-link",
+      "catalog_note": "",
+      "catalog_probe": {
+        "robots": "allow",
+        "reachable": "yes",
+        "sitemap": "yes",
+        "nameLikely": 0,
+        "companyLinks": 5,
+        "loginWall": "",
+        "note": ""
+      },
+      "probed_at": "2026-11-06",
+      "reason": "",
+      "robots": "allow",
+      "tos_verdict": "prohibited",
+      "tos_url": "https://www.chibacari.com/career/rule/",
+      "tos_evidence": [
+        {
+          "kind": "commercial",
+          "text": "本システムの許可なく商業行為を行うこと。",
+          "url": "https://www.chibacari.com/career/rule/"
+        },
+        {
+          "kind": "commercial",
+          "text": "本サービス上での宣伝、広告、勧誘又は営業行為やメール、ジャンクメール、スパムメール、チェーンレター、その他就職転職・求人以外を目的としたメールを送信する行為、その他本サービスの利用目的に反する行為。",
+          "url": "https://www.chibacari.com/career/rule/"
+        },
+        {
+          "kind": "commercial",
+          "text": "本システムで得た情報を商業目的や不法な目的に利用すること。",
+          "url": "https://www.chibacari.com/career/rule/"
+        }
+      ],
+      "legal_tier": "T3",
+      "tos_checked_at": "2026-11-06",
+      "tos_override": {
+        "legal_tier": "T2",
+        "reason": "規約に自動収集・商用利用の禁止あり。ネオキャリアは媒体を販売する正式な事業者のため利用可と判断（ユーザー判断 2026-11-06）",
+        "by": "shofukui-neo",
+        "at": "2026-11-06"
+      },
+      "crawl": {
+        "via": "listing",
+        "render": "static",
+        "detail_template": "/career/job/detail/?id",
+        "detail_regex": "^/career/job/detail/\\?(?=.*\\bid=).*$",
+        "support": 10,
+        "list_urls": [
+          "https://www.chibacari.com/career/",
+          "https://www.chibacari.com/career/job/",
+          "https://www.chibacari.com/career/job/?s=1&new",
+          "https://www.chibacari.com/career/job/recommend/",
+          "https://www.chibacari.com/career/user/job/",
+          "https://www.chibacari.com/career/job/?s=1&content_1=1",
+          "https://www.chibacari.com/career/job/?s=1&content_9=9",
+          "https://www.chibacari.com/career/job/?s=1&content_22=22",
+          "https://www.chibacari.com/career/job/?s=1&content_30=30",
+          "https://www.chibacari.com/career/job/?s=1&content_41=41",
+          "https://www.chibacari.com/career/job/?s=1&content_54=54",
+          "https://www.chibacari.com/career/job/?s=1&content_64=64"
+        ],
+        "sitemap_hits": 0,
+        "details_seen": 190,
+        "sample": [
+          {
+            "url": "https://www.chibacari.com/career/job/detail/?id=20231311",
+            "name": "株式会社マルウ",
+            "phone": "",
+            "employees": null,
+            "hire": null,
+            "site": ""
+          },
+          {
+            "url": "https://www.chibacari.com/career/job/detail/?id=20231312",
+            "name": "株式会社マルウ",
+            "phone": "",
+            "employees": null,
+            "hire": null,
+            "site": ""
+          },
+          {
+            "url": "https://www.chibacari.com/career/job/detail/?id=20231247",
+            "name": "株式会社コーエイ",
+            "phone": "",
+            "employees": null,
+            "hire": null,
+            "site": ""
+          },
+          {
+            "url": "https://www.chibacari.com/career/job/detail/?id=20231248",
+            "name": "株式会社コーエイ",
+            "phone": "",
+            "employees": null,
+            "hire": null,
+            "site": ""
+          }
+        ],
+        "tried": [
+          "一覧(静的) /career/job/detail/?id 抽出4/4"
+        ]
+      }
+    },
+    {
+      "id": "m-sizcari-jp",
+      "name": "しずキャリ",
+      "status": "unverified",
+      "cat": "2-地方特化",
+      "role": "sales",
+      "url": "https://sizcari.jp/",
+      "catalog_strategy": "recruit-page-link",
+      "catalog_note": "静岡。最優先営業先",
+      "catalog_probe": {
+        "robots": "allow",
+        "reachable": "yes",
+        "sitemap": "?",
+        "nameLikely": 0,
+        "companyLinks": 3,
+        "loginWall": "",
+        "note": ""
+      },
+      "probed_at": "2026-11-06",
+      "reason": "到達不可（HTTP 503）。一時的な障害か社内網から届かない可能性。再プローブで確認",
+      "robots": ""
+    },
+    {
+      "id": "m-jobnavi-i-jp",
+      "name": "いしかわ就活スマートナビ",
+      "status": "unverified",
+      "cat": "2-地方特化",
+      "role": "sales",
+      "url": "https://jobnavi-i.jp/",
+      "catalog_strategy": "recruit-page-link",
+      "catalog_note": "",
+      "catalog_probe": {
+        "robots": "allow",
+        "reachable": "yes",
+        "sitemap": "?",
+        "nameLikely": 0,
+        "companyLinks": 10,
+        "loginWall": "",
+        "note": ""
+      },
+      "probed_at": "2026-11-06",
+      "reason": "企業詳細ページの型が見つからない（一覧(静的) /detail_company?id 抽出1/4 / 一覧(JS描画) /detail_company?id 抽出1/4）",
+      "robots": "allow",
+      "tos_verdict": "no-explicit-prohibition",
+      "tos_url": "https://jobnavi-i.jp/terms/ https://jobnavi-i.jp/sp/terms/ https://jobnavi-i.jp/terms",
+      "tos_evidence": [],
+      "legal_tier": "T2",
+      "tos_checked_at": "2026-11-06",
+      "crawl": {
+        "tried": [
+          "一覧(静的) /detail_company?id 抽出1/4",
+          "一覧(JS描画) /detail_company?id 抽出1/4"
+        ]
+      }
+    },
+    {
+      "id": "m-fukui-syukatsu-com",
+      "name": "就活ふくい",
+      "status": "active",
+      "cat": "2-地方特化",
+      "role": "sales",
+      "url": "https://fukui-syukatsu.com/",
+      "catalog_strategy": "recruit-page-link",
+      "catalog_note": "福井商工会議所",
+      "catalog_probe": {
+        "robots": "allow",
+        "reachable": "yes",
+        "sitemap": "yes",
+        "nameLikely": 0,
+        "companyLinks": 4,
+        "loginWall": "",
+        "note": ""
+      },
+      "probed_at": "2026-11-06",
+      "reason": "",
+      "robots": "allow",
+      "tos_verdict": "prohibited",
+      "tos_url": "https://fukui-syukatsu.com/kiyaku/ https://fukui-syukatsu.com/kiyaku",
+      "tos_evidence": [
+        {
+          "kind": "commercial",
+          "text": "審査の際、当所から、当所所定の利用規約同意書に所定事項の記載・捺印を求める場合や、広告の掲載及び本サービスの利用をお断りする場合がございますが、理由及び事情の如何に問わず、審査の内容・判断理由はお伝えいたしません。",
+          "url": "https://fukui-syukatsu.com/kiyaku/"
+        },
+        {
+          "kind": "commercial",
+          "text": "審査の際、当所から、当所所定の利用規約同意書に所定事項の記載・捺印を求める場合や、広告の掲載及び本サービスの利用をお断りする場合がございますが、理由及び事情の如何に問わず、審査の内容・判断理由はお伝えいたしません。",
+          "url": "https://fukui-syukatsu.com/kiyaku"
+        }
+      ],
+      "legal_tier": "T3",
+      "tos_checked_at": "2026-11-06",
+      "tos_override": {
+        "legal_tier": "T2",
+        "reason": "規約に自動収集・商用利用の禁止あり。ネオキャリアは媒体を販売する正式な事業者のため利用可と判断（ユーザー判断 2026-11-06）",
+        "by": "shofukui-neo",
+        "at": "2026-11-06"
+      },
+      "crawl": {
+        "via": "listing",
+        "render": "static",
+        "detail_template": "/job/single-job.php?id",
+        "detail_regex": "^/job/single-job\\.php\\?(?=.*\\bid=).*$",
+        "support": 10,
+        "list_urls": [
+          "https://fukui-syukatsu.com/",
+          "https://fukui-syukatsu.com/job/",
+          "https://fukui-syukatsu.com/job/?industries%5B%5D=1",
+          "https://fukui-syukatsu.com/job/?industries%5B%5D=2",
+          "https://fukui-syukatsu.com/job/?industries%5B%5D=3",
+          "https://fukui-syukatsu.com/job/?industries%5B%5D=4",
+          "https://fukui-syukatsu.com/job/?industries%5B%5D=5",
+          "https://fukui-syukatsu.com/job/?industries%5B%5D=6",
+          "https://fukui-syukatsu.com/job/?jobs%5B%5D=1",
+          "https://fukui-syukatsu.com/job/?jobs%5B%5D=2",
+          "https://fukui-syukatsu.com/job/?jobs%5B%5D=3",
+          "https://fukui-syukatsu.com/job/?jobs%5B%5D=4"
+        ],
+        "sitemap_hits": 0,
+        "details_seen": 52,
+        "sample": [
+          {
+            "url": "https://fukui-syukatsu.com/job/single-job.php?id=2607",
+            "name": "中島管材鋼機株式会社",
+            "phone": "0776-21-2241",
+            "employees": "42",
+            "hire": 3,
+            "site": "https://kanzai.biz/"
+          },
+          {
+            "url": "https://fukui-syukatsu.com/job/single-job.php?id=3215",
+            "name": "花山工業株式会社",
+            "phone": "0776-35-2213",
+            "employees": "53",
+            "hire": 1,
+            "site": "http://www.hanayamakogyo.co.jp/"
+          },
+          {
+            "url": "https://fukui-syukatsu.com/job/single-job.php?id=3204",
+            "name": "カナカン株式会社",
+            "phone": "076-231-1151",
+            "employees": "578",
+            "hire": 1,
+            "site": "https://www.kanakan.co.jp/"
+          },
+          {
+            "url": "https://fukui-syukatsu.com/job/single-job.php?id=3154",
+            "name": "丸八株式会社",
+            "phone": "0776-67-0808",
+            "employees": "22",
+            "hire": null,
+            "site": "https://www.maruhati.co.jp/"
+          }
+        ],
+        "tried": [
+          "一覧(静的) /job/single-job.php?id 抽出4/4"
+        ]
+      }
+    },
+    {
+      "id": "m-291jobs-pref-fukui-lg-jp",
+      "name": "291JOBS新卒",
+      "status": "unverified",
+      "cat": "2-地方特化",
+      "role": "sales",
+      "url": "https://291jobs.pref.fukui.lg.jp/shinsotsu/",
+      "catalog_strategy": "media-detail",
+      "catalog_note": "福井県・自治体（無料掲載）",
+      "catalog_probe": {
+        "robots": "allow",
+        "reachable": "yes",
+        "sitemap": "no",
+        "nameLikely": 0,
+        "companyLinks": 7,
+        "loginWall": "",
+        "note": ""
+      },
+      "probed_at": "2026-11-06",
+      "reason": "企業詳細ページの型が見つからない（一覧・サイトマップとも社名つきの詳細リンクなし）",
+      "robots": "allow",
+      "tos_verdict": "not-found",
+      "tos_url": "",
+      "tos_evidence": [],
+      "crawl": {
+        "tried": []
+      },
+      "tos_override": {
+        "legal_tier": "T2",
+        "reason": "規約ページ未発見。禁止媒体も利用可とした判断に準じる（ユーザー判断 2026-11-06）",
+        "by": "shofukui-neo",
+        "at": "2026-11-06"
+      },
+      "tos_checked_at": "2026-11-06"
+    },
+    {
+      "id": "m-okajob-com",
+      "name": "オカジョブ",
+      "status": "unverified",
+      "cat": "2-地方特化",
+      "role": "competitor",
+      "url": "https://www.okajob.com/",
+      "catalog_strategy": "recruit-page-link",
+      "catalog_note": "岡山・シーズ系。自社採用管理標榜=競合精査",
+      "catalog_probe": {
+        "robots": "allow",
+        "reachable": "yes",
+        "sitemap": "?",
+        "nameLikely": 0,
+        "companyLinks": 14,
+        "loginWall": "",
+        "note": ""
+      },
+      "probed_at": "2026-11-06",
+      "reason": "企業詳細ページの型が見つからない（一覧・サイトマップとも社名つきの詳細リンクなし）",
+      "robots": "allow",
+      "tos_verdict": "not-found",
+      "tos_url": "",
+      "tos_evidence": [],
+      "crawl": {
+        "tried": []
+      },
+      "tos_override": {
+        "legal_tier": "T2",
+        "reason": "規約ページ未発見。禁止媒体も利用可とした判断に準じる（ユーザー判断 2026-11-06）",
+        "by": "shofukui-neo",
+        "at": "2026-11-06"
+      },
+      "tos_checked_at": "2026-11-06"
+    },
+    {
+      "id": "m-hirojob-com",
+      "name": "ヒロジョブ",
+      "status": "unverified",
+      "cat": "2-地方特化",
+      "role": "competitor",
+      "url": "https://www.hirojob.com/",
+      "catalog_strategy": "recruit-page-link",
+      "catalog_note": "広島・シーズ系。URL要確認",
+      "catalog_probe": {
+        "robots": "allow",
+        "reachable": "yes",
+        "sitemap": "?",
+        "nameLikely": 0,
+        "companyLinks": 14,
+        "loginWall": "",
+        "note": ""
+      },
+      "probed_at": "2026-11-06",
+      "reason": "企業詳細ページの型が見つからない（一覧・サイトマップとも社名つきの詳細リンクなし）",
+      "robots": "allow",
+      "tos_verdict": "not-found",
+      "tos_url": "",
+      "tos_evidence": [],
+      "crawl": {
+        "tried": []
+      },
+      "tos_override": {
+        "legal_tier": "T2",
+        "reason": "規約ページ未発見。禁止媒体も利用可とした判断に準じる（ユーザー判断 2026-11-06）",
+        "by": "shofukui-neo",
+        "at": "2026-11-06"
+      },
+      "tos_checked_at": "2026-11-06"
+    },
+    {
+      "id": "m-kagawajob-com",
+      "name": "カガワジョブ",
+      "status": "unverified",
+      "cat": "2-地方特化",
+      "role": "competitor",
+      "url": "https://www.kagawajob.com/",
+      "catalog_strategy": "recruit-page-link",
+      "catalog_note": "香川・シーズ系。URL要確認",
+      "catalog_probe": {
+        "robots": "allow",
+        "reachable": "no",
+        "sitemap": "?",
+        "nameLikely": 0,
+        "companyLinks": "",
+        "loginWall": "",
+        "note": "HTTP 410"
+      },
+      "probed_at": "2026-11-06",
+      "reason": "到達不可（fetch failed）。一時的な障害か社内網から届かない可能性。再プローブで確認",
+      "robots": ""
+    },
+    {
+      "id": "m-furusato-tori-info-co-jp",
+      "name": "とっとり就活ナビ",
+      "status": "unverified",
+      "cat": "2-地方特化",
+      "role": "sales",
+      "url": "https://furusato.tori-info.co.jp/torinavi/",
+      "catalog_strategy": "media-detail",
+      "catalog_note": "鳥取県定住機構",
+      "catalog_probe": {
+        "robots": "allow",
+        "reachable": "yes",
+        "sitemap": "?",
+        "nameLikely": 0,
+        "companyLinks": 4,
+        "loginWall": "",
+        "note": ""
+      },
+      "probed_at": "2026-11-06",
+      "reason": "企業詳細ページの型が見つからない（一覧・サイトマップとも社名つきの詳細リンクなし）",
+      "robots": "allow",
+      "tos_verdict": "no-explicit-prohibition",
+      "tos_url": "https://furusato.tori-info.co.jp/torinavi/docs/11607.html",
+      "tos_evidence": [],
+      "legal_tier": "T2",
+      "tos_checked_at": "2026-11-06",
+      "crawl": {
+        "tried": []
+      }
+    },
+    {
+      "id": "m-gogo-jobcafe-shimane-jp",
+      "name": "ジョブカフェしまね",
+      "status": "active",
+      "cat": "2-地方特化",
+      "role": "sales",
+      "url": "https://www.gogo-jobcafe-shimane.jp/",
+      "catalog_strategy": "media-detail",
+      "catalog_note": "島根・自治体",
+      "catalog_probe": {
+        "robots": "allow",
+        "reachable": "yes",
+        "sitemap": "no",
+        "nameLikely": 0,
+        "companyLinks": 13,
+        "loginWall": "",
+        "note": ""
+      },
+      "probed_at": "2026-11-05",
+      "reason": "",
+      "robots": "allow",
+      "tos_verdict": "no-explicit-prohibition",
+      "tos_url": "https://www.gogo-jobcafe-shimane.jp/about_site",
+      "tos_evidence": [],
+      "legal_tier": "T2",
+      "tos_checked_at": "2026-11-05",
+      "crawl": {
+        "via": "listing",
+        "render": "static",
+        "detail_template": "/job/detail?job_id",
+        "detail_regex": "^/job/detail\\?(?=.*\\bjob_id=).*$",
+        "support": 4,
+        "list_urls": [
+          "https://www.gogo-jobcafe-shimane.jp/",
+          "https://www.gogo-jobcafe-shimane.jp/job/merit",
+          "https://www.gogo-jobcafe-shimane.jp/job_faq",
+          "https://www.gogo-jobcafe-shimane.jp/jobmate/gakusei_jobmate",
+          "https://www.gogo-jobcafe-shimane.jp/job/search",
+          "https://www.gogo-jobcafe-shimane.jp/job/company",
+          "https://www.gogo-jobcafe-shimane.jp/event/list",
+          "https://www.gogo-jobcafe-shimane.jp/intern/search",
+          "https://www.gogo-jobcafe-shimane.jp/intern/search?intern_type%5B%5D=1",
+          "https://www.gogo-jobcafe-shimane.jp/job/mylist",
+          "https://www.gogo-jobcafe-shimane.jp/company",
+          "https://www.gogo-jobcafe-shimane.jp/crm/company/CompanyApplyTop"
+        ],
+        "sitemap_hits": 0,
+        "details_seen": 20,
+        "sample": [
+          {
+            "url": "https://www.gogo-jobcafe-shimane.jp/job/detail?job_id=2364845",
+            "name": "一般社団法人しまね縁結びサポートセンター",
+            "phone": "",
+            "employees": "13",
+            "hire": 1,
+            "site": "https://www.shimane-enmusubi.com/"
+          },
+          {
+            "url": "https://www.gogo-jobcafe-shimane.jp/job/detail?job_id=1611239",
+            "name": "Ｆｒｏｎｔｉｅｒ株式会社",
+            "phone": "",
+            "employees": "60",
+            "hire": null,
+            "site": "https://www.blueskyfrontier.jp/"
+          },
+          {
+            "url": "https://www.gogo-jobcafe-shimane.jp/job/detail?job_id=1611238",
+            "name": "Ｆｒｏｎｔｉｅｒ株式会社",
+            "phone": "",
+            "employees": "60",
+            "hire": null,
+            "site": "https://www.blueskyfrontier.jp/"
+          }
+        ],
+        "tried": [
+          "一覧(静的) /job/detail?job_id 抽出3/3"
+        ]
+      }
+    },
+    {
+      "id": "m-joby-jp",
+      "name": "やまぐちジョブナビ",
+      "status": "unverified",
+      "cat": "2-地方特化",
+      "role": "sales",
+      "url": "https://www.joby.jp/",
+      "catalog_strategy": "recruit-page-link",
+      "catalog_note": "山口",
+      "catalog_probe": {
+        "robots": "allow",
+        "reachable": "yes",
+        "sitemap": "yes",
+        "nameLikely": 0,
+        "companyLinks": 9,
+        "loginWall": "",
+        "note": ""
+      },
+      "probed_at": "2026-11-06",
+      "reason": "企業詳細ページの型が見つからない（サイトマップ /:id/(22件) 抽出0/2）",
+      "robots": "allow",
+      "tos_verdict": "no-explicit-prohibition",
+      "tos_url": "https://www.joby.jp/terms https://www.joby.jp/terms/",
+      "tos_evidence": [],
+      "legal_tier": "T2",
+      "tos_checked_at": "2026-11-06",
+      "crawl": {
+        "tried": [
+          "サイトマップ /:id/(22件) 抽出0/2"
+        ]
+      }
+    },
+    {
+      "id": "m-switch-navi-jp",
+      "name": "スイッチナビ",
+      "status": "active",
+      "cat": "2-地方特化",
+      "role": "sales",
+      "url": "https://switch-navi.jp/",
+      "catalog_strategy": "recruit-page-link",
+      "catalog_note": "愛媛。最優先営業先",
+      "catalog_probe": {
+        "robots": "allow",
+        "reachable": "yes",
+        "sitemap": "?",
+        "nameLikely": 0,
+        "companyLinks": 22,
+        "loginWall": "",
+        "note": ""
+      },
+      "probed_at": "2026-11-06",
+      "reason": "",
+      "robots": "allow",
+      "tos_verdict": "not-found",
+      "tos_url": "",
+      "tos_evidence": [],
+      "crawl": {
+        "via": "listing",
+        "render": "static",
+        "detail_template": "/company/detail.html?cmp_id",
+        "detail_regex": "^/company/detail\\.html\\?(?=.*\\bcmp_id=).*$",
+        "support": 14,
+        "list_urls": [
+          "https://switch-navi.jp/",
+          "https://switch-navi.jp/member/",
+          "https://switch-navi.jp/search/",
+          "https://switch-navi.jp/company/pickup.html",
+          "https://switch-navi.jp/company/event.html?cmp_id=300",
+          "https://switch-navi.jp/company/action.html?cmp_id=317",
+          "https://switch-navi.jp/member/member/registration.html",
+          "https://switch-navi.jp/search/?page_id=2",
+          "https://switch-navi.jp/search/?page_id=3",
+          "https://switch-navi.jp/company/",
+          "https://switch-navi.jp/company/company/detail.html?cmp_id=300",
+          "https://switch-navi.jp/company/company/recruit.html?cmp_id=300"
+        ],
+        "sitemap_hits": 0,
+        "details_seen": 21,
+        "sample": [
+          {
+            "url": "https://switch-navi.jp/company/detail.html?cmp_id=302",
+            "name": "ＪＡえひめエネルギー株式会社",
+            "phone": "089-974-3592",
+            "employees": "123",
+            "hire": null,
+            "site": "http://www.ja-ehimeene.co.jp/"
+          },
+          {
+            "url": "https://switch-navi.jp/company/detail.html?cmp_id=321",
+            "name": "ネッツトヨタ瀬戸内株式会社",
+            "phone": "089-904-0608",
+            "employees": "382",
+            "hire": null,
+            "site": "https://www.netzsetouchi.jp/"
+          },
+          {
+            "url": "https://switch-navi.jp/company/detail.html?cmp_id=314",
+            "name": "大西物流株式会社",
+            "phone": "0896-25-0222",
+            "employees": "350",
+            "hire": null,
+            "site": "https://www.ohnisi-buturyu.co.jp/"
+          },
+          {
+            "url": "https://switch-navi.jp/company/detail.html?cmp_id=306",
+            "name": "株式会社大石工作所",
+            "phone": "0897-46-1160",
+            "employees": "70",
+            "hire": null,
+            "site": "http://ois.gr.jp/"
+          }
+        ],
+        "tried": [
+          "一覧(静的) /company/detail.html?cmp_id 抽出4/4"
+        ]
+      },
+      "tos_override": {
+        "legal_tier": "T2",
+        "reason": "規約ページ未発見。禁止媒体も利用可とした判断に準じる（ユーザー判断 2026-11-06）",
+        "by": "shofukui-neo",
+        "at": "2026-11-06"
+      },
+      "tos_checked_at": "2026-11-06"
+    },
+    {
+      "id": "m-kenjin-ne-jp",
+      "name": "ケンジン",
+      "status": "unverified",
+      "cat": "2-地方特化",
+      "role": "sales",
+      "url": "https://www.kenjin.ne.jp/",
+      "catalog_strategy": "recruit-page-link",
+      "catalog_note": "高知。最優先営業先",
+      "catalog_probe": {
+        "robots": "allow",
+        "reachable": "yes",
+        "sitemap": "no",
+        "nameLikely": 0,
+        "companyLinks": 0,
+        "loginWall": "",
+        "note": ""
+      },
+      "probed_at": "2026-11-06",
+      "reason": "企業詳細ページの型が見つからない（一覧・サイトマップとも社名つきの詳細リンクなし）",
+      "robots": "allow",
+      "tos_verdict": "not-found",
+      "tos_url": "",
+      "tos_evidence": [],
+      "crawl": {
+        "tried": []
+      },
+      "tos_override": {
+        "legal_tier": "T2",
+        "reason": "規約ページ未発見。禁止媒体も利用可とした判断に準じる（ユーザー判断 2026-11-06）",
+        "by": "shofukui-neo",
+        "at": "2026-11-06"
+      },
+      "tos_checked_at": "2026-11-06"
+    },
+    {
+      "id": "m-tksjob-com",
+      "name": "とくしま就活ナビ",
+      "status": "excluded",
+      "cat": "2-地方特化",
+      "role": "sales",
+      "url": "https://tksjob.com/",
+      "catalog_strategy": "recruit-page-link",
+      "catalog_note": "徳島新聞社",
+      "catalog_probe": {
+        "robots": "allow",
+        "reachable": "no",
+        "sitemap": "?",
+        "nameLikely": 0,
+        "companyLinks": "",
+        "loginWall": "",
+        "note": "HTTP 403"
+      },
+      "probed_at": "2026-11-06",
+      "reason": "自動アクセスを拒否（HTTP 403）。UA偽装等の回避はしない",
+      "robots": ""
+    },
+    {
+      "id": "m-jobnavi-pref-tokushima-lg-jp",
+      "name": "ジョブナビとくしま",
+      "status": "unverified",
+      "cat": "2-地方特化",
+      "role": "sales",
+      "url": "https://jobnavi.pref.tokushima.lg.jp/",
+      "catalog_strategy": "media-detail",
+      "catalog_note": "徳島県・自治体",
+      "catalog_probe": {
+        "robots": "allow",
+        "reachable": "yes",
+        "sitemap": "no",
+        "nameLikely": 0,
+        "companyLinks": 4,
+        "loginWall": "",
+        "note": ""
+      },
+      "probed_at": "2026-11-06",
+      "reason": "企業詳細ページの型が見つからない（一覧・サイトマップとも社名つきの詳細リンクなし）",
+      "robots": "allow",
+      "tos_verdict": "not-found",
+      "tos_url": "",
+      "tos_evidence": [],
+      "crawl": {
+        "tried": []
+      },
+      "tos_override": {
+        "legal_tier": "T2",
+        "reason": "規約ページ未発見。禁止媒体も利用可とした判断に準じる（ユーザー判断 2026-11-06）",
+        "by": "shofukui-neo",
+        "at": "2026-11-06"
+      },
+      "tos_checked_at": "2026-11-06"
+    },
+    {
+      "id": "m-saga-job-jp",
+      "name": "さがジョブナビ",
+      "status": "unverified",
+      "cat": "2-地方特化",
+      "role": "sales",
+      "url": "https://saga-job.jp/",
+      "catalog_strategy": "media-detail",
+      "catalog_note": "佐賀県",
+      "catalog_probe": {
+        "robots": "allow",
+        "reachable": "yes",
+        "sitemap": "?",
+        "nameLikely": 0,
+        "companyLinks": 10,
+        "loginWall": "",
+        "note": ""
+      },
+      "probed_at": "2026-11-06",
+      "reason": "企業詳細ページの型が見つからない（一覧・サイトマップとも社名つきの詳細リンクなし）",
+      "robots": "allow",
+      "tos_verdict": "prohibited",
+      "tos_url": "https://saga-job.jp/kiyaku/ https://saga-job.jp/tos/ https://saga-job.jp/kiyaku",
+      "tos_evidence": [
+        {
+          "kind": "commercial",
+          "text": "第三者又は県の著作権、商標権、意匠権、その他の知的所有権を侵害する行為 第三者又は県の財産、プライバシー、名誉等の他人の権利を侵害する行為 第三者又は県を誹謗中傷する行為 第三者又は県に不利益を与える、又はそのおそれのある行為 虚偽の情報を登録、告知する行為 職業安定法等の法令、公序良俗に反する、又はそのおそれのある行",
+          "url": "https://saga-job.jp/kiyaku/"
+        },
+        {
+          "kind": "commercial",
+          "text": "第三者又は県の著作権、商標権、意匠権、その他の知的所有権を侵害する行為 第三者又は県の財産、プライバシー、名誉等の他人の権利を侵害する行為 第三者又は県を誹謗中傷する行為 第三者又は県に不利益を与える、又はそのおそれのある行為 虚偽の情報を登録、告知する行為 職業安定法等の法令、公序良俗に反する、又はそのおそれのある行",
+          "url": "https://saga-job.jp/kiyaku"
+        }
+      ],
+      "legal_tier": "T3",
+      "tos_checked_at": "2026-11-06",
+      "tos_override": {
+        "legal_tier": "T2",
+        "reason": "規約に自動収集・商用利用の禁止あり。ネオキャリアは媒体を販売する正式な事業者のため利用可と判断（ユーザー判断 2026-11-06）",
+        "by": "shofukui-neo",
+        "at": "2026-11-06"
+      },
+      "crawl": {
+        "tried": []
+      }
+    },
+    {
+      "id": "m-oita-jobpark-jp",
+      "name": "オオイタジョブパーク",
+      "status": "active",
+      "cat": "2-地方特化",
+      "role": "sales",
+      "url": "https://oita-jobpark.jp/",
+      "catalog_strategy": "media-detail",
+      "catalog_note": "大分県",
+      "catalog_probe": {
+        "robots": "allow",
+        "reachable": "yes",
+        "sitemap": "yes",
+        "nameLikely": 0,
+        "companyLinks": 8,
+        "loginWall": "",
+        "note": ""
+      },
+      "probed_at": "2026-11-06",
+      "reason": "",
+      "robots": "allow",
+      "tos_verdict": "prohibited",
+      "tos_url": "https://oita-jobpark.jp/terms https://oita-jobpark.jp/terms/ https://oita-jobpark.jp/terms.html",
+      "tos_evidence": [
+        {
+          "kind": "commercial",
+          "text": "1. 法令等に違反するもの又は違反するおそれがあるもの2. 公序良俗に反するもの3. 第三者の権利や基本的人権等を侵害するもの4. 特定の個人、企業、団体等を誹謗中傷するもの5. 営業活動、政治的活動、宗教的活動、その他営利を目的としたもの6. 虚偽や事実でない内容が含まれるもの7. 著作権、商標権、肖像権などの県、他",
+          "url": "https://oita-jobpark.jp/terms"
+        },
+        {
+          "kind": "commercial",
+          "text": "1. 法令等に違反するもの又は違反するおそれがあるもの2. 公序良俗に反するもの3. 第三者の権利や基本的人権等を侵害するもの4. 特定の個人、企業、団体等を誹謗中傷するもの5. 営業活動、政治的活動、宗教的活動、その他営利を目的としたもの6. 虚偽や事実でない内容が含まれるもの7. 著作権、商標権、肖像権などの県、他",
+          "url": "https://oita-jobpark.jp/terms/"
+        },
+        {
+          "kind": "commercial",
+          "text": "1. 法令等に違反するもの又は違反するおそれがあるもの2. 公序良俗に反するもの3. 第三者の権利や基本的人権等を侵害するもの4. 特定の個人、企業、団体等を誹謗中傷するもの5. 営業活動、政治的活動、宗教的活動、その他営利を目的としたもの6. 虚偽や事実でない内容が含まれるもの7. 著作権、商標権、肖像権などの県、他",
+          "url": "https://oita-jobpark.jp/terms.html"
+        }
+      ],
+      "legal_tier": "T3",
+      "tos_checked_at": "2026-11-06",
+      "tos_override": {
+        "legal_tier": "T2",
+        "reason": "規約に自動収集・商用利用の禁止あり。ネオキャリアは媒体を販売する正式な事業者のため利用可と判断（ユーザー判断 2026-11-06）",
+        "by": "shofukui-neo",
+        "at": "2026-11-06"
+      },
+      "crawl": {
+        "via": "listing",
+        "render": "static",
+        "detail_template": "/companies/:id",
+        "detail_regex": "^/companies/[^/?]+$",
+        "support": 19,
+        "list_urls": [
+          "https://oita-jobpark.jp/",
+          "https://oita-jobpark.jp/forcompany",
+          "https://oita-jobpark.jp/search/companies",
+          "https://oita-jobpark.jp/search/recruitments",
+          "https://oita-jobpark.jp/search/interns",
+          "https://oita-jobpark.jp/search/events",
+          "https://oita-jobpark.jp/search/movies",
+          "https://oita-jobpark.jp/search/recruitments?q%5Bprofile_graduate_year_eq%5D=2026%E5%B9%B4",
+          "https://oita-jobpark.jp/search/recruitments?q%5Bprofile_graduate_year_eq%5D=2027%E5%B9%B4",
+          "https://oita-jobpark.jp/company/sign_up",
+          "https://oita-jobpark.jp/search/companies?page=1",
+          "https://oita-jobpark.jp/search/companies?page=2"
+        ],
+        "sitemap_hits": 200,
+        "details_seen": 43,
+        "sample": [
+          {
+            "url": "https://oita-jobpark.jp/companies/9569",
+            "name": "サミットスチール株式会社",
+            "phone": "",
+            "employees": "388",
+            "hire": null,
+            "site": "https://www.summitsteel.co.jp/"
+          },
+          {
+            "url": "https://oita-jobpark.jp/companies/9518",
+            "name": "株式会社 東九",
+            "phone": "097-586-1528",
+            "employees": "42",
+            "hire": null,
+            "site": "https://www.toukyu-k.co.jp/"
+          },
+          {
+            "url": "https://oita-jobpark.jp/companies/9444",
+            "name": "エレホン・化成工業株式会社",
+            "phone": "097-552-2251",
+            "employees": "111",
+            "hire": null,
+            "site": "https://erewhon.co.jp/"
+          },
+          {
+            "url": "https://oita-jobpark.jp/companies/724",
+            "name": "レゾナント・ソリューションズ株式会社",
+            "phone": "097-529-5310",
+            "employees": "9",
+            "hire": null,
+            "site": "http://www.resonant-sol.jp/"
+          }
+        ],
+        "tried": [
+          "一覧(静的) /companies/:id 抽出4/4"
+        ]
+      }
+    },
+    {
+      "id": "m-kagojob-jp",
+      "name": "かごJob",
+      "status": "active",
+      "cat": "2-地方特化",
+      "role": "sales",
+      "url": "https://www.kagojob.jp/",
+      "catalog_strategy": "media-detail",
+      "catalog_note": "鹿児島県",
+      "catalog_probe": {
+        "robots": "allow",
+        "reachable": "yes",
+        "sitemap": "no",
+        "nameLikely": 0,
+        "companyLinks": 101,
+        "loginWall": "",
+        "note": ""
+      },
+      "probed_at": "2026-11-05",
+      "reason": "",
+      "robots": "allow",
+      "tos_verdict": "no-explicit-prohibition",
+      "tos_url": "https://www.kagojob.jp/privacy/",
+      "tos_evidence": [],
+      "crawl": {
+        "via": "listing",
+        "render": "static",
+        "detail_template": "/introduction/detail/:id/",
+        "detail_regex": "^/introduction/detail/[^/]+/$",
+        "support": 15,
+        "list_urls": [
+          "https://www.kagojob.jp/",
+          "https://www.kagojob.jp/info/for_company/",
+          "https://www.kagojob.jp/event/detail/pref-gousetsu1212/",
+          "https://www.kagojob.jp/event/detail/pref-hoikunoshigoto/",
+          "https://www.kagojob.jp/event/detail/kagoshimakigyoumiryoku/"
+        ],
+        "sitemap_hits": 15,
+        "details_seen": 15,
+        "sample": [
+          {
+            "url": "https://www.kagojob.jp/introduction/detail/12/",
+            "name": "社会医療法人緑泉会",
+            "phone": "",
+            "employees": null,
+            "hire": null,
+            "site": "https://lit.link/yonemorihp"
+          },
+          {
+            "url": "https://www.kagojob.jp/introduction/detail/11/",
+            "name": "株式会社財宝",
+            "phone": "",
+            "employees": null,
+            "hire": null,
+            "site": ""
+          },
+          {
+            "url": "https://www.kagojob.jp/introduction/detail/14/",
+            "name": "SCSKニアショアシステムズ株式会社",
+            "phone": "",
+            "employees": null,
+            "hire": null,
+            "site": ""
+          }
+        ],
+        "tried": [
+          "一覧(静的) /introduction/detail/:id/ 抽出3/3"
+        ]
+      },
+      "legal_tier": "T2",
+      "tos_checked_at": "2026-11-05"
+    },
+    {
+      "id": "m-kumamoto-keizai-co-jp",
+      "name": "デビュー(Debut)",
+      "status": "unverified",
+      "cat": "2-地方特化",
+      "role": "sales",
+      "url": "http://www.kumamoto-keizai.co.jp/debut/",
+      "catalog_strategy": "recruit-page-link",
+      "catalog_note": "熊本・くまもと経済",
+      "catalog_probe": {
+        "robots": "allow",
+        "reachable": "yes",
+        "sitemap": "no",
+        "nameLikely": 0,
+        "companyLinks": 4,
+        "loginWall": "",
+        "note": ""
+      },
+      "probed_at": "2026-11-06",
+      "reason": "企業詳細ページの型が見つからない（一覧・サイトマップとも社名つきの詳細リンクなし）",
+      "robots": "allow",
+      "tos_verdict": "not-found",
+      "tos_url": "",
+      "tos_evidence": [],
+      "crawl": {
+        "tried": []
+      },
+      "tos_override": {
+        "legal_tier": "T2",
+        "reason": "規約ページ未発見。禁止媒体も利用可とした判断に準じる（ユーザー判断 2026-11-06）",
+        "by": "shofukui-neo",
+        "at": "2026-11-06"
+      },
+      "tos_checked_at": "2026-11-06"
+    },
+    {
+      "id": "m-timesnavi-jp",
+      "name": "タイムス就職ナビ",
+      "status": "unverified",
+      "cat": "2-地方特化",
+      "role": "sales",
+      "url": "https://timesnavi.jp/",
+      "catalog_strategy": "recruit-page-link",
+      "catalog_note": "沖縄タイムス社",
+      "catalog_probe": {
+        "robots": "allow",
+        "reachable": "yes",
+        "sitemap": "?",
+        "nameLikely": 0,
+        "companyLinks": 0,
+        "loginWall": "",
+        "note": ""
+      },
+      "probed_at": "2026-11-06",
+      "reason": "企業詳細ページの型が見つからない（一覧・サイトマップとも社名つきの詳細リンクなし）",
+      "robots": "allow",
+      "tos_verdict": "not-found",
+      "tos_url": "",
+      "tos_evidence": [],
+      "crawl": {
+        "tried": []
+      },
+      "tos_override": {
+        "legal_tier": "T2",
+        "reason": "規約ページ未発見。禁止媒体も利用可とした判断に準じる（ユーザー判断 2026-11-06）",
+        "by": "shofukui-neo",
+        "at": "2026-11-06"
+      },
+      "tos_checked_at": "2026-11-06"
+    },
+    {
+      "id": "m-ryunavi-com",
+      "name": "りゅうナビ",
+      "status": "unverified",
+      "cat": "2-地方特化",
+      "role": "sales",
+      "url": "https://www.ryunavi.com/",
+      "catalog_strategy": "recruit-page-link",
+      "catalog_note": "沖縄",
+      "catalog_probe": {
+        "robots": "allow",
+        "reachable": "yes",
+        "sitemap": "no",
+        "nameLikely": 0,
+        "companyLinks": 0,
+        "loginWall": "likely",
+        "note": ""
+      },
+      "probed_at": "2026-11-06",
+      "reason": "企業詳細ページの型が見つからない（一覧・サイトマップとも社名つきの詳細リンクなし）",
+      "robots": "allow",
+      "tos_verdict": "not-found",
+      "tos_url": "",
+      "tos_evidence": [],
+      "crawl": {
+        "tried": []
+      },
+      "tos_override": {
+        "legal_tier": "T2",
+        "reason": "規約ページ未発見。禁止媒体も利用可とした判断に準じる（ユーザー判断 2026-11-06）",
+        "by": "shofukui-neo",
+        "at": "2026-11-06"
+      },
+      "tos_checked_at": "2026-11-06"
+    },
+    {
+      "id": "m-fukuoka-shukatsu-jp",
+      "name": "福岡就活Plus",
+      "status": "active",
+      "cat": "2-地方特化",
+      "role": "sales",
+      "url": "https://fukuoka-shukatsu.jp/",
+      "catalog_strategy": "recruit-page-link",
+      "catalog_note": "福岡・エージェント型",
+      "catalog_probe": {
+        "robots": "allow",
+        "reachable": "yes",
+        "sitemap": "yes",
+        "nameLikely": 0,
+        "companyLinks": 2,
+        "loginWall": "",
+        "note": ""
+      },
+      "probed_at": "2026-11-06",
+      "reason": "",
+      "robots": "allow",
+      "tos_verdict": "prohibited",
+      "tos_url": "https://fukuoka-shukatsu.jp/terms-of-service/ https://policies.google.com/terms https://fukuoka-shukatsu.jp/terms",
+      "tos_evidence": [
+        {
+          "kind": "commercial",
+          "text": "法令または公序良俗に違反する行為犯罪行為に関連する行為当社のサーバーまたはネットワークの機能を破壊したり、妨害したりする行為当社のサービスの運営を妨害するおそれのある行為他のユーザーに成りすます行為当社のサービスに関連して、反社会的勢力に対して直接または間接に利益を供与する行為当社、本サービスの他の利用者又はその他の第",
+          "url": "https://fukuoka-shukatsu.jp/terms-of-service/"
+        },
+        {
+          "kind": "automated",
+          "text": "マルウェアの投入システムや保護対策に対するスパム行為、ハッキング、または回避ジェイルブレイク、敵対的なプロンプト、プロンプト インジェクション（安全性やバグのテスト プログラムに含まれる場合を除く）以下のような、不正なまたは虚偽の方法でのサービスやコンテンツへのアクセスもしくは使用フィッシング偽のレビューなど、偽のアカ",
+          "url": "https://policies.google.com/terms"
+        },
+        {
+          "kind": "commercial",
+          "text": "法令または公序良俗に違反する行為犯罪行為に関連する行為当社のサーバーまたはネットワークの機能を破壊したり、妨害したりする行為当社のサービスの運営を妨害するおそれのある行為他のユーザーに成りすます行為当社のサービスに関連して、反社会的勢力に対して直接または間接に利益を供与する行為当社、本サービスの他の利用者又はその他の第",
+          "url": "https://fukuoka-shukatsu.jp/terms"
+        }
+      ],
+      "legal_tier": "T3",
+      "tos_checked_at": "2026-11-06",
+      "tos_override": {
+        "legal_tier": "T2",
+        "reason": "規約に自動収集・商用利用の禁止あり。ネオキャリアは媒体を販売する正式な事業者のため利用可と判断（ユーザー判断 2026-11-06）",
+        "by": "shofukui-neo",
+        "at": "2026-11-06"
+      },
+      "crawl": {
+        "via": "sitemap",
+        "render": "static",
+        "detail_template": "/project/:id/",
+        "detail_regex": "^/project/[^/?]+/$",
+        "support": 8000,
+        "list_urls": [],
+        "sitemap_hits": 8000,
+        "details_seen": 8000,
+        "sample": [
+          {
+            "url": "https://fukuoka-shukatsu.jp/project/40010-32251221/",
+            "name": "毎日交通株式会社",
+            "phone": "092-710-7634",
+            "employees": null,
+            "hire": null,
+            "site": ""
+          },
+          {
+            "url": "https://fukuoka-shukatsu.jp/project/40010-32231121/",
+            "name": "株式会社 サンワ商会",
+            "phone": "092-710-7634",
+            "employees": null,
+            "hire": null,
+            "site": ""
+          }
+        ],
+        "tried": [
+          "サイトマップ /project/:id/(8000件) 抽出2/2"
+        ]
+      }
+    },
+    {
+      "id": "m-wakayama-uiturn-jp",
+      "name": "UIわかやま就職ガイド",
+      "status": "active",
+      "cat": "2-地方特化",
+      "role": "sales",
+      "url": "https://www.wakayama-uiturn.jp/",
+      "catalog_strategy": "media-detail",
+      "catalog_note": "和歌山県",
+      "catalog_probe": {
+        "robots": "allow",
+        "reachable": "yes",
+        "sitemap": "yes",
+        "nameLikely": 0,
+        "companyLinks": 23,
+        "loginWall": "",
+        "note": ""
+      },
+      "probed_at": "2026-11-05",
+      "reason": "",
+      "robots": "allow",
+      "tos_verdict": "no-explicit-prohibition",
+      "tos_url": "https://www.wakayama-uiturn.jp/student/terms-of-service",
+      "tos_evidence": [],
+      "legal_tier": "T2",
+      "tos_checked_at": "2026-11-05",
+      "crawl": {
+        "via": "listing",
+        "render": "static",
+        "detail_template": "/student/recruit/page/?slug",
+        "detail_regex": "^/student/recruit/page/\\?(?=.*\\bslug=).*$",
+        "support": 3,
+        "list_urls": [
+          "https://www.wakayama-uiturn.jp/",
+          "https://www.wakayama-uiturn.jp/student/recruit",
+          "https://www.wakayama-uiturn.jp/company",
+          "https://www.wakayama-uiturn.jp/student/recruit/archive?tob[]=28",
+          "https://www.wakayama-uiturn.jp/student/recruit/archive?tob[]=2",
+          "https://www.wakayama-uiturn.jp/student/recruit/archive?tob[]=42",
+          "https://www.wakayama-uiturn.jp/student/recruit/archive?tob[]=43",
+          "https://www.wakayama-uiturn.jp/student/recruit/archive?tob[]=44",
+          "https://www.wakayama-uiturn.jp/student/recruit/archive?tob[]=45",
+          "https://www.wakayama-uiturn.jp/student/recruit/archive?tob[]=46",
+          "https://www.wakayama-uiturn.jp/student/recruit/archive?tob[]=47",
+          "https://www.wakayama-uiturn.jp/student/recruit/archive?tob[]=48"
+        ],
+        "sitemap_hits": 0,
+        "details_seen": 52,
+        "sample": [
+          {
+            "url": "https://www.wakayama-uiturn.jp/student/recruit/page/?slug=kishuturi2006",
+            "name": "紀州株式会社",
+            "phone": "073-441-2807",
+            "employees": "13",
+            "hire": null,
+            "site": "https://kishu.jp/"
+          },
+          {
+            "url": "https://www.wakayama-uiturn.jp/student/recruit/page/?slug=kinokunifarm1989",
+            "name": "有限会社農園紀の国",
+            "phone": "073-441-2807",
+            "employees": "3",
+            "hire": 2,
+            "site": "http://kinokunifarm.jp/"
+          }
+        ],
+        "tried": [
+          "一覧(静的) /student/recruit/page/?slug 抽出2/3"
+        ]
+      }
+    },
+    {
+      "id": "m-jimo-navi-com",
+      "name": "じもナビ",
+      "status": "unverified",
+      "cat": "2-地方特化",
+      "role": "sales",
+      "url": "https://jimo-navi.com/",
+      "catalog_strategy": "recruit-page-link",
+      "catalog_note": "UIターン全国ポータル",
+      "catalog_probe": {
+        "robots": "allow",
+        "reachable": "yes",
+        "sitemap": "yes",
+        "nameLikely": 0,
+        "companyLinks": 2,
+        "loginWall": "",
+        "note": ""
+      },
+      "probed_at": "2026-11-06",
+      "reason": "企業詳細ページの型が見つからない（一覧・サイトマップとも社名つきの詳細リンクなし）",
+      "robots": "allow",
+      "tos_verdict": "not-found",
+      "tos_url": "",
+      "tos_evidence": [],
+      "crawl": {
+        "tried": []
+      },
+      "tos_override": {
+        "legal_tier": "T2",
+        "reason": "規約ページ未発見。禁止媒体も利用可とした判断に準じる（ユーザー判断 2026-11-06）",
+        "by": "shofukui-neo",
+        "at": "2026-11-06"
+      },
+      "tos_checked_at": "2026-11-06"
+    },
+    {
+      "id": "m-local-syukatsu-mhlw-go-jp",
+      "name": "LO活",
+      "status": "unverified",
+      "cat": "2-地方特化",
+      "role": "sales",
+      "url": "https://local-syukatsu.mhlw.go.jp/",
+      "catalog_strategy": "media-detail",
+      "catalog_note": "厚労省・地方就職ポータル",
+      "catalog_probe": {
+        "robots": "allow",
+        "reachable": "yes",
+        "sitemap": "yes",
+        "nameLikely": 0,
+        "companyLinks": 22,
+        "loginWall": "",
+        "note": ""
+      },
+      "probed_at": "2026-11-06",
+      "reason": "企業詳細ページの型が見つからない（サイトマップ /seminar/:id/(96件) 抽出0/2）",
+      "robots": "allow",
+      "tos_verdict": "not-found",
+      "tos_url": "",
+      "tos_evidence": [],
+      "crawl": {
+        "tried": [
+          "サイトマップ /seminar/:id/(96件) 抽出0/2"
+        ]
+      },
+      "tos_override": {
+        "legal_tier": "T2",
+        "reason": "規約ページ未発見。禁止媒体も利用可とした判断に準じる（ユーザー判断 2026-11-06）",
+        "by": "shofukui-neo",
+        "at": "2026-11-06"
+      },
+      "tos_checked_at": "2026-11-06"
+    },
+    {
+      "id": "m-rikeinavi-com",
+      "name": "理系ナビ",
+      "status": "unverified",
+      "cat": "3-理系特化",
+      "role": "sales",
+      "url": "https://rikeinavi.com/",
+      "catalog_strategy": "recruit-page-link",
+      "catalog_note": "",
+      "catalog_probe": {
+        "robots": "allow",
+        "reachable": "yes",
+        "sitemap": "no",
+        "nameLikely": 0,
+        "companyLinks": 0,
+        "loginWall": "",
+        "note": ""
+      },
+      "probed_at": "2026-11-06",
+      "reason": "企業詳細ページの型が見つからない（一覧・サイトマップとも社名つきの詳細リンクなし）",
+      "robots": "allow",
+      "tos_verdict": "no-explicit-prohibition",
+      "tos_url": "https://rikeinavi.com/agreement https://rikeinavi.com/about_copyright",
+      "tos_evidence": [],
+      "legal_tier": "T2",
+      "tos_checked_at": "2026-11-06",
+      "crawl": {
+        "tried": []
+      }
+    },
+    {
+      "id": "m-compass-labbase-jp",
+      "name": "LabBase就職",
+      "status": "excluded",
+      "cat": "3-理系特化",
+      "role": "competitor",
+      "url": "https://compass.labbase.jp/",
+      "catalog_strategy": "blocked-or-login",
+      "catalog_note": "スカウト型・会員制",
+      "catalog_probe": {
+        "robots": "allow",
+        "reachable": "yes",
+        "sitemap": "yes",
+        "nameLikely": 0,
+        "companyLinks": 8,
+        "loginWall": "",
+        "note": ""
+      },
+      "reason": "ログイン壁・公開の企業ページなし（カタログの実測判定）",
+      "legal_tier": "T3"
+    },
+    {
+      "id": "m-acaric-jp",
+      "name": "アカリク",
+      "status": "active",
+      "cat": "3-理系特化",
+      "role": "sales",
+      "url": "https://acaric.jp/",
+      "catalog_strategy": "recruit-page-link",
+      "catalog_note": "",
+      "catalog_probe": {
+        "robots": "allow",
+        "reachable": "yes",
+        "sitemap": "no",
+        "nameLikely": 0,
+        "companyLinks": 5,
+        "loginWall": "",
+        "note": ""
+      },
+      "probed_at": "2026-11-06",
+      "reason": "",
+      "robots": "allow",
+      "tos_verdict": "prohibited",
+      "tos_url": "https://acaric.jp/terms https://acaric.jp/terms/",
+      "tos_evidence": [
+        {
+          "kind": "automated",
+          "text": "虚偽の情報を登録する行為弊社、他の会員又は第三者の著作権、その他知的所有権を侵害する行為弊社、他の会員又は第三者の財産、プライバシー等を侵害する行為弊社、他の会員又は第三者を誹謗中傷する行為その他、法律に違反する行為、およびそのおそれのある行為犯罪に結びつく行為公序良俗に反する行為反社会的活動に結びつく行為 アカリクを",
+          "url": "https://acaric.jp/terms"
+        },
+        {
+          "kind": "automated",
+          "text": "虚偽の情報を登録する行為弊社、他の会員又は第三者の著作権、その他知的所有権を侵害する行為弊社、他の会員又は第三者の財産、プライバシー等を侵害する行為弊社、他の会員又は第三者を誹謗中傷する行為その他、法律に違反する行為、およびそのおそれのある行為犯罪に結びつく行為公序良俗に反する行為反社会的活動に結びつく行為 アカリクを",
+          "url": "https://acaric.jp/terms/"
+        }
+      ],
+      "legal_tier": "T3",
+      "tos_checked_at": "2026-11-06",
+      "tos_override": {
+        "legal_tier": "T2",
+        "reason": "規約に自動収集・商用利用の禁止あり。ネオキャリアは媒体を販売する正式な事業者のため利用可と判断（ユーザー判断 2026-11-06）",
+        "by": "shofukui-neo",
+        "at": "2026-11-06"
+      },
+      "crawl": {
+        "via": "listing",
+        "render": "static",
+        "detail_template": "/company-search/detail/:id",
+        "detail_regex": "^/company-search/detail/[^/?]+$",
+        "support": 11,
+        "list_urls": [
+          "https://acaric.jp/",
+          "https://acaric.jp/create-member",
+          "https://acaric.jp/fall-winter-company-spotlight",
+          "https://acaric.jp/company-search"
+        ],
+        "sitemap_hits": 68,
+        "details_seen": 11,
+        "sample": [
+          {
+            "url": "https://acaric.jp/company-search/detail/117112",
+            "name": "旭化成株式会社",
+            "phone": "",
+            "employees": null,
+            "hire": null,
+            "site": "https://www.asahi-kasei.com/jp/"
+          },
+          {
+            "url": "https://acaric.jp/company-search/detail/148239",
+            "name": "シャープ株式会社",
+            "phone": "",
+            "employees": null,
+            "hire": null,
+            "site": "https://corporate.jp.sharp/recruit/"
+          },
+          {
+            "url": "https://acaric.jp/company-search/detail/60388",
+            "name": "株式会社ブリヂストン",
+            "phone": "",
+            "employees": null,
+            "hire": null,
+            "site": "http://www.bridgestone.co.jp/"
+          },
+          {
+            "url": "https://acaric.jp/company-search/detail/148322",
+            "name": "株式会社日立製作所",
+            "phone": "",
+            "employees": null,
+            "hire": null,
+            "site": "https://www.hitachi.co.jp/recruit/newgraduate/"
+          }
+        ],
+        "tried": [
+          "一覧(静的) /company-search/detail/:id 抽出4/4"
+        ]
+      }
+    },
+    {
+      "id": "m-techoffer-jp",
+      "name": "TECH OFFER",
+      "status": "excluded",
+      "cat": "3-理系特化",
+      "role": "competitor",
+      "url": "https://techoffer.jp/",
+      "catalog_strategy": "blocked-or-login",
+      "catalog_note": "オファー型",
+      "catalog_probe": {
+        "robots": "allow",
+        "reachable": "yes",
+        "sitemap": "no",
+        "nameLikely": 0,
+        "companyLinks": 3,
+        "loginWall": "",
+        "note": ""
+      },
+      "reason": "ログイン壁・公開の企業ページなし（カタログの実測判定）",
+      "legal_tier": "T3"
+    },
+    {
+      "id": "m-unknown-54",
+      "name": "リケイマッチ",
+      "status": "excluded",
+      "cat": "3-理系特化",
+      "role": "either",
+      "url": "",
+      "catalog_strategy": "blocked-or-login",
+      "catalog_note": "URL要確認",
+      "catalog_probe": {
+        "robots": "",
+        "reachable": "",
+        "sitemap": "",
+        "nameLikely": 0,
+        "companyLinks": "",
+        "loginWall": "",
+        "note": "URL未確定(要確認)"
+      },
+      "reason": "URL未確定（カタログにURLが無い）",
+      "legal_tier": "T2"
+    },
+    {
+      "id": "m-supporterz-jp",
+      "name": "サポーターズ",
+      "status": "excluded",
+      "cat": "3-IT特化",
+      "role": "competitor",
+      "url": "https://supporterz.jp/",
+      "catalog_strategy": "blocked-or-login",
+      "catalog_note": "逆求人イベント・会員制",
+      "catalog_probe": {
+        "robots": "allow",
+        "reachable": "no",
+        "sitemap": "?",
+        "nameLikely": 0,
+        "companyLinks": "",
+        "loginWall": "",
+        "note": "HTTP 503"
+      },
+      "reason": "ICPのIT除外（IT特化媒体）",
+      "legal_tier": "T2"
+    },
+    {
+      "id": "m-paiza-jp",
+      "name": "paiza新卒",
+      "status": "excluded",
+      "cat": "3-IT特化",
+      "role": "competitor",
+      "url": "https://paiza.jp/",
+      "catalog_strategy": "blocked-or-login",
+      "catalog_note": "",
+      "catalog_probe": {
+        "robots": "allow",
+        "reachable": "yes",
+        "sitemap": "yes",
+        "nameLikely": 0,
+        "companyLinks": 0,
+        "loginWall": "",
+        "note": ""
+      },
+      "reason": "ICPのIT除外（IT特化媒体）",
+      "legal_tier": "T2"
+    },
+    {
+      "id": "m-rookie-levtech-jp",
+      "name": "レバテックルーキー",
+      "status": "excluded",
+      "cat": "3-IT特化",
+      "role": "competitor",
+      "url": "https://rookie.levtech.jp/",
+      "catalog_strategy": "recruit-page-link",
+      "catalog_note": "エージェント型",
+      "catalog_probe": {
+        "robots": "allow",
+        "reachable": "yes",
+        "sitemap": "no",
+        "nameLikely": 0,
+        "companyLinks": 41,
+        "loginWall": "",
+        "note": ""
+      },
+      "reason": "ICPのIT除外（IT特化媒体）",
+      "legal_tier": "T2"
+    },
+    {
+      "id": "m-engineer-shukatsu-jp",
+      "name": "エンジニア就活",
+      "status": "excluded",
+      "cat": "3-IT特化",
+      "role": "sales",
+      "url": "https://www.engineer-shukatsu.jp/",
+      "catalog_strategy": "recruit-page-link",
+      "catalog_note": "",
+      "catalog_probe": {
+        "robots": "allow",
+        "reachable": "no",
+        "sitemap": "?",
+        "nameLikely": 0,
+        "companyLinks": "",
+        "loginWall": "",
+        "note": "fetch failed"
+      },
+      "reason": "ICPのIT除外（IT特化媒体）",
+      "legal_tier": "T2"
+    },
+    {
+      "id": "m-unison-career-com",
+      "name": "ユニゾンキャリア就活",
+      "status": "excluded",
+      "cat": "3-IT特化",
+      "role": "sales",
+      "url": "https://unison-career.com/",
+      "catalog_strategy": "recruit-page-link",
+      "catalog_note": "",
+      "catalog_probe": {
+        "robots": "allow",
+        "reachable": "yes",
+        "sitemap": "no",
+        "nameLikely": 0,
+        "companyLinks": 19,
+        "loginWall": "",
+        "note": ""
+      },
+      "reason": "ICPのIT除外（IT特化媒体）",
+      "legal_tier": "T2"
+    },
+    {
+      "id": "m-careerselect-jp",
+      "name": "キャリアセレクト",
+      "status": "excluded",
+      "cat": "3-IT特化",
+      "role": "sales",
+      "url": "https://careerselect.jp/",
+      "catalog_strategy": "recruit-page-link",
+      "catalog_note": "",
+      "catalog_probe": {
+        "robots": "allow",
+        "reachable": "yes",
+        "sitemap": "no",
+        "nameLikely": 0,
+        "companyLinks": 0,
+        "loginWall": "",
+        "note": ""
+      },
+      "reason": "ICPのIT除外（IT特化媒体）",
+      "legal_tier": "T2"
+    },
+    {
+      "id": "m-clutch-digmee-com",
+      "name": "CLUTCH(旧digmee)",
+      "status": "excluded",
+      "cat": "3-IT特化",
+      "role": "sales",
+      "url": "https://clutch-digmee.com/",
+      "catalog_strategy": "recruit-page-link",
+      "catalog_note": "アスナロ運営",
+      "catalog_probe": {
+        "robots": "allow",
+        "reachable": "no",
+        "sitemap": "?",
+        "nameLikely": 0,
+        "companyLinks": "",
+        "loginWall": "",
+        "note": "fetch failed"
+      },
+      "reason": "ICPのIT除外（IT特化媒体）",
+      "legal_tier": "T2"
+    },
+    {
+      "id": "m-sponavi-com",
+      "name": "スポナビ",
+      "status": "unverified",
+      "cat": "3-体育会系",
+      "role": "sales",
+      "url": "https://sponavi.com/",
+      "catalog_strategy": "recruit-page-link",
+      "catalog_note": "スポーツフィールド",
+      "catalog_probe": {
+        "robots": "allow",
+        "reachable": "no",
+        "sitemap": "?",
+        "nameLikely": 0,
+        "companyLinks": "",
+        "loginWall": "",
+        "note": "fetch failed"
+      },
+      "probed_at": "2026-11-06",
+      "reason": "到達不可（fetch failed）。一時的な障害か社内網から届かない可能性。再プローブで確認",
+      "robots": ""
+    },
+    {
+      "id": "m-career-sponavi-com",
+      "name": "スポナビキャリア",
+      "status": "unverified",
+      "cat": "3-体育会系",
+      "role": "sales",
+      "url": "https://career.sponavi.com/",
+      "catalog_strategy": "recruit-page-link",
+      "catalog_note": "",
+      "catalog_probe": {
+        "robots": "allow",
+        "reachable": "yes",
+        "sitemap": "yes",
+        "nameLikely": 0,
+        "companyLinks": 5,
+        "loginWall": "",
+        "note": ""
+      },
+      "probed_at": "2026-11-06",
+      "reason": "企業詳細ページの型が見つからない（サイトマップ /case_study/:id/(136件) 抽出0/2 / サイトマップ /consultants/:id/(29件) 抽出0/2）",
+      "robots": "allow",
+      "tos_verdict": "no-explicit-prohibition",
+      "tos_url": "https://career.sponavi.com/kiyaku/ https://career.sponavi.com/kiyaku",
+      "tos_evidence": [],
+      "legal_tier": "T2",
+      "tos_checked_at": "2026-11-06",
+      "crawl": {
+        "tried": [
+          "サイトマップ /case_study/:id/(136件) 抽出0/2",
+          "サイトマップ /consultants/:id/(29件) 抽出0/2"
+        ]
+      }
+    },
+    {
+      "id": "m-a-cial-com",
+      "name": "アスリートエージェント",
+      "status": "excluded",
+      "cat": "3-体育会系",
+      "role": "sales",
+      "url": "https://www.a-cial.com/",
+      "catalog_strategy": "recruit-page-link",
+      "catalog_note": "アーシャルデザイン",
+      "catalog_probe": {
+        "robots": "allow",
+        "reachable": "yes",
+        "sitemap": "yes",
+        "nameLikely": 0,
+        "companyLinks": 17,
+        "loginWall": "",
+        "note": ""
+      },
+      "probed_at": "2026-11-06",
+      "reason": "自動アクセスを拒否（HTTP 403）。UA偽装等の回避はしない",
+      "robots": ""
+    },
+    {
+      "id": "m-asplanning-co-jp",
+      "name": "アスプラ",
+      "status": "unverified",
+      "cat": "3-体育会系",
+      "role": "sales",
+      "url": "https://www.asplanning.co.jp/",
+      "catalog_strategy": "recruit-page-link",
+      "catalog_note": "アスリートプランニング",
+      "catalog_probe": {
+        "robots": "allow",
+        "reachable": "no",
+        "sitemap": "?",
+        "nameLikely": 0,
+        "companyLinks": "",
+        "loginWall": "",
+        "note": "fetch failed"
+      },
+      "probed_at": "2026-11-06",
+      "reason": "到達不可（fetch failed）。一時的な障害か社内網から届かない可能性。再プローブで確認",
+      "robots": ""
+    },
+    {
+      "id": "m-spojoba-com",
+      "name": "スポジョバ",
+      "status": "excluded",
+      "cat": "3-体育会系",
+      "role": "sales",
+      "url": "https://spojoba.com/",
+      "catalog_strategy": "recruit-page-link",
+      "catalog_note": "",
+      "catalog_probe": {
+        "robots": "allow",
+        "reachable": "yes",
+        "sitemap": "no",
+        "nameLikely": 0,
+        "companyLinks": 3,
+        "loginWall": "",
+        "note": ""
+      },
+      "probed_at": "2026-11-06",
+      "reason": "自動アクセスを拒否（HTTP 403）。UA偽装等の回避はしない",
+      "robots": ""
+    },
+    {
+      "id": "m-athlete-career-mynavi-jp",
+      "name": "マイナビアスリートキャリア",
+      "status": "unverified",
+      "cat": "3-体育会系",
+      "role": "competitor",
+      "url": "https://athlete-career.mynavi.jp/",
+      "catalog_strategy": "recruit-page-link",
+      "catalog_note": "",
+      "catalog_probe": {
+        "robots": "allow",
+        "reachable": "yes",
+        "sitemap": "no",
+        "nameLikely": 0,
+        "companyLinks": 1,
+        "loginWall": "",
+        "note": ""
+      },
+      "probed_at": "2026-11-06",
+      "reason": "企業詳細ページの型が見つからない（一覧・サイトマップとも社名つきの詳細リンクなし）",
+      "robots": "allow",
+      "tos_verdict": "not-found",
+      "tos_url": "",
+      "tos_evidence": [],
+      "crawl": {
+        "tried": []
+      },
+      "tos_override": {
+        "legal_tier": "T2",
+        "reason": "規約ページ未発見。禁止媒体も利用可とした判断に準じる（ユーザー判断 2026-11-06）",
+        "by": "shofukui-neo",
+        "at": "2026-11-06"
+      },
+      "tos_checked_at": "2026-11-06"
+    },
+    {
+      "id": "m-unknown-68",
+      "name": "スポチョク",
+      "status": "excluded",
+      "cat": "3-体育会系",
+      "role": "either",
+      "url": "",
+      "catalog_strategy": "blocked-or-login",
+      "catalog_note": "URL要確認",
+      "catalog_probe": {
+        "robots": "",
+        "reachable": "",
+        "sitemap": "",
+        "nameLikely": 0,
+        "companyLinks": "",
+        "loginWall": "",
+        "note": "URL未確定(要確認)"
+      },
+      "reason": "URL未確定（カタログにURLが無い）",
+      "legal_tier": "T2"
+    },
+    {
+      "id": "m-unknown-69",
+      "name": "体育会ナビ",
+      "status": "excluded",
+      "cat": "3-体育会系",
+      "role": "either",
+      "url": "",
+      "catalog_strategy": "blocked-or-login",
+      "catalog_note": "URL要確認",
+      "catalog_probe": {
+        "robots": "",
+        "reachable": "",
+        "sitemap": "",
+        "nameLikely": 0,
+        "companyLinks": "",
+        "loginWall": "",
+        "note": "URL未確定(要確認)"
+      },
+      "reason": "URL未確定（カタログにURLが無い）",
+      "legal_tier": "T2"
+    },
+    {
+      "id": "m-unknown-70",
+      "name": "CSParkCareer",
+      "status": "excluded",
+      "cat": "3-体育会系",
+      "role": "either",
+      "url": "",
+      "catalog_strategy": "blocked-or-login",
+      "catalog_note": "URL要確認",
+      "catalog_probe": {
+        "robots": "",
+        "reachable": "",
+        "sitemap": "",
+        "nameLikely": 0,
+        "companyLinks": "",
+        "loginWall": "",
+        "note": "URL未確定(要確認)"
+      },
+      "reason": "URL未確定（カタログにURLが無い）",
+      "legal_tier": "T2"
+    },
+    {
+      "id": "m-gaishishukatsu-com",
+      "name": "外資就活ドットコム",
+      "status": "excluded",
+      "cat": "3-外資コンサル",
+      "role": "competitor",
+      "url": "https://gaishishukatsu.com/",
+      "catalog_strategy": "blocked-or-login",
+      "catalog_note": "会員制",
+      "catalog_probe": {
+        "robots": "allow",
+        "reachable": "yes",
+        "sitemap": "yes",
+        "nameLikely": 0,
+        "companyLinks": 4,
+        "loginWall": "",
+        "note": ""
+      },
+      "reason": "ログイン壁・公開の企業ページなし（カタログの実測判定）",
+      "legal_tier": "T3"
+    },
+    {
+      "id": "m-goodfind-jp",
+      "name": "Goodfind",
+      "status": "excluded",
+      "cat": "3-外資コンサル",
+      "role": "competitor",
+      "url": "https://www.goodfind.jp/",
+      "catalog_strategy": "blocked-or-login",
+      "catalog_note": "スローガン",
+      "catalog_probe": {
+        "robots": "allow",
+        "reachable": "yes",
+        "sitemap": "no",
+        "nameLikely": 0,
+        "companyLinks": 6,
+        "loginWall": "",
+        "note": ""
+      },
+      "reason": "ログイン壁・公開の企業ページなし（カタログの実測判定）",
+      "legal_tier": "T3"
+    },
+    {
+      "id": "m-factlogic-jp",
+      "name": "FactLogic",
+      "status": "unverified",
+      "cat": "3-外資コンサル",
+      "role": "sales",
+      "url": "https://factlogic.jp/",
+      "catalog_strategy": "recruit-page-link",
+      "catalog_note": "",
+      "catalog_probe": {
+        "robots": "allow",
+        "reachable": "yes",
+        "sitemap": "yes",
+        "nameLikely": 0,
+        "companyLinks": 11,
+        "loginWall": "",
+        "note": ""
+      },
+      "probed_at": "2026-11-06",
+      "reason": "到達不可（HTTP 503）。一時的な障害か社内網から届かない可能性。再プローブで確認",
+      "robots": ""
+    },
+    {
+      "id": "m-nurse-mynavi-jp",
+      "name": "マイナビ看護学生",
+      "status": "unverified",
+      "cat": "3-医療福祉",
+      "role": "competitor",
+      "url": "https://nurse.mynavi.jp/",
+      "catalog_strategy": "media-detail",
+      "catalog_note": "",
+      "catalog_probe": {
+        "robots": "allow",
+        "reachable": "yes",
+        "sitemap": "yes",
+        "nameLikely": 0,
+        "companyLinks": 18,
+        "loginWall": "",
+        "note": ""
+      },
+      "probed_at": "2026-11-06",
+      "reason": "企業詳細ページの型が見つからない（一覧(静的) /student/hospitals/outline/:id 抽出1/4 / サイトマップ /student/hospitals/outline/:id/senior_detail/:id(7068件) 抽出0/2 / サイトマップ /student/hospitals/outline/:id(1962件) 抽出0/2 / サイトマップ /student/hospitals/outline/:id/seniors/(508件) 抽出0/2 / サイトマップ /student/hospitals/outline/:id/seminars/list/(1025件) 抽出0/2 / 一覧(JS描画) /student/hospitals/outline/:id 抽出1/4）",
+      "robots": "allow",
+      "tos_verdict": "prohibited",
+      "tos_url": "https://nurse.mynavi.jp/conts/policy/users.html",
+      "tos_evidence": [
+        {
+          "kind": "commercial",
+          "text": "3.本サービスにおいて提供される情報（医療機関等の採用情報、広告その他第三者により提供される情報、利用者より提供される情報）の内容に関して、当社は、一切の保証を行わないものとし、利用者はこれを承諾のうえ、自己の責任において当該情報を利用するものとします。",
+          "url": "https://nurse.mynavi.jp/conts/policy/users.html"
+        }
+      ],
+      "legal_tier": "T3",
+      "tos_checked_at": "2026-11-06",
+      "tos_override": {
+        "legal_tier": "T2",
+        "reason": "規約に自動収集・商用利用の禁止あり。ネオキャリアは媒体を販売する正式な事業者のため利用可と判断（ユーザー判断 2026-11-06）",
+        "by": "shofukui-neo",
+        "at": "2026-11-06"
+      },
+      "crawl": {
+        "tried": [
+          "一覧(静的) /student/hospitals/outline/:id 抽出1/4",
+          "サイトマップ /student/hospitals/outline/:id/senior_detail/:id(7068件) 抽出0/2",
+          "サイトマップ /student/hospitals/outline/:id(1962件) 抽出0/2",
+          "サイトマップ /student/hospitals/outline/:id/seniors/(508件) 抽出0/2",
+          "サイトマップ /student/hospitals/outline/:id/seminars/list/(1025件) 抽出0/2",
+          "一覧(JS描画) /student/hospitals/outline/:id 抽出1/4"
+        ]
+      }
+    },
+    {
+      "id": "m-mynavi-iryofukushi-jp",
+      "name": "マイナビ医療福祉キャリア",
+      "status": "unverified",
+      "cat": "3-医療福祉",
+      "role": "competitor",
+      "url": "https://mynavi-iryofukushi.jp/",
+      "catalog_strategy": "media-detail",
+      "catalog_note": "",
+      "catalog_probe": {
+        "robots": "allow",
+        "reachable": "yes",
+        "sitemap": "yes",
+        "nameLikely": 0,
+        "companyLinks": 15,
+        "loginWall": "",
+        "note": ""
+      },
+      "probed_at": "2026-11-06",
+      "reason": "企業詳細ページの型が見つからない（サイトマップ /job/j_14/:id(1540件) 抽出0/2 / サイトマップ /job/j_1/:id(1511件) 抽出0/2 / サイトマップ /job/j_23/:id(1392件) 抽出0/2 / サイトマップ /job/j_15/:id(1205件) 抽出0/2）",
+      "robots": "allow",
+      "tos_verdict": "no-explicit-prohibition",
+      "tos_url": "https://mynavi-iryofukushi.jp/job/agreement/",
+      "tos_evidence": [],
+      "legal_tier": "T2",
+      "tos_checked_at": "2026-11-06",
+      "crawl": {
+        "tried": [
+          "サイトマップ /job/j_14/:id(1540件) 抽出0/2",
+          "サイトマップ /job/j_1/:id(1511件) 抽出0/2",
+          "サイトマップ /job/j_23/:id(1392件) 抽出0/2",
+          "サイトマップ /job/j_15/:id(1205件) 抽出0/2"
+        ]
+      }
+    },
+    {
+      "id": "m-fukushi-work-jp",
+      "name": "福祉のお仕事",
+      "status": "unverified",
+      "cat": "3-医療福祉",
+      "role": "sales",
+      "url": "https://www.fukushi-work.jp/",
+      "catalog_strategy": "media-detail",
+      "catalog_note": "",
+      "catalog_probe": {
+        "robots": "allow",
+        "reachable": "yes",
+        "sitemap": "?",
+        "nameLikely": 0,
+        "companyLinks": 6,
+        "loginWall": "",
+        "note": ""
+      },
+      "probed_at": "2026-11-06",
+      "reason": "企業詳細ページの型が見つからない（一覧・サイトマップとも社名つきの詳細リンクなし）",
+      "robots": "allow",
+      "tos_verdict": "prohibited",
+      "tos_url": "https://www.fukushi-work.jp/content_4.html",
+      "tos_evidence": [
+        {
+          "kind": "commercial",
+          "text": "(5) ただし、本サイトの内容の全部または一部については、私的使用または引用等著作権法上認められた範囲に限り、出所を明示することにより引用、転載及び複製を行うことができます。",
+          "url": "https://www.fukushi-work.jp/content_4.html"
+        }
+      ],
+      "crawl": {
+        "tried": []
+      },
+      "legal_tier": "T3",
+      "tos_checked_at": "2026-11-06",
+      "tos_override": {
+        "legal_tier": "T2",
+        "reason": "規約に自動収集・商用利用の禁止あり。ネオキャリアは媒体を販売する正式な事業者のため利用可と判断（ユーザー判断 2026-11-06）",
+        "by": "shofukui-neo",
+        "at": "2026-11-06"
+      }
+    },
+    {
+      "id": "m-unknown-77",
+      "name": "ナース専科就職ナビ",
+      "status": "excluded",
+      "cat": "3-医療福祉",
+      "role": "either",
+      "url": "",
+      "catalog_strategy": "blocked-or-login",
+      "catalog_note": "URL要確認",
+      "catalog_probe": {
+        "robots": "",
+        "reachable": "",
+        "sitemap": "",
+        "nameLikely": 0,
+        "companyLinks": "",
+        "loginWall": "",
+        "note": "URL未確定(要確認)"
+      },
+      "reason": "URL未確定（カタログにURLが無い）",
+      "legal_tier": "T2"
+    },
+    {
+      "id": "m-massnavi-com",
+      "name": "マスナビ",
+      "status": "unverified",
+      "cat": "3-マスコミ広告",
+      "role": "sales",
+      "url": "https://www.massnavi.com/",
+      "catalog_strategy": "recruit-page-link",
+      "catalog_note": "宣伝会議",
+      "catalog_probe": {
+        "robots": "allow",
+        "reachable": "yes",
+        "sitemap": "no",
+        "nameLikely": 0,
+        "companyLinks": 56,
+        "loginWall": "",
+        "note": ""
+      },
+      "probed_at": "2026-11-06",
+      "reason": "企業詳細ページの型が見つからない（一覧・サイトマップとも社名つきの詳細リンクなし）",
+      "robots": "allow",
+      "tos_verdict": "prohibited",
+      "tos_url": "https://www.advertimes.com/info/terms/ https://www.advertimes.com/terms https://www.advertimes.com/terms/",
+      "tos_evidence": [
+        {
+          "kind": "commercial",
+          "text": "株式会社宣伝会議(弊社)のプライバシーポリシー 週間アクセスランキングサンリオ、VIVANTとの「関係断絶」 コラボ中止、ドラマの描写に批判集まる「転売ヤーは撲滅で」 男子バレーの容赦ない対応に称賛の声 予約とキャンセルを繰り返す手口に鉄槌、チケット無効化にファンクラブ資格も剥奪ローソンで見かける「揚げ物セルフ」、なぜ",
+          "url": "https://www.advertimes.com/info/terms/"
+        },
+        {
+          "kind": "commercial",
+          "text": "株式会社宣伝会議(弊社)のプライバシーポリシー 週間アクセスランキングサンリオ、VIVANTとの「関係断絶」 コラボ中止、ドラマの描写に批判集まる「転売ヤーは撲滅で」 男子バレーの容赦ない対応に称賛の声 予約とキャンセルを繰り返す手口に鉄槌、チケット無効化にファンクラブ資格も剥奪ローソンで見かける「揚げ物セルフ」、なぜ",
+          "url": "https://www.advertimes.com/terms"
+        },
+        {
+          "kind": "commercial",
+          "text": "株式会社宣伝会議(弊社)のプライバシーポリシー 週間アクセスランキングサンリオ、VIVANTとの「関係断絶」 コラボ中止、ドラマの描写に批判集まる「転売ヤーは撲滅で」 男子バレーの容赦ない対応に称賛の声 予約とキャンセルを繰り返す手口に鉄槌、チケット無効化にファンクラブ資格も剥奪ローソンで見かける「揚げ物セルフ」、なぜ",
+          "url": "https://www.advertimes.com/terms/"
+        }
+      ],
+      "legal_tier": "T3",
+      "tos_checked_at": "2026-11-06",
+      "tos_override": {
+        "legal_tier": "T2",
+        "reason": "規約に自動収集・商用利用の禁止あり。ネオキャリアは媒体を販売する正式な事業者のため利用可と判断（ユーザー判断 2026-11-06）",
+        "by": "shofukui-neo",
+        "at": "2026-11-06"
+      },
+      "crawl": {
+        "tried": []
+      }
+    },
+    {
+      "id": "m-vivivit-com",
+      "name": "ViViViT",
+      "status": "excluded",
+      "cat": "3-マスコミ広告",
+      "role": "competitor",
+      "url": "https://www.vivivit.com/",
+      "catalog_strategy": "blocked-or-login",
+      "catalog_note": "ポートフォリオ・スカウト型",
+      "catalog_probe": {
+        "robots": "allow",
+        "reachable": "yes",
+        "sitemap": "no",
+        "nameLikely": 0,
+        "companyLinks": 0,
+        "loginWall": "",
+        "note": ""
+      },
+      "reason": "ログイン壁・公開の企業ページなし（カタログの実測判定）",
+      "legal_tier": "T3"
+    },
+    {
+      "id": "m-job-cinra-net",
+      "name": "CINRA.JOB",
+      "status": "unverified",
+      "cat": "3-マスコミ広告",
+      "role": "sales",
+      "url": "https://job.cinra.net/",
+      "catalog_strategy": "recruit-page-link",
+      "catalog_note": "",
+      "catalog_probe": {
+        "robots": "allow",
+        "reachable": "yes",
+        "sitemap": "?",
+        "nameLikely": 0,
+        "companyLinks": 2,
+        "loginWall": "",
+        "note": ""
+      },
+      "probed_at": "2026-11-06",
+      "reason": "企業詳細ページの型が見つからない（一覧・サイトマップとも社名つきの詳細リンクなし）",
+      "robots": "allow",
+      "tos_verdict": "no-explicit-prohibition",
+      "tos_url": "http://www.cinra.net/terms-of-use https://job.cinra.net/terms https://job.cinra.net/terms/",
+      "tos_evidence": [],
+      "legal_tier": "T2",
+      "tos_checked_at": "2026-11-06",
+      "crawl": {
+        "tried": []
+      }
+    },
+    {
+      "id": "m-unknown-81",
+      "name": "クリ博ナビ",
+      "status": "excluded",
+      "cat": "3-マスコミ広告",
+      "role": "either",
+      "url": "",
+      "catalog_strategy": "blocked-or-login",
+      "catalog_note": "URL要確認",
+      "catalog_probe": {
+        "robots": "",
+        "reachable": "",
+        "sitemap": "",
+        "nameLikely": 0,
+        "companyLinks": "",
+        "loginWall": "",
+        "note": "URL未確定(要確認)"
+      },
+      "reason": "URL未確定（カタログにURLが無い）",
+      "legal_tier": "T2"
+    },
+    {
+      "id": "m-careerforum-net",
+      "name": "CFN(キャリアフォーラム)",
+      "status": "unverified",
+      "cat": "3-グローバル",
+      "role": "sales",
+      "url": "https://careerforum.net/",
+      "catalog_strategy": "recruit-page-link",
+      "catalog_note": "ボストンキャリアフォーラム",
+      "catalog_probe": {
+        "robots": "allow",
+        "reachable": "yes",
+        "sitemap": "?",
+        "nameLikely": 0,
+        "companyLinks": 8,
+        "loginWall": "",
+        "note": ""
+      },
+      "probed_at": "2026-11-06",
+      "reason": "企業詳細ページの型が見つからない（一覧・サイトマップとも社名つきの詳細リンクなし）",
+      "robots": "allow",
+      "tos_verdict": "not-found",
+      "tos_url": "",
+      "tos_evidence": [],
+      "crawl": {
+        "tried": []
+      },
+      "tos_override": {
+        "legal_tier": "T2",
+        "reason": "規約ページ未発見。禁止媒体も利用可とした判断に準じる（ユーザー判断 2026-11-06）",
+        "by": "shofukui-neo",
+        "at": "2026-11-06"
+      },
+      "tos_checked_at": "2026-11-06"
+    },
+    {
+      "id": "m-global-mynavi-jp",
+      "name": "マイナビ国際派就職",
+      "status": "active",
+      "cat": "3-グローバル",
+      "role": "competitor",
+      "url": "https://global.mynavi.jp/",
+      "catalog_strategy": "recruit-page-link",
+      "catalog_note": "",
+      "catalog_probe": {
+        "robots": "allow",
+        "reachable": "yes",
+        "sitemap": "no",
+        "nameLikely": 0,
+        "companyLinks": 18,
+        "loginWall": "",
+        "note": ""
+      },
+      "probed_at": "2026-11-06",
+      "reason": "",
+      "robots": "allow",
+      "tos_verdict": "not-found",
+      "tos_url": "",
+      "tos_evidence": [],
+      "crawl": {
+        "via": "listing",
+        "render": "static",
+        "detail_template": "/member/companies/senior_detail/:id/:id",
+        "detail_regex": "^/member/companies/senior_detail/[^/?]+/[^/?]+$",
+        "support": 4,
+        "list_urls": [
+          "https://global.mynavi.jp/",
+          "https://global.mynavi.jp/member/members/agreement",
+          "https://global.mynavi.jp/member/companies/search/",
+          "https://global.mynavi.jp/member/companies/search_list/industries/1.2.3.4.5.6.7.8.9.10",
+          "https://global.mynavi.jp/member/companies/search_list/industries/11",
+          "https://global.mynavi.jp/member/companies/search_list/industries/12.13",
+          "https://global.mynavi.jp/member/companies/search_list/industries/14.15.16",
+          "https://global.mynavi.jp/member/companies/search_list/industries/20.21",
+          "https://global.mynavi.jp/member/companies/search_list/industries/17.18.19.22.23.24.25.26.27.28.30.31.32",
+          "https://global.mynavi.jp/member/companies/search_list/industries/29",
+          "https://global.mynavi.jp/member/companies/search_list/features/10",
+          "https://global.mynavi.jp/member/companies/search_list/features/2"
+        ],
+        "sitemap_hits": 0,
+        "details_seen": 4,
+        "sample": [
+          {
+            "url": "https://global.mynavi.jp/member/companies/senior_detail/55761-1/2",
+            "name": "エクシオグループ株式会社",
+            "phone": "",
+            "employees": null,
+            "hire": null,
+            "site": ""
+          },
+          {
+            "url": "https://global.mynavi.jp/member/companies/senior_detail/267760-1/5",
+            "name": "株式会社トライアンフ",
+            "phone": "",
+            "employees": null,
+            "hire": null,
+            "site": ""
+          },
+          {
+            "url": "https://global.mynavi.jp/member/companies/senior_detail/214443-1/2",
+            "name": "株式会社トータルクリエーションズ",
+            "phone": "",
+            "employees": null,
+            "hire": null,
+            "site": ""
+          },
+          {
+            "url": "https://global.mynavi.jp/member/companies/senior_detail/229332-1/3",
+            "name": "株式会社インターオーシャンシッピングコーポレーション",
+            "phone": "",
+            "employees": null,
+            "hire": null,
+            "site": ""
+          }
+        ],
+        "tried": [
+          "一覧(静的) /member/companies/senior_detail/:id/:id 抽出4/4"
+        ]
+      },
+      "tos_override": {
+        "legal_tier": "T2",
+        "reason": "規約ページ未発見。禁止媒体も利用可とした判断に準じる（ユーザー判断 2026-11-06）",
+        "by": "shofukui-neo",
+        "at": "2026-11-06"
+      },
+      "tos_checked_at": "2026-11-06"
+    },
+    {
+      "id": "m-br-campus-jp",
+      "name": "ビズリーチ・キャンパス",
+      "status": "excluded",
+      "cat": "3-グローバル",
+      "role": "competitor",
+      "url": "https://br-campus.jp/",
+      "catalog_strategy": "blocked-or-login",
+      "catalog_note": "OB訪問・会員制",
+      "catalog_probe": {
+        "robots": "allow",
+        "reachable": "yes",
+        "sitemap": "no",
+        "nameLikely": 0,
+        "companyLinks": 2,
+        "loginWall": "",
+        "note": ""
+      },
+      "reason": "ログイン壁・公開の企業ページなし（カタログの実測判定）",
+      "legal_tier": "T3"
+    },
+    {
+      "id": "m-offerbox-jp",
+      "name": "OfferBox",
+      "status": "excluded",
+      "cat": "4-逆求人",
+      "role": "competitor",
+      "url": "https://offerbox.jp/",
+      "catalog_strategy": "blocked-or-login",
+      "catalog_note": "i-plug。逆求人大手・競合基準点",
+      "catalog_probe": {
+        "robots": "allow",
+        "reachable": "yes",
+        "sitemap": "no",
+        "nameLikely": 0,
+        "companyLinks": 13,
+        "loginWall": "",
+        "note": ""
+      },
+      "reason": "ログイン壁・公開の企業ページなし（カタログの実測判定）",
+      "legal_tier": "T3"
+    },
+    {
+      "id": "m-campus-doda-jp",
+      "name": "dodaキャンパス",
+      "status": "excluded",
+      "cat": "4-逆求人",
+      "role": "competitor",
+      "url": "https://campus.doda.jp/",
+      "catalog_strategy": "blocked-or-login",
+      "catalog_note": "ベネッセi-キャリア",
+      "catalog_probe": {
+        "robots": "allow",
+        "reachable": "yes",
+        "sitemap": "no",
+        "nameLikely": 0,
+        "companyLinks": 0,
+        "loginWall": "",
+        "note": ""
+      },
+      "reason": "ログイン壁・公開の企業ページなし（カタログの実測判定）",
+      "legal_tier": "T3"
+    },
+    {
+      "id": "m-kimisuka-com",
+      "name": "キミスカ",
+      "status": "excluded",
+      "cat": "4-逆求人",
+      "role": "competitor",
+      "url": "https://kimisuka.com/",
+      "catalog_strategy": "blocked-or-login",
+      "catalog_note": "グローアップ",
+      "catalog_probe": {
+        "robots": "allow",
+        "reachable": "yes",
+        "sitemap": "yes",
+        "nameLikely": 0,
+        "companyLinks": 3,
+        "loginWall": "",
+        "note": ""
+      },
+      "reason": "ログイン壁・公開の企業ページなし（カタログの実測判定）",
+      "legal_tier": "T3"
+    },
+    {
+      "id": "m-iroots-jp",
+      "name": "iroots",
+      "status": "excluded",
+      "cat": "4-逆求人",
+      "role": "competitor",
+      "url": "https://iroots.jp/",
+      "catalog_strategy": "blocked-or-login",
+      "catalog_note": "エン・ジャパン",
+      "catalog_probe": {
+        "robots": "allow",
+        "reachable": "yes",
+        "sitemap": "no",
+        "nameLikely": 0,
+        "companyLinks": 0,
+        "loginWall": "",
+        "note": ""
+      },
+      "reason": "ログイン壁・公開の企業ページなし（カタログの実測判定）",
+      "legal_tier": "T3"
+    },
+    {
+      "id": "m-lognavi-com",
+      "name": "Lognavi",
+      "status": "excluded",
+      "cat": "4-逆求人",
+      "role": "competitor",
+      "url": "https://lognavi.com/",
+      "catalog_strategy": "blocked-or-login",
+      "catalog_note": "アスパーク",
+      "catalog_probe": {
+        "robots": "allow",
+        "reachable": "yes",
+        "sitemap": "yes",
+        "nameLikely": 0,
+        "companyLinks": 2,
+        "loginWall": "",
+        "note": ""
+      },
+      "reason": "ログイン壁・公開の企業ページなし（カタログの実測判定）",
+      "legal_tier": "T3"
+    },
+    {
+      "id": "m-hr-ababa-co-jp",
+      "name": "ABABA",
+      "status": "active",
+      "cat": "4-逆求人",
+      "role": "competitor",
+      "url": "https://hr.ababa.co.jp/",
+      "catalog_strategy": "recruit-page-link",
+      "catalog_note": "",
+      "catalog_probe": {
+        "robots": "allow",
+        "reachable": "yes",
+        "sitemap": "yes",
+        "nameLikely": 0,
+        "companyLinks": 0,
+        "loginWall": "",
+        "note": ""
+      },
+      "probed_at": "2026-11-06",
+      "reason": "",
+      "robots": "allow",
+      "tos_verdict": "not-found",
+      "tos_url": "",
+      "tos_evidence": [],
+      "crawl": {
+        "via": "sitemap",
+        "render": "static",
+        "detail_template": "/article/:id",
+        "detail_regex": "^/article/[^/?]+$",
+        "support": 146,
+        "list_urls": [],
+        "sitemap_hits": 146,
+        "details_seen": 146,
+        "sample": [
+          {
+            "url": "https://hr.ababa.co.jp/article/nMkHU7A1",
+            "name": "株式会社ABABA",
+            "phone": "",
+            "employees": null,
+            "hire": null,
+            "site": ""
+          },
+          {
+            "url": "https://hr.ababa.co.jp/article/rBn08Ru4",
+            "name": "株式会社ABABA",
+            "phone": "",
+            "employees": null,
+            "hire": null,
+            "site": ""
+          }
+        ],
+        "tried": [
+          "サイトマップ /new-5/:id(70件) 抽出0/2",
+          "サイトマップ /article/:id(146件) 抽出2/2"
+        ]
+      },
+      "tos_override": {
+        "legal_tier": "T2",
+        "reason": "規約ページ未発見。禁止媒体も利用可とした判断に準じる（ユーザー判断 2026-11-06）",
+        "by": "shofukui-neo",
+        "at": "2026-11-06"
+      },
+      "tos_checked_at": "2026-11-06"
+    },
+    {
+      "id": "m-careerticket-jp",
+      "name": "キャリアチケット就職スカウト",
+      "status": "active",
+      "cat": "4-逆求人",
+      "role": "competitor",
+      "url": "https://careerticket.jp/",
+      "catalog_strategy": "recruit-page-link",
+      "catalog_note": "レバレジーズ",
+      "catalog_probe": {
+        "robots": "allow",
+        "reachable": "yes",
+        "sitemap": "no",
+        "nameLikely": 0,
+        "companyLinks": 41,
+        "loginWall": "",
+        "note": ""
+      },
+      "probed_at": "2026-11-06",
+      "reason": "",
+      "robots": "allow",
+      "tos_verdict": "not-found",
+      "tos_url": "",
+      "tos_evidence": [],
+      "crawl": {
+        "via": "listing",
+        "render": "static",
+        "detail_template": "/company/:id/",
+        "detail_regex": "^/company/[^/?]+/$",
+        "support": 60,
+        "list_urls": [
+          "https://careerticket.jp/",
+          "https://careerticket.jp/company/",
+          "https://careerticket.jp/info/company/",
+          "https://careerticket.jp/company/industry/manufacturing/",
+          "https://careerticket.jp/company/industry/trading/",
+          "https://careerticket.jp/company/industry/retail/",
+          "https://careerticket.jp/company/industry/finance/",
+          "https://careerticket.jp/company/industry/service-infrastructure/",
+          "https://careerticket.jp/company/industry/it-telecom/",
+          "https://careerticket.jp/company/industry/media-ad/",
+          "https://careerticket.jp/company/industry/government-public/",
+          "https://careerticket.jp/company/B378412049/?tab=events"
+        ],
+        "sitemap_hits": 200,
+        "details_seen": 63,
+        "sample": [
+          {
+            "url": "https://careerticket.jp/company/B083152353/",
+            "name": "株式会社イトーヨーカ堂",
+            "phone": "0120-962-647",
+            "employees": null,
+            "hire": null,
+            "site": "https://www.itoyokado.co.jp/"
+          },
+          {
+            "url": "https://careerticket.jp/company/B479301184/",
+            "name": "株式会社BREXA",
+            "phone": "0120-962-647",
+            "employees": null,
+            "hire": null,
+            "site": "https://technology.brexa.com/"
+          },
+          {
+            "url": "https://careerticket.jp/company/B580413104/",
+            "name": "株式会社オープンアップコンストラクション",
+            "phone": "0120-962-647",
+            "employees": null,
+            "hire": null,
+            "site": "https://www.openup-construction.co.jp/profile/"
+          },
+          {
+            "url": "https://careerticket.jp/company/B048062523/",
+            "name": "いなば食品株式会社",
+            "phone": "0120-962-647",
+            "employees": null,
+            "hire": null,
+            "site": "https://www.inaba-foods.jp/"
+          }
+        ],
+        "tried": [
+          "一覧(静的) /company/:id/ 抽出4/4"
+        ]
+      },
+      "tos_override": {
+        "legal_tier": "T2",
+        "reason": "規約ページ未発見。禁止媒体も利用可とした判断に準じる（ユーザー判断 2026-11-06）",
+        "by": "shofukui-neo",
+        "at": "2026-11-06"
+      },
+      "tos_checked_at": "2026-11-06"
+    },
+    {
+      "id": "m-jobrass-com",
+      "name": "JOBRASS新卒",
+      "status": "unverified",
+      "cat": "4-逆求人",
+      "role": "competitor",
+      "url": "https://jobrass.com/",
+      "catalog_strategy": "recruit-page-link",
+      "catalog_note": "",
+      "catalog_probe": {
+        "robots": "allow",
+        "reachable": "no",
+        "sitemap": "?",
+        "nameLikely": 0,
+        "companyLinks": "",
+        "loginWall": "",
+        "note": "fetch failed"
+      },
+      "probed_at": "2026-11-06",
+      "reason": "到達不可（fetch failed）。一時的な障害か社内網から届かない可能性。再プローブで確認",
+      "robots": ""
+    },
+    {
+      "id": "m-cheercareer-jp",
+      "name": "チアキャリア",
+      "status": "active",
+      "cat": "4-逆求人",
+      "role": "sales",
+      "url": "https://cheercareer.jp/",
+      "catalog_strategy": "recruit-page-link",
+      "catalog_note": "CheerCareer",
+      "catalog_probe": {
+        "robots": "allow",
+        "reachable": "yes",
+        "sitemap": "yes",
+        "nameLikely": 1,
+        "companyLinks": 2,
+        "loginWall": "",
+        "note": ""
+      },
+      "probed_at": "2026-11-06",
+      "reason": "",
+      "robots": "allow",
+      "tos_verdict": "not-found",
+      "tos_url": "",
+      "tos_evidence": [],
+      "crawl": {
+        "via": "listing",
+        "render": "static",
+        "detail_template": "/companies/:id/messages/:id",
+        "detail_regex": "^/companies/[^/?]+/messages/[^/?]+$",
+        "support": 9,
+        "list_urls": [
+          "https://cheercareer.jp/",
+          "https://cheercareer.jp/companies",
+          "https://cheercareer.jp/corporate",
+          "https://cheercareer.jp/corporate/press_releases",
+          "https://cheercareer.jp/corporate/press_releases?category=media",
+          "https://cheercareer.jp/recruit_blogs",
+          "https://cheercareer.jp/company_whitepapers",
+          "https://cheercareer.jp/hslp/recruit_outsourcing",
+          "https://cheercareer.jp/companies/2802",
+          "https://cheercareer.jp/companies/3562",
+          "https://cheercareer.jp/companies/4623",
+          "https://cheercareer.jp/companies/4801"
+        ],
+        "sitemap_hits": 200,
+        "details_seen": 19,
+        "sample": [
+          {
+            "url": "https://cheercareer.jp/companies/4823/messages/125718",
+            "name": "株式会社分析屋",
+            "phone": "",
+            "employees": null,
+            "hire": null,
+            "site": ""
+          },
+          {
+            "url": "https://cheercareer.jp/companies/4726/messages/125683",
+            "name": "株式会社free",
+            "phone": "",
+            "employees": null,
+            "hire": null,
+            "site": ""
+          },
+          {
+            "url": "https://cheercareer.jp/companies/3559/messages/125716",
+            "name": "グローバルライフ株式会社",
+            "phone": "",
+            "employees": null,
+            "hire": null,
+            "site": ""
+          }
+        ],
+        "tried": [
+          "一覧(静的) /companies/:id/messages/:id 抽出3/4"
+        ]
+      },
+      "tos_override": {
+        "legal_tier": "T2",
+        "reason": "規約ページ未発見。禁止媒体も利用可とした判断に準じる（ユーザー判断 2026-11-06）",
+        "by": "shofukui-neo",
+        "at": "2026-11-06"
+      },
+      "tos_checked_at": "2026-11-06"
+    },
+    {
+      "id": "m-matcher-jp",
+      "name": "Matcher",
+      "status": "unverified",
+      "cat": "4-逆求人",
+      "role": "sales",
+      "url": "https://matcher.jp/",
+      "catalog_strategy": "recruit-page-link",
+      "catalog_note": "OB訪問",
+      "catalog_probe": {
+        "robots": "allow",
+        "reachable": "yes",
+        "sitemap": "no",
+        "nameLikely": 0,
+        "companyLinks": 0,
+        "loginWall": "",
+        "note": ""
+      },
+      "probed_at": "2026-11-06",
+      "reason": "企業詳細ページの型が見つからない（サイトマップ /obogs/:id(19993件) 抽出0/2）",
+      "robots": "allow",
+      "tos_verdict": "no-explicit-prohibition",
+      "tos_url": "https://matcher.jp/docs/terms",
+      "tos_evidence": [],
+      "legal_tier": "T2",
+      "tos_checked_at": "2026-11-06",
+      "crawl": {
+        "tried": [
+          "サイトマップ /obogs/:id(19993件) 抽出0/2"
+        ]
+      }
+    },
+    {
+      "id": "m-baseme-app",
+      "name": "BaseMe(旧エシカル就活)",
+      "status": "excluded",
+      "cat": "4-逆求人",
+      "role": "competitor",
+      "url": "https://baseme.app/",
+      "catalog_strategy": "blocked-or-login",
+      "catalog_note": "",
+      "catalog_probe": {
+        "robots": "allow",
+        "reachable": "yes",
+        "sitemap": "yes",
+        "nameLikely": 0,
+        "companyLinks": 5,
+        "loginWall": "",
+        "note": ""
+      },
+      "reason": "ログイン壁・公開の企業ページなし（カタログの実測判定）",
+      "legal_tier": "T3"
+    },
+    {
+      "id": "m-job-tv-jp",
+      "name": "JOBTV",
+      "status": "active",
+      "cat": "4-逆求人",
+      "role": "sales",
+      "url": "https://jobtv.jp/",
+      "catalog_strategy": "recruit-page-link",
+      "catalog_note": "",
+      "catalog_probe": {
+        "robots": "allow",
+        "reachable": "no",
+        "sitemap": "?",
+        "nameLikely": 0,
+        "companyLinks": "",
+        "loginWall": "",
+        "note": "fetch failed"
+      },
+      "probed_at": "2026-11-06",
+      "reason": "",
+      "robots": "allow",
+      "url_override": "https://jobtv.jp/",
+      "tos_verdict": "prohibited",
+      "tos_url": "https://jobtv.jp/lp/terms-of-service.html",
+      "tos_evidence": [
+        {
+          "kind": "automated",
+          "text": "本規約に違反する行為 本サービス以外の連絡手段（電話、メール、SNS、その他のサービスを含みます）を用いて登録企業と登録求職者が連絡、接触する行為 登録企業が登録求職者に対して、本サービス以外からのエントリーその他の求職活動を促す行為 当社、当社がライセンスを受けているライセンサーその他第三者の知的財産権、特許権、実用",
+          "url": "https://jobtv.jp/lp/terms-of-service.html"
+        }
+      ],
+      "legal_tier": "T3",
+      "tos_checked_at": "2026-11-06",
+      "tos_override": {
+        "legal_tier": "T2",
+        "reason": "規約に自動収集・商用利用の禁止あり。ネオキャリアは媒体を販売する正式な事業者のため利用可と判断（ユーザー判断 2026-11-06）",
+        "by": "shofukui-neo",
+        "at": "2026-11-06"
+      },
+      "crawl": {
+        "via": "sitemap",
+        "render": "static",
+        "detail_template": "/company/detail/:id",
+        "detail_regex": "^/company/detail/[^/?]+$",
+        "support": 471,
+        "list_urls": [],
+        "sitemap_hits": 471,
+        "details_seen": 471,
+        "sample": [
+          {
+            "url": "https://jobtv.jp/company/detail/CP11-9813-0446-70",
+            "name": "株式会社爽健グローバル",
+            "phone": "",
+            "employees": null,
+            "hire": null,
+            "site": ""
+          },
+          {
+            "url": "https://jobtv.jp/company/detail/CP11-3579-5832-22",
+            "name": "日本リビング保証株式会社",
+            "phone": "",
+            "employees": null,
+            "hire": null,
+            "site": ""
+          }
+        ],
+        "tried": [
+          "サイトマップ /company/detail/:id(471件) 抽出2/2"
+        ]
+      }
+    },
+    {
+      "id": "m-meetscompany-jp",
+      "name": "ミーツカンパニー",
+      "status": "unverified",
+      "cat": "4-逆求人",
+      "role": "competitor",
+      "url": "https://www.meetscompany.jp/",
+      "catalog_strategy": "recruit-page-link",
+      "catalog_note": "DYM・イベント型",
+      "catalog_probe": {
+        "robots": "allow",
+        "reachable": "yes",
+        "sitemap": "yes",
+        "nameLikely": 0,
+        "companyLinks": 22,
+        "loginWall": "",
+        "note": ""
+      },
+      "probed_at": "2026-11-06",
+      "reason": "企業詳細ページの型が見つからない（一覧・サイトマップとも社名つきの詳細リンクなし）",
+      "robots": "allow",
+      "tos_verdict": "prohibited",
+      "tos_url": "https://www.meetscompany.jp/terms/ https://www.meetscompany.jp/terms",
+      "tos_evidence": [
+        {
+          "kind": "commercial",
+          "text": "a. 虚偽の​情報を​当社に​提供する​行為b. 当社または​求人企業の​業務・営業を​妨害する​行為、​または​社会的信用もしくは​評価を​毀損する​行為c. 他の​利用者、​求人企業、​当社または​求人企業の​従業員​その​他当社の​事業の​一切の​関係者(以下、​「関係者」と​いいます)を​誹謗、​中傷もしくは​",
+          "url": "https://www.meetscompany.jp/terms/"
+        },
+        {
+          "kind": "commercial",
+          "text": "a. 虚偽の​情報を​当社に​提供する​行為b. 当社または​求人企業の​業務・営業を​妨害する​行為、​または​社会的信用もしくは​評価を​毀損する​行為c. 他の​利用者、​求人企業、​当社または​求人企業の​従業員​その​他当社の​事業の​一切の​関係者(以下、​「関係者」と​いいます)を​誹謗、​中傷もしくは​",
+          "url": "https://www.meetscompany.jp/terms"
+        }
+      ],
+      "legal_tier": "T3",
+      "tos_checked_at": "2026-11-06",
+      "tos_override": {
+        "legal_tier": "T2",
+        "reason": "規約に自動収集・商用利用の禁止あり。ネオキャリアは媒体を販売する正式な事業者のため利用可と判断（ユーザー判断 2026-11-06）",
+        "by": "shofukui-neo",
+        "at": "2026-11-06"
+      },
+      "crawl": {
+        "tried": []
+      }
+    },
+    {
+      "id": "m-in-fra-jp",
+      "name": "Infraインターン",
+      "status": "active",
+      "cat": "5-インターン",
+      "role": "sales",
+      "url": "https://www.in-fra.jp/",
+      "catalog_strategy": "recruit-page-link",
+      "catalog_note": "",
+      "catalog_probe": {
+        "robots": "allow",
+        "reachable": "yes",
+        "sitemap": "yes",
+        "nameLikely": 0,
+        "companyLinks": 5,
+        "loginWall": "",
+        "note": ""
+      },
+      "probed_at": "2026-11-06",
+      "reason": "",
+      "robots": "allow",
+      "tos_verdict": "prohibited",
+      "tos_url": "https://www.in-fra.jp/pages/user-policy",
+      "tos_evidence": [
+        {
+          "kind": "commercial",
+          "text": "当社が事前に書面をもって承認した場合を除く、本サービスを使用した営業活動、営利を目的とした本サービスの利用、又はその準備を目的とした本サービスの利用。",
+          "url": "https://www.in-fra.jp/pages/user-policy"
+        }
+      ],
+      "legal_tier": "T3",
+      "tos_checked_at": "2026-11-06",
+      "tos_override": {
+        "legal_tier": "T2",
+        "reason": "規約に自動収集・商用利用の禁止あり。ネオキャリアは媒体を販売する正式な事業者のため利用可と判断（ユーザー判断 2026-11-06）",
+        "by": "shofukui-neo",
+        "at": "2026-11-06"
+      },
+      "crawl": {
+        "via": "sitemap",
+        "render": "static",
+        "detail_template": "/long-internships/:id",
+        "detail_regex": "^/long-internships/[^/?]+$",
+        "support": 15259,
+        "list_urls": [],
+        "sitemap_hits": 15259,
+        "details_seen": 15259,
+        "sample": [
+          {
+            "url": "https://www.in-fra.jp/long-internships/29274",
+            "name": "株式会社N",
+            "phone": "",
+            "employees": null,
+            "hire": null,
+            "site": "https://www.n-grp.net/"
+          },
+          {
+            "url": "https://www.in-fra.jp/long-internships/29316",
+            "name": "株式会社つむぐ",
+            "phone": "",
+            "employees": null,
+            "hire": null,
+            "site": "https://tsumugu.kyoto/about-us"
+          }
+        ],
+        "tried": [
+          "一覧(静的) /long-internships/:id 抽出1/4",
+          "サイトマップ /long-internships/:id(15259件) 抽出2/2"
+        ]
+      }
+    },
+    {
+      "id": "m-01intern-com",
+      "name": "ゼロワンインターン",
+      "status": "active",
+      "cat": "5-インターン",
+      "role": "sales",
+      "url": "https://01intern.com/",
+      "catalog_strategy": "recruit-page-link",
+      "catalog_note": "",
+      "catalog_probe": {
+        "robots": "allow",
+        "reachable": "yes",
+        "sitemap": "no",
+        "nameLikely": 0,
+        "companyLinks": 2,
+        "loginWall": "",
+        "note": ""
+      },
+      "probed_at": "2026-11-05",
+      "reason": "",
+      "robots": "allow",
+      "tos_verdict": "no-explicit-prohibition",
+      "tos_url": "https://01intern.com/terms.html https://01intern-admin.com/terms_corporation.html",
+      "tos_evidence": [],
+      "legal_tier": "T2",
+      "tos_checked_at": "2026-11-05",
+      "crawl": {
+        "via": "listing",
+        "render": "static",
+        "detail_template": "/corporation/:id",
+        "detail_regex": "^/corporation/[^/]+$",
+        "support": 12,
+        "list_urls": [
+          "https://01intern.com/",
+          "https://01intern.com/recruiters/lp/index.html",
+          "https://01intern.com/job/condition?select=area",
+          "https://01intern.com/job/condition?select=jobType",
+          "https://01intern.com/job/condition?select=businessType",
+          "https://01intern.com/job/condition?select=stickingCondition",
+          "https://01intern.com/job/new",
+          "https://01intern.com/job/actively",
+          "https://01intern.com/job/7866.html",
+          "https://01intern.com/job/6808.html",
+          "https://01intern.com/job/7111.html",
+          "https://01intern.com/job/6631.html"
+        ],
+        "sitemap_hits": 0,
+        "details_seen": 18,
+        "sample": [
+          {
+            "url": "https://01intern.com/corporation/713",
+            "name": "株式会社南国ソフトの長期インターンに参加",
+            "phone": "",
+            "employees": "11",
+            "hire": null,
+            "site": ""
+          },
+          {
+            "url": "https://01intern.com/corporation/2823",
+            "name": "株式会社伊藤佑ホールディングスの長期インターンに参加",
+            "phone": "",
+            "employees": "301",
+            "hire": null,
+            "site": ""
+          }
+        ],
+        "tried": [
+          "一覧(静的) /corporation/:id 抽出2/3"
+        ]
+      }
+    },
+    {
+      "id": "m-careerbaito-com",
+      "name": "キャリアバイト",
+      "status": "unverified",
+      "cat": "5-インターン",
+      "role": "sales",
+      "url": "https://careerbaito.com/",
+      "catalog_strategy": "recruit-page-link",
+      "catalog_note": "",
+      "catalog_probe": {
+        "robots": "allow",
+        "reachable": "no",
+        "sitemap": "?",
+        "nameLikely": 0,
+        "companyLinks": "",
+        "loginWall": "",
+        "note": "fetch failed"
+      },
+      "probed_at": "2026-11-06",
+      "reason": "到達不可（fetch failed）。一時的な障害か社内網から届かない可能性。再プローブで確認",
+      "robots": ""
+    },
+    {
+      "id": "m-jeek-jp",
+      "name": "JEEK",
+      "status": "unverified",
+      "cat": "5-インターン",
+      "role": "sales",
+      "url": "https://jeek.jp/",
+      "catalog_strategy": "recruit-page-link",
+      "catalog_note": "",
+      "catalog_probe": {
+        "robots": "allow",
+        "reachable": "yes",
+        "sitemap": "no",
+        "nameLikely": 0,
+        "companyLinks": 29,
+        "loginWall": "",
+        "note": ""
+      },
+      "probed_at": "2026-11-06",
+      "reason": "企業詳細ページの型が見つからない（一覧・サイトマップとも社名つきの詳細リンクなし）",
+      "robots": "allow",
+      "tos_verdict": "not-found",
+      "tos_url": "",
+      "tos_evidence": [],
+      "crawl": {
+        "tried": []
+      },
+      "tos_override": {
+        "legal_tier": "T2",
+        "reason": "規約ページ未発見。禁止媒体も利用可とした判断に準じる（ユーザー判断 2026-11-06）",
+        "by": "shofukui-neo",
+        "at": "2026-11-06"
+      },
+      "tos_checked_at": "2026-11-06"
+    },
+    {
+      "id": "m-internshipguide-jp",
+      "name": "インターンシップガイド",
+      "status": "active",
+      "cat": "5-インターン",
+      "role": "sales",
+      "url": "https://internshipguide.jp/",
+      "catalog_strategy": "recruit-page-link",
+      "catalog_note": "",
+      "catalog_probe": {
+        "robots": "allow",
+        "reachable": "yes",
+        "sitemap": "yes",
+        "nameLikely": 0,
+        "companyLinks": 1,
+        "loginWall": "",
+        "note": ""
+      },
+      "probed_at": "2026-11-05",
+      "reason": "",
+      "robots": "allow",
+      "tos_verdict": "no-explicit-prohibition",
+      "tos_url": "https://internshipguide.jp/Pages/terms",
+      "tos_evidence": [],
+      "legal_tier": "T2",
+      "tos_checked_at": "2026-11-05",
+      "crawl": {
+        "via": "sitemap",
+        "render": "static",
+        "detail_template": "/interns/internDetail/:id",
+        "detail_regex": "^/interns/internDetail/[^/]+$",
+        "support": 1522,
+        "list_urls": [],
+        "sitemap_hits": 1522,
+        "details_seen": 1522,
+        "sample": [
+          {
+            "url": "https://internshipguide.jp/interns/internDetail/597",
+            "name": "株式会社グローバル人材戦略研究所の長期インターンシップ",
+            "phone": "",
+            "employees": "20",
+            "hire": null,
+            "site": ""
+          },
+          {
+            "url": "https://internshipguide.jp/interns/internDetail/891",
+            "name": "東京ガス株式会社",
+            "phone": "",
+            "employees": null,
+            "hire": null,
+            "site": ""
+          }
+        ],
+        "tried": [
+          "一覧(静的) /columns/view/:id 抽出0/3",
+          "サイトマップ /companies/company/:id(1031件) 抽出0/2",
+          "サイトマップ /interns/internDetail/:id(1522件) 抽出2/2"
+        ]
+      }
+    },
+    {
+      "id": "m-yourturn-jp",
+      "name": "ユアターン",
+      "status": "unverified",
+      "cat": "5-インターン",
+      "role": "sales",
+      "url": "https://yourturn.jp/",
+      "catalog_strategy": "recruit-page-link",
+      "catalog_note": "URL要確認",
+      "catalog_probe": {
+        "robots": "allow",
+        "reachable": "no",
+        "sitemap": "?",
+        "nameLikely": 0,
+        "companyLinks": "",
+        "loginWall": "",
+        "note": "fetch failed"
+      },
+      "probed_at": "2026-11-06",
+      "reason": "到達不可（fetch failed）。一時的な障害か社内網から届かない可能性。再プローブで確認",
+      "robots": ""
+    },
+    {
+      "id": "m-unknown-104",
+      "name": "Renew",
+      "status": "excluded",
+      "cat": "5-インターン",
+      "role": "either",
+      "url": "",
+      "catalog_strategy": "blocked-or-login",
+      "catalog_note": "URL要確認",
+      "catalog_probe": {
+        "robots": "",
+        "reachable": "",
+        "sitemap": "",
+        "nameLikely": 0,
+        "companyLinks": "",
+        "loginWall": "",
+        "note": "URL未確定(要確認)"
+      },
+      "reason": "URL未確定（カタログにURLが無い）",
+      "legal_tier": "T2"
+    },
+    {
+      "id": "m-job-draft-com",
+      "name": "ジョブドラフトNavi",
+      "status": "unverified",
+      "cat": "6-高卒",
+      "role": "sales",
+      "url": "https://job-draft.com/",
+      "catalog_strategy": "recruit-page-link",
+      "catalog_note": "ジンジブ。LINE連携強みセグメント",
+      "catalog_probe": {
+        "robots": "allow",
+        "reachable": "yes",
+        "sitemap": "yes",
+        "nameLikely": 0,
+        "companyLinks": 0,
+        "loginWall": "",
+        "note": ""
+      },
+      "probed_at": "2026-11-06",
+      "reason": "企業詳細ページの型が見つからない（サイトマップ /jobs/:id(1590件) 抽出0/2 / サイトマップ /jobs/:id/recruitments(1590件) 抽出0/2 / サイトマップ /videos/:id(6237件) 抽出0/2 / サイトマップ /howtos/:id(172件) 抽出0/2）",
+      "robots": "allow",
+      "tos_verdict": "not-found",
+      "tos_url": "",
+      "tos_evidence": [],
+      "crawl": {
+        "tried": [
+          "サイトマップ /jobs/:id(1590件) 抽出0/2",
+          "サイトマップ /jobs/:id/recruitments(1590件) 抽出0/2",
+          "サイトマップ /videos/:id(6237件) 抽出0/2",
+          "サイトマップ /howtos/:id(172件) 抽出0/2"
+        ]
+      },
+      "tos_override": {
+        "legal_tier": "T2",
+        "reason": "規約ページ未発見。禁止媒体も利用可とした判断に準じる（ユーザー判断 2026-11-06）",
+        "by": "shofukui-neo",
+        "at": "2026-11-06"
+      },
+      "tos_checked_at": "2026-11-06"
+    },
+    {
+      "id": "m-harikennabi-jp",
+      "name": "ハリケンナビ",
+      "status": "active",
+      "cat": "6-高卒",
+      "role": "sales",
+      "url": "https://www.harikennabi.jp/",
+      "catalog_strategy": "recruit-page-link",
+      "catalog_note": "ハリアー研究所",
+      "catalog_probe": {
+        "robots": "allow",
+        "reachable": "yes",
+        "sitemap": "?",
+        "nameLikely": 0,
+        "companyLinks": 5,
+        "loginWall": "",
+        "note": ""
+      },
+      "probed_at": "2026-11-06",
+      "reason": "",
+      "robots": "allow",
+      "tos_verdict": "no-explicit-prohibition",
+      "tos_url": "https://www.harikennabi.jp/rule/ https://www.harikennabi.jp/kiyaku https://www.harikennabi.jp/kiyaku/",
+      "tos_evidence": [],
+      "legal_tier": "T2",
+      "tos_checked_at": "2026-11-06",
+      "crawl": {
+        "via": "listing",
+        "render": "static",
+        "detail_template": "/recruit/:id",
+        "detail_regex": "^/recruit/[^/?]+$",
+        "support": 4,
+        "list_urls": [
+          "https://www.harikennabi.jp/",
+          "https://www.harikennabi.jp/recruit/",
+          "https://www.harikennabi.jp/recruit",
+          "https://www.harikennabi.jp/recruit/?kinmu_id=&syokusyu_id=&gyosyu_id=g08&merit04=0&merit05=0&merit06=0&merit07=0&merit09=0&merit10=0&merit11=0&merit12=0&merit14=0&merit15=0&merit17=0&merit18=0&merit21=0&merit24=0&merit25=0&merit26=0&merit27=0&merit28=0&merit29=0&merit30=0&freeword=",
+          "https://www.harikennabi.jp/recruit/?kinmu_id=&syokusyu_id=&gyosyu_id=g01&merit04=0&merit05=0&merit06=0&merit07=0&merit09=0&merit10=0&merit11=0&merit12=0&merit14=0&merit15=0&merit17=0&merit18=0&merit21=0&merit24=0&merit25=0&merit26=0&merit27=0&merit28=0&merit29=0&merit30=0&freeword=",
+          "https://www.harikennabi.jp/recruit/?kinmu_id=a000",
+          "https://www.harikennabi.jp/recruit/?kinmu_id=b000",
+          "https://www.harikennabi.jp/recruit/?kinmu_id=b001",
+          "https://www.harikennabi.jp/recruit/?kinmu_id=b002",
+          "https://www.harikennabi.jp/recruit/?kinmu_id=b003",
+          "https://www.harikennabi.jp/recruit/?kinmu_id=b004",
+          "https://www.harikennabi.jp/recruit/?kinmu_id=b005"
+        ],
+        "sitemap_hits": 181,
+        "details_seen": 48,
+        "sample": [
+          {
+            "url": "https://www.harikennabi.jp/recruit/422",
+            "name": "株式会社AOS",
+            "phone": "",
+            "employees": "511",
+            "hire": null,
+            "site": "http://www.sc-aos.co.jp/"
+          },
+          {
+            "url": "https://www.harikennabi.jp/recruit/555",
+            "name": "株式会社王将フードサービス",
+            "phone": "",
+            "employees": "2489",
+            "hire": 50,
+            "site": "https://recruit.ohsho.co.jp/"
+          },
+          {
+            "url": "https://www.harikennabi.jp/recruit/535",
+            "name": "シモハナ物流株式会社",
+            "phone": "",
+            "employees": "8480",
+            "hire": 120,
+            "site": "https://shimohana.com/"
+          },
+          {
+            "url": "https://www.harikennabi.jp/recruit/307",
+            "name": "株式会社フォービル",
+            "phone": "",
+            "employees": "64",
+            "hire": 10,
+            "site": "http://www.forbuild.co.jp/"
+          }
+        ],
+        "tried": [
+          "一覧(静的) /recruit/:id 抽出4/4"
+        ]
+      }
+    }
+  ]
+}
